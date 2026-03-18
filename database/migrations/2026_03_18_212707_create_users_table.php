@@ -21,7 +21,7 @@ return new class extends Migration
             $table->integer('ext')->nullable();
             $table->string('password');
             $table->boolean('is_active')->default(true);
-            $table->foreignIdFor(Department::class);
+            $table->foreignIdFor(Department::class)->constrained();
             $table->rememberToken();
             $table->timestamps();
         });

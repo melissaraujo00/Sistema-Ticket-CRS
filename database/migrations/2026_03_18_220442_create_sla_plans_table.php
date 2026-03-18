@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Department;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -12,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('divisions', function (Blueprint $table) {
+        Schema::create('sla_plans', function (Blueprint $table) {
             $table->id();
             $table->string('name', 50);
-            $table->string('characteristics', 70);
-            $table->foreignIdFor(Department::class)->constrained();
+            $table->integer('grace_time_hours');
+            $table->tinyInteger('working_hours');
             $table->timestamps();
         });
     }
@@ -26,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('divisions');
+        Schema::dropIfExists('sla_plans');
     }
 };

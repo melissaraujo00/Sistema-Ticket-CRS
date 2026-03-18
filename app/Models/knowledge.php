@@ -5,17 +5,18 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Division extends Model
+class knowledge extends Model
 {
     protected $fillable = [
-        'name',
-        'characteristics',
-        'department_id'
+        'title',
+        'content_response',
+        'creation_date',
+        'category_id'
     ];
 
-    public function department(): BelongsTo
+    public function category(): BelongsTo
     {
-        return $this->belongsTo(Department::class);
+        return $this->belongsTo(Category::class);
     }
 
     public function helpTopics()

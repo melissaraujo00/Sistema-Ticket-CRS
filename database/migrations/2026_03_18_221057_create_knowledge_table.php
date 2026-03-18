@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Department;
+use App\Models\Category;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -12,11 +12,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('divisions', function (Blueprint $table) {
+        Schema::create('knowledge', function (Blueprint $table) {
             $table->id();
-            $table->string('name', 50);
-            $table->string('characteristics', 70);
-            $table->foreignIdFor(Department::class)->constrained();
+            $table->string('title', 100);
+            $table->string('content_response',255);
+            $table->date('creation_date');
+            $table->foreignIdFor(Category::class)->constrained();
             $table->timestamps();
         });
     }
@@ -26,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('divisions');
+        Schema::dropIfExists('knowledge');
     }
 };
