@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import UserRoleBadge from '@/components/users/UserRoleBadge';
 import CreateUserModal from '@/components/users/CreateUserModal';
+import DeleteUserModal from '@/components/users/DeleteUserModal';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { type User } from '@/types/user';
@@ -20,12 +21,22 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'Usuarios', href: '/users' }];
 
 export default function Index({ users, departments, roles }: Props) {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
+    const openDeleteModal = (user: User) => {
+        setSelectedUser(user);
+        setIsDeleteOpen(true);
+    };
+
+    const closeDeleteModal = () => {
+        setSelectedUser(null);
+        setIsDeleteOpen(false);
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="mx-auto max-w-7xl p-6">
-
-                {/* Cabecera */}
                 <div className="mb-6 flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-bold text-white-900">Lista de Usuarios</h1>
@@ -38,11 +49,10 @@ export default function Index({ users, departments, roles }: Props) {
                         onClick={() => setIsCreateOpen(true)}
                         className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
                     >
-                         Nuevo Usuario
+                        Nuevo Usuario
                     </button>
                 </div>
 
-                {/* Tabla */}
                 <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse text-left">
@@ -106,7 +116,11 @@ export default function Index({ users, departments, roles }: Props) {
                                             <button className="text-blue-600 transition-colors hover:text-blue-900">
                                                 Editar
                                             </button>
-                                            <button className="text-red-600 transition-colors hover:text-red-900">
+
+                                            <button
+                                                onClick={() => openDeleteModal(user)}
+                                                className="text-red-600 transition-colors hover:text-red-900"
+                                            >
                                                 Eliminar
                                             </button>
                                         </td>
@@ -123,6 +137,12 @@ export default function Index({ users, departments, roles }: Props) {
                 onClose={() => setIsCreateOpen(false)}
                 departments={departments}
                 roles={roles}
+            />
+
+            <DeleteUserModal
+                user={selectedUser}
+                isOpen={isDeleteOpen}
+                onClose={closeDeleteModal}
             />
         </AppLayout>
     );
