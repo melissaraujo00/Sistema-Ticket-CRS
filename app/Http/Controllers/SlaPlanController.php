@@ -12,7 +12,8 @@ class SlaPlanController extends Controller
      */
     public function index()
     {
-        //
+        $planes = SlaPlan::all();
+        return view('sla_plans.index', compact('planes'));
     }
 
     /**
@@ -20,7 +21,7 @@ class SlaPlanController extends Controller
      */
     public function create()
     {
-        //
+        return view('sla_plans.create');
     }
 
     /**
@@ -28,7 +29,19 @@ class SlaPlanController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'name'             => 'required|string|max:50',
+            'grace_time_hours' => 'required|integer|min:1',
+            'working_hours'    => 'required|boolean',
+        ]);
+
+        try {
+            SlaPlan::create($request->all());
+            return redirect()->route('sla-plans.index')
+                             ->with('success', 'Plan SLA creado exitosamente.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error al guardar. Intente nuevamente.');
+        }
     }
 
     /**
