@@ -16,7 +16,9 @@ class DatabaseSeeder extends Seeder
             AreaSeeder::class,
             CategorySeeder::class,
             DepartmentSeeder::class,
+            RoleSeeder::class,
             UserSeeder::class,
+            UserRoleSeeder::class,
             KnowledgeSeeder::class,
         ]);
 
