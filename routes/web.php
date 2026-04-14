@@ -1,14 +1,13 @@
 <?php
 
+use App\Http\Controllers\PublicController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use Inertia\Inertia;
 use App\Http\Controllers\SlaPlanController;
 use App\Http\Controllers\PriorityController;
 
-Route::get('/', function () {
-    return Inertia::render('welcome');
-})->name('home');
+Route::get('/', [PublicController::class, 'index'])->name('home');
 
 Route::middleware(['auth'])->group(function () {
 
