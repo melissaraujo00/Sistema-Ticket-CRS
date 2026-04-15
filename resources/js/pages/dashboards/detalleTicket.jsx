@@ -1,8 +1,9 @@
 import { Link, Head } from '@inertiajs/react';
-import TecnicoLayout from '@/layouts/tecnico-layout';
+
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { ArrowLeft, Paperclip } from 'lucide-react';
+import AppLayout from '@/layouts/app-layout';
 
 export default function TicketDetails({ id }) {
     const [ticket, setTicket] = useState(null);
@@ -27,7 +28,7 @@ export default function TicketDetails({ id }) {
     if (!data) return <div>Cargando...</div>;
 
     return (
-        <TecnicoLayout>
+        <AppLayout>
             <Head title={`Detalle Ticket #${data.id}`} />
 
             <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 text-gray-800 font-sans">
@@ -133,7 +134,7 @@ export default function TicketDetails({ id }) {
                     {/* Back button */}
                     <div className="pt-2">
                         <Link
-                            href="/tecnico/dashboard"
+                            href="/dashboard"
                             className="inline-flex items-center gap-2 px-5 py-2 border border-gray-300 rounded-xl text-sm font-bold bg-white text-black hover:bg-gray-50 transition-colors shadow-sm"
                         >
                             <ArrowLeft className="w-4 h-4" /> Volver
@@ -141,6 +142,6 @@ export default function TicketDetails({ id }) {
                     </div>
                 </div>
             </div>
-        </TecnicoLayout>
+        </AppLayout>
     );
 }

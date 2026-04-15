@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { Link, usePage } from '@inertiajs/react';
 import { BookOpen, Folder, LayoutGrid, Menu, Search } from 'lucide-react';
 
+import { CruzRojaLogo } from '../components/CruzRojaLogo';
 
 const mainNavItems = [
     {
@@ -66,7 +67,7 @@ export function AppHeader({ breadcrumbs = [] }) {
                     </div>
 
                     <Link href="/dashboard" prefetch className="flex items-center space-x-2">
-                        <AppLogo />
+                        <CruzRojaLogo size='xs'/>
                     </Link>
 
                     {/* Desktop Navigation */}

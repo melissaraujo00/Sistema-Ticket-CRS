@@ -23,7 +23,7 @@ Route::middleware(['auth'])->group(function () {
             })->name('tecnico.dashboard');
 
             Route::get('/ticket/{id}', function ($id) {
-                return Inertia::render('tecnico/DetalleTicket', ['id' => $id]);
+                return Inertia::render('dashboards/detalleTicket', ['id' => $id]);
             })->name('tecnico.ticket');
 
             Route::get('/total-asignados', [TecnicoController::class, 'totalTicketsAsignados']);
