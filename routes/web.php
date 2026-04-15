@@ -7,6 +7,7 @@ use Inertia\Inertia;
 use App\Http\Controllers\SlaPlanController;
 use App\Http\Controllers\PriorityController;
 use App\Http\Controllers\TecnicoController;
+use App\Http\Controllers\TicketController;
 
 Route::get('/', [PublicController::class, 'index'])->name('home');
 
@@ -49,6 +50,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('/sla-plans',  SlaPlanController::class);
     // Rutas de prioridades
     Route::resource('priorities', PriorityController::class);
+    Route::resource('tickets', TicketController::class);
 
     Route::middleware(['permission:manage_users|view_area_dashboard'])->group(function () {
         Route::resource('users', UserController::class);

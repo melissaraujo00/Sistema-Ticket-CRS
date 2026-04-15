@@ -3,10 +3,9 @@ import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { usePage, Link } from '@inertiajs/react';
-import { BookOpen, Clock, Folder, LayoutGrid, ListChecks, Users } from 'lucide-react';
+import { BookOpen, Clock, Folder, LayoutGrid, ListChecks, Users, Ticket, HelpCircle } from 'lucide-react'; // Agregados Ticket y HelpCircle
 
 import AppLogo from './app-logo';
-
 
 const mainNavItems = [
     {
@@ -14,7 +13,16 @@ const mainNavItems = [
         url: '/dashboard',
         icon: LayoutGrid,
     },
-
+    {
+        title: 'Mis Tickets',
+        url: '/tickets',          // Ruta típica para tickets del usuario
+        icon: Ticket,             // Ícono de ticket
+    },
+    {
+        title: 'FAQs',
+        url: '/faqs',             // Ruta para preguntas frecuentes
+        icon: HelpCircle,         // Ícono de ayuda
+    },
     {
         title: 'Ticket',
         icon: ListChecks,
@@ -33,17 +41,13 @@ const mainNavItems = [
             },
         ]
     },
-
     {
         title: 'Usuarios',
         url: '/users',
         icon: Users,
         permission: 'ver usuarios'
     },
-
-
 ];
-
 
 function filterNavItems(items, hasPermission) {
     return items
@@ -77,9 +81,13 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={filteredNavItems}  />
+                <NavMain items={filteredNavItems} />
             </SidebarContent>
 
+            {/* Opcional: si quieres agregar el footer con el usuario */}
+            {/* <SidebarFooter>
+                <NavUser />
+            </SidebarFooter> */}
         </Sidebar>
     );
 }

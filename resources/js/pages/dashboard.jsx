@@ -1,8 +1,10 @@
 import { Head, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 
+// Importamos todos los dashboards disponibles
 import SuperAdminDashboard from '../pages/dashboards/super-admin-dashboard';
 import AgentDashboard from '../pages/dashboards/agent-dashboard';
+import UserDashboard from '../pages/dashboards/user-dashboard'; // Asegúrate de tener este importado
 
 const breadcrumbs = [
     { title: 'Dashboard', href: '/dashboard' }
@@ -12,19 +14,44 @@ export default function Dashboard() {
     // Obtenemos la información del usuario autenticado
     const { auth } = usePage().props;
 
-    // Obtenemos el arreglo de roles (si no hay, por defecto es un arreglo vacío)
+    // Obtenemos el arreglo de roles (ej: ['superadmin'] o ['agent'])
     const userRoles = auth?.user?.roles || [];
 
-    // Verificamos si el usuario tiene el rol 'admin' (Ajusta el nombre si en tu BD se llama 'Administrador')
-    const isAdmin = userRoles.includes('superadmin');
+    // Función para determinar el rol principal (por si un usuario tiene varios roles)
+    // Le damos prioridad de arriba hacia abajo
+    const getPrimaryRole = () => {
+        if (userRoles.includes('superadmin')) return 'superadmin';
+        if (userRoles.includes('tecnico')) return 'tecnico';
+        if (userRoles.includes('user')) return 'user';
 
+        return 'default'; // Si no tiene ningún rol asignado
+    };
+
+    // Usamos el switch para renderizar el componente correcto
     const renderContent = () => {
-        if (isAdmin) {
-            return <SuperAdminDashboard />;
-        }
+        const role = getPrimaryRole();
 
-        // Si no es admin, mostramos el dashboard del agente
-        return <AgentDashboard />;
+        switch (role) {
+            case 'superadmin':
+                return <SuperAdminDashboard />;
+
+            case 'tecnico':
+                return <AgentDashboard />;
+
+            case 'user':
+                return <UserDashboard />;
+
+            default:
+                // Vista de seguridad en caso de que el usuario no tenga rol
+                return (
+                    <div className="flex items-center justify-center h-full bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                        <div className="text-center">
+                            <h2 className="text-lg font-bold text-gray-900">Acceso Restringido</h2>
+                            <p className="text-gray-500">No tienes un rol asignado para ver el panel.</p>
+                        </div>
+                    </div>
+                );
+        }
     };
 
     return (
