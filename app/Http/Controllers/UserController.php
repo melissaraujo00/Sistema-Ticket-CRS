@@ -5,29 +5,21 @@ namespace App\Http\Controllers;
 use App\Http\Requests\UserStoreRequest;
 use App\Http\Requests\UserUpdateRequest;
 use App\Services\UserService;
-use Inertia\Inertia;
 use App\Models\User;
-use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Routing\Controllers\Middleware;
+use Inertia\Inertia;
 
-class UserController extends Controller implements HasMiddleware
+class UserController extends Controller
 {
     protected $userService;
 
     public function __construct(UserService $userService)
     {
         $this->userService = $userService;
-    }
 
-    /**
-     * Define los middlewares directamente en el controlador.
-     * Solo los usuarios con el permiso 'manage_users' pueden modificar datos.
-     */
-    public static function middleware(): array
-    {
-        return [
-            new Middleware('permission:manage_users', only: ['create', 'store', 'edit', 'update', 'destroy']),
-        ];
+        // Middleware: solo usuarios con permiso 'manage_users' pueden modificar datos
+        $this->middleware('permission:manage_users')->only([
+            'create', 'store', 'edit', 'update', 'destroy'
+        ]);
     }
 
     public function index()
@@ -86,9 +78,7 @@ class UserController extends Controller implements HasMiddleware
 
             return redirect()->route('users.index')
                 ->with('success', 'Usuario eliminado correctamente');
-
         } catch (\Exception $e) {
-            // Atrapamos la excepción de seguridad del UserService
             return redirect()->route('users.index')
                 ->with('error', $e->getMessage());
         }
