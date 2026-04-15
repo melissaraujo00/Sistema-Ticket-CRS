@@ -1,160 +1,136 @@
-import { useState } from 'react';
+/* global route */
+import DeleteEntityModal from '@/components/DeleteEntityModal';
+import { GenericTable } from '@/components/GenericTable';
+import { Button } from '@/components/ui/button';
 import UserRoleBadge from '@/components/users/UserRoleBadge';
-import CreateUserModal from '@/components/users/CreateUserModal';
-import DeleteUserModal from '@/components/users/DeleteUserModal';
-import EditUserModal from '@/components/users/EditUserModal';
+import UserTableActions from '@/components/users/UserTableActions';
+import { usePermissions } from '@/hooks/usePermissions';
 import AppLayout from '@/layouts/app-layout';
+import { Head, Link } from '@inertiajs/react';
+import { Plus, User } from 'lucide-react';
+import { useState } from 'react';
+import { Toaster } from 'sonner';
 
 
-const breadcrumbs = [{ title: 'Usuarios', href: '/users' }];
-
-export default function Index({ users, departments, roles }) {
-    const [isCreateOpen, setIsCreateOpen] = useState(false);
-    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-    const [isEditOpen, setIsEditOpen] = useState(false);
+export default function Users({ users = [], departments = [], roles = [] }) {
     const [selectedUser, setSelectedUser] = useState(null);
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
-    const openDeleteModal = (user) => {
-        setSelectedUser(user);
-        setIsDeleteOpen(true);
-    };
+    const { hasPermission, authUser } = usePermissions();
 
-    const closeDeleteModal = () => {
-        setSelectedUser(null);
-        setIsDeleteOpen(false);
-    };
+    const allColumns = [
+        {
+            header: 'Usuario',
+            render: (user) => (
+                <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded bg-zinc-100 text-zinc-500 dark:bg-zinc-800">
+                        <User className="h-4 w-4" />
+                    </div>
+                    <div>
+                        <span className="block font-semibold">{user.name}</span>
+                        <span className="text-xs text-zinc-400">ID: {user.id}</span>
+                    </div>
+                </div>
+            ),
+        },
+        {
+            header: 'Contacto',
+            className: 'hidden md:table-cell',
+            render: (user) => (
+                <div>
+                    <span className="block text-sm">{user.email}</span>
+                    <span className="text-xs text-zinc-400">Tel: {user.phone_number}</span>
+                </div>
+            ),
+        },
+        {
+            header: 'Departamento',
+            className: 'hidden md:table-cell text-zinc-600',
+            render: (user) => <span className="text-sm">{user.department?.name ?? 'Sin asignar'}</span>,
+        },
+        {
+            header: 'Rol',
+            render: (user) => (
+                <div className="flex flex-wrap gap-1">
+                    {user.roles?.map((role) => (
+                        <UserRoleBadge key={role.id} role={role} />
+                    ))}
+                </div>
+            ),
+        },
+        {
+            header: 'Estado',
+            render: (user) => (
+                <span
+                    className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium ${
+                        user.is_active
+                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                            : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                    }`}
+                >
+                    <span className={`h-1.5 w-1.5 rounded-full ${user.is_active ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                    {user.is_active ? 'Activo' : 'Inactivo'}
+                </span>
+            ),
+        },
+        {
+            header: 'Acciones',
+            className: 'text-right',
+            render: (user) => (
+                <UserTableActions
+                    user={user}
+                    authUser={authUser}
+                    onDelete={(u) => {
+                        setSelectedUser(u);
+                        setIsDeleteOpen(true);
+                    }}
+                />
+            ),
+        },
+    ];
 
-    const openEditModal = (user) => {
-        setSelectedUser(user);
-        setIsEditOpen(true);
-    };
-
-    const closeEditModal = () => {
-        setSelectedUser(null);
-        setIsEditOpen(false);
-    };
+    // Filtrar la columna de acciones si el usuario no tiene permisos
+    const columns = allColumns.filter((column) => {
+        if (column.header === 'Acciones') {
+            return hasPermission('manage_users');
+        }
+        return true;
+    });
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <div className="mx-auto max-w-7xl p-6">
-                <div className="mb-6 flex items-center justify-between">
+        <AppLayout>
+            <Head title="Usuarios" />
+            <Toaster position="top-right" richColors />
+
+            <div className="space-y-6 p-4 md:p-8">
+                <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-white-900">Lista de Usuarios</h1>
-                        <p className="mt-1 text-sm text-gray-100">
-                            Gestiona los miembros de tu equipo, sus roles y departamentos.
-                        </p>
+                        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Usuarios</h1>
+                        <p className="text-sm text-zinc-500">Gestión de miembros del equipo, roles y departamentos.</p>
                     </div>
 
-                    <button
-                        onClick={() => setIsCreateOpen(true)}
-                        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
-                    >
-                        Nuevo Usuario
-                    </button>
+                    {hasPermission('manage_users') && (
+                        <Button asChild className="bg-zinc-900 dark:bg-zinc-50 dark:text-zinc-900">
+                            <Link href={route('users.create')}>
+                                <Plus className="mr-2 h-4 w-4" />
+                                Nuevo
+                            </Link>
+                        </Button>
+                    )}
                 </div>
 
-                <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-                    <div className="overflow-x-auto">
-                        <table className="w-full border-collapse text-left">
-                            <thead>
-                            <tr className="border-b border-gray-200 bg-gray-50 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                                <th className="px-6 py-4">Usuario</th>
-                                <th className="px-6 py-4">Contacto</th>
-                                <th className="px-6 py-4">Departamento</th>
-                                <th className="px-6 py-4">Rol</th>
-                                <th className="px-6 py-4">Estado</th>
-                                <th className="px-6 py-4 text-right">Acciones</th>
-                            </tr>
-                            </thead>
-
-                            <tbody className="divide-y divide-gray-200 text-sm">
-                            {users.map((user) => (
-                                <tr key={user.id} className="transition-colors hover:bg-gray-50">
-                                    <td className="whitespace-nowrap px-6 py-4">
-                                        <div className="font-medium text-gray-900">{user.name}</div>
-                                        <div className="mt-0.5 text-xs text-gray-500">ID: {user.id}</div>
-                                    </td>
-
-                                    <td className="whitespace-nowrap px-6 py-4">
-                                        <div className="text-gray-900">{user.email}</div>
-                                        <div className="mt-0.5 text-xs text-gray-500">
-                                            Tel: {user.phone_number}
-                                        </div>
-                                    </td>
-
-                                    <td className="whitespace-nowrap px-6 py-4 text-gray-700">
-                                        {user.department?.name ?? 'Sin asignar'}
-                                    </td>
-
-                                    <td className="whitespace-nowrap px-6 py-4">
-                                        <div className="flex gap-1">
-                                            {user.roles?.map((role) => (
-                                                <UserRoleBadge key={role.id} role={role} />
-                                            ))}
-                                        </div>
-                                    </td>
-
-                                    <td className="whitespace-nowrap px-6 py-4">
-                                            <span
-                                                className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium ${
-                                                    user.is_active
-                                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                                                        : 'border-red-200 bg-red-50 text-red-700'
-                                                }`}
-                                            >
-                                                <span
-                                                    className={`mr-1.5 h-1.5 w-1.5 rounded-full ${
-                                                        user.is_active
-                                                            ? 'bg-emerald-500'
-                                                            : 'bg-red-500'
-                                                    }`}
-                                                />
-                                                {user.is_active ? 'Activo' : 'Inactivo'}
-                                            </span>
-                                    </td>
-
-                                    <td className="space-x-4 whitespace-nowrap px-6 py-4 text-right font-medium">
-                                        <button
-                                            onClick={() => openEditModal(user)}
-                                            className="text-blue-600 transition-colors hover:text-blue-900"
-                                        >
-                                            Editar
-                                        </button>
-
-                                        <button
-                                            onClick={() => openDeleteModal(user)}
-                                            className="text-red-600 transition-colors hover:text-red-900"
-                                        >
-                                            Eliminar
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                <GenericTable data={users} columns={columns} />
             </div>
 
-            <CreateUserModal
-                isOpen={isCreateOpen}
-                onClose={() => setIsCreateOpen(false)}
-                departments={departments}
-                roles={roles}
-            />
-
-            <DeleteUserModal
-                user={selectedUser}
+            <DeleteEntityModal
                 isOpen={isDeleteOpen}
-                onClose={closeDeleteModal}
-            />
-
-            <EditUserModal
-                user={selectedUser}
-                isOpen={isEditOpen}
-                onClose={closeEditModal}
-                departments={departments}
-                roles={roles}
+                entity={selectedUser}
+                entityType="Usuario"
+                deleteEndpoint={route('users.index')}
+                closeModal={() => {
+                    setIsDeleteOpen(false);
+                    setSelectedUser(null);
+                }}
             />
         </AppLayout>
     );

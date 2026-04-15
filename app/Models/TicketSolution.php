@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class TicketSolution extends Model
 {
     use SoftDeletes;
-    
+
     protected $fillable = [
         'ticket_id',
         'user_id',
@@ -19,7 +19,8 @@ class TicketSolution extends Model
         'type'
     ];
 
-    protected $casts = [ 'type' => TicketSolution::class];
+    protected $casts = [  'date' => 'date',
+                            'attach' => 'array'];
 
     public function ticket(): BelongsTo
     {

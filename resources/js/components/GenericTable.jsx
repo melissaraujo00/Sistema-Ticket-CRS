@@ -2,10 +2,11 @@ import React from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 /**
- * Tabla Genérica reutilizable
+ * 
  * @param {Array} 
  * @param {Array} 
  */
+
 export function GenericTable({ data = [], columns = [] }) {
     return (
         <div className="rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950 overflow-hidden">
@@ -13,7 +14,10 @@ export function GenericTable({ data = [], columns = [] }) {
                 <TableHeader className="bg-zinc-50/50 dark:bg-zinc-900/50">
                     <TableRow>
                         {columns.map((col, i) => (
-                            <TableHead key={i} className={col.className}>
+                            <TableHead 
+                                key={i} 
+                                className={`text-center px-6 font-bold text-zinc-700 dark:text-zinc-300 ${col.className || ""}`}
+                            >
                                 {col.header}
                             </TableHead>
                         ))}
@@ -22,13 +26,15 @@ export function GenericTable({ data = [], columns = [] }) {
                 <TableBody>
                     {data.length > 0 ? (
                         data.map((item, i) => (
-                            <TableRow 
-                                key={i} 
-                                className="hover:bg-zinc-50/50 dark:hover:bg-zinc-900/50 transition-colors"
-                            >
+                            <TableRow key={i} className="hover:bg-zinc-50/50 transition-colors">
                                 {columns.map((col, j) => (
-                                    <TableCell key={j} className={col.className}>
-                                        {col.render(item)}
+                                    <TableCell 
+                                        key={j} 
+                                        className={`px-6 py-4 ${col.className || ""}`}
+                                    >
+                                        <div className="flex justify-center items-center">
+                                            {col.render(item)}
+                                        </div>
                                     </TableCell>
                                 ))}
                             </TableRow>

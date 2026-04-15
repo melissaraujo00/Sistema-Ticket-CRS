@@ -1,22 +1,24 @@
-
-export const initialBaseUserForm = {
+/**
+ * Valores base compartidos para evitar repetición
+ */
+const baseForm = {
     name: '',
     email: '',
     phone_number: '',
-    ext: null,
+    ext: '',
     birthdate: '',
-    department_id: null,
+    department_id: '',
     role: ''
 };
 
-// Para la creación, podrías extenderlo así:
+/** @type {initialUserFormData} */
 export const initialUserFormData = {
-    ...initialBaseUserForm,
+    ...baseForm,
     password: ''
 };
 
-// Para la actualización:
+/** @type {initialUpdateUserFormData} */
 export const initialUpdateUserFormData = {
-    ...initialBaseUserForm,
+    ...baseForm,
     password: ''
 };

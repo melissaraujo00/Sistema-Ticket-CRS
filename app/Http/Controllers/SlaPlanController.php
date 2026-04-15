@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreSlaPlanRequest;
+use App\Http\Requests\UpdatedSlaPlanRequest;
 use App\Models\SlaPlan;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class SlaPlanController extends Controller
 {
@@ -24,27 +27,24 @@ class SlaPlanController extends Controller
      */
     public function create()
     {
-        return Inertia::render('sla-plans/create');return view('sla_plans.create');
+        $slaPlan = SlaPlan::all();
+        return Inertia::render('sla-plans/create', [
+            'sla-plans' => $slaPlan
+        ]);
+
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreSlaPlanRequest $request)
     {
-        $request->validate([
-            'name'             => 'required|string|max:50',
-            'grace_time_hours' => 'required|integer|min:1',
-            'working_hours'    => 'required|boolean',
-        ]);
 
-        try {
-            SlaPlan::create($request->all());
-            return redirect()->route('sla-plans.index')
-                             ->with('success', 'Plan SLA creado exitosamente.');
-        } catch (\Exception $e) {
-            return back()->with('error', 'Error al guardar. Intente nuevamente.');
-        }
+        SlaPlan::create($request->validated());
+
+        return redirect()->route('sla-plans.index')
+                        ->with('success', 'Plan SLA creado exitosamente.');
+
     }
 
     /**
@@ -60,22 +60,26 @@ class SlaPlanController extends Controller
      */
     public function edit(SlaPlan $slaPlan)
     {
-        //
+        return Inertia::render('sla-plans/edit', [
+        'slaPlan' => $slaPlan  
+    ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, SlaPlan $slaPlan)
+    public function update(UpdatedSlaPlanRequest $request, SlaPlan $slaPlan)
     {
-        //
+        $slaPlan->update($request->validated());
+        return redirect()->route('sla-plans.index')->With('success', 'Sla Plan Editado Exitosamente');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(SlaPlan $slaPlan)
+    public function destroy(SlaPlan $slaPlan): RedirectResponse
     {
-        //
+        $slaPlan->delete();
+        return redirect()->route('sla-plans.index')->with('success', 'Plan eliminado (puede restaurarse).');
     }
 }
