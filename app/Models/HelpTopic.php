@@ -39,4 +39,6 @@ class HelpTopic extends Model
     {
         return $this->hasMany(Ticket::class);
     }
+
+
 }

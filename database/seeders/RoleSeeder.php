@@ -27,6 +27,7 @@ class RoleSeeder extends Seeder
             'editar plan_sla',
             'eliminar plan_sla',
             'ver dashboard',
+            'ver tickets',
         ];
 
         foreach ($permissions as $permissionName) {

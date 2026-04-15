@@ -16,7 +16,8 @@ const mainNavItems = [
     {
         title: 'Mis Tickets',
         url: '/tickets',          // Ruta típica para tickets del usuario
-        icon: Ticket,             // Ícono de ticket
+        icon: Ticket,
+        permission: 'ver tickets'          // Ícono de ticket
     },
     {
         title: 'FAQs',
