@@ -45,9 +45,6 @@ Route::middleware(['auth'])->group(function () {
         });
     });
 
-
-    Route::get('/tickets/preview', [TicketController::class, 'preview'])->name('tickets.preview');
-
     Route::resource('tickets', TicketController::class);
 
     // Rutas de SLA Plans

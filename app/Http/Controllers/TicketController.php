@@ -43,12 +43,6 @@ class TicketController extends Controller
     ]);
     }
     
-    public function preview(Request $request)
-    {
-        return Inertia::render('tickets/preview', [
-            'ticket' => $request->all()
-        ]);
-    }
     /**
      * Guarda el ticket en la base de datos.
      */
