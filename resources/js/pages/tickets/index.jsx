@@ -19,6 +19,8 @@ export default function Index() {
     const tickets = props.tickets || [];
     const auth = props.auth || { user: { permissions: [] } };
 
+    console.log("Tickets desde el backend:", tickets);
+
     const [searchTerm, setSearchTerm] = useState("");
     const [ratingModalOpen, setRatingModalOpen] = useState(false);
     const [ticketToClose, setTicketToClose] = useState(null);
@@ -27,7 +29,7 @@ export default function Index() {
 
     const hasPermission = (perm) => auth.user?.permissions?.includes(perm);
 
-    // Filtrar tickets por asunto o código
+    // Filtrar tickets por asunto o códigox
     const filteredTickets = tickets.filter((ticket) =>
         `${ticket.code} ${ticket.subject}`.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -82,27 +84,26 @@ export default function Index() {
         {
             header: "Estado",
             render: (ticket) => {
+                const statusName = ticket.status?.name;
+                console.log(statusName);
                 const statusStyles = {
-                    open: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
-                    in_progress: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-                    resolved: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-                    closed: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400",
+                    "Abierto": "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+                    "En Proceso": "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+                    "Resuelto": "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+                    "Cerrado": "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400",
                 };
-                const statusLabels = {
-                    open: "Abierto",
-                    in_progress: "En Proceso",
-                    resolved: "Resuelto",
-                    closed: "Cerrado",
-                };
+
                 return (
                     <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${statusStyles[ticket.status] || statusStyles.open}`}
+                        // Usamos statusName para buscar el color
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${statusStyles[statusName] || "bg-gray-100 text-gray-700"}`}
                     >
-                        {statusLabels[ticket.status] || ticket.status}
+                    
+                        {statusName || "Sin estado"}
                     </span>
                 );
             },
-        },
+        }, ,
         {
             header: "Fecha de creación",
             className: "hidden md:table-cell",
@@ -219,9 +220,8 @@ export default function Index() {
                                         key={star}
                                         type="button"
                                         onClick={() => setRating(star)}
-                                        className={`transition-all hover:scale-110 ${
-                                            rating >= star ? "text-yellow-400" : "text-gray-200 dark:text-gray-600"
-                                        }`}
+                                        className={`transition-all hover:scale-110 ${rating >= star ? "text-yellow-400" : "text-gray-200 dark:text-gray-600"
+                                            }`}
                                     >
                                         <Star className="w-10 h-10 fill-current" />
                                     </button>

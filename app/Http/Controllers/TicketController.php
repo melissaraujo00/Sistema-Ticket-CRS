@@ -22,7 +22,10 @@ class TicketController extends Controller
      */
     public function index()
     {
-        $tickets = Ticket::where('requesting_user', Auth::id())->get();
+        $tickets = Ticket::with('status')
+            ->where('requesting_user', Auth::id())
+            ->get();
+
         return Inertia::render('tickets/index', [
             'tickets' => $tickets,
         ]);

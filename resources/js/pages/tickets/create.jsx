@@ -13,14 +13,23 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Loader2, Paperclip, Ticket, Image as ImageIcon, Pencil, Check, Link } from "lucide-react";
+import { ArrowLeft, Ticket, Image as ImageIcon, Link } from "lucide-react";
 import { route } from "ziggy-js";
+import * as Yup from 'yup';
 
 const breadcrumbs = [
     { title: "Dashboard", href: "/dashboard" },
     { title: "Mis Tickets", href: "/tickets" },
     { title: "Crear Ticket", href: "/tickets/create" },
 ];
+
+const ticketSchema = Yup.object().shape({
+    department_id: Yup.string().required("El departamento es obligatorio"),
+    division_id: Yup.string().required("La división es obligatoria"),
+    help_topic_id: Yup.string().required("El tema de ayuda es obligatorio"),
+    subject: Yup.string().min(5, "El asunto es muy corto").required("El asunto es obligatorio"),
+    message: Yup.string().min(10, "Por favor, explica mejor tu problema").required("El mensaje es obligatorio"),
+});
 
 export default function Create() {
     const { auth, departments, divisions, helpTopics } = usePage().props;
@@ -29,7 +38,7 @@ export default function Create() {
     const [dept, setDept] = useState("");
     const [div, setDiv] = useState("");
 
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, post, processing, errors, setError, clearErrors } = useForm({
         department_id: "",
         division_id: "",
         help_topic_id: "",
@@ -60,25 +69,24 @@ export default function Create() {
         setData("help_topic_id", "");
     };
 
-    const handleGoToPreview = (e) => {
+    const handleGoToPreview = async (e) => {
         e.preventDefault();
-        setShowPreview(true);
+        clearErrors(); 
+        try {
+            await ticketSchema.validate(data, { abortEarly: false });
+            setShowPreview(true);
+        } catch (validationErrors) {
+            validationErrors.inner.forEach((error) => {
+                setError(error.path, error.message);
+            });
+        }
     };
 
     const submit = (e) => {
         if (e && e.preventDefault) e.preventDefault();
-        console.log("Intentando enviar datos...", data); 
 
-        post(route('tickets.store'), { 
-            forceFormData: true,
-            onSuccess: () => {
-                console.log("¡Éxito!");
-                setShowPreview(false);
-            },
-            onError: (err) => {
-                console.error("Errores de validación:", err);
-                setShowPreview(false); 
-            }
+        post(route('tickets.store'), {
+            forceFormData: true
         });
     };
 
@@ -108,22 +116,22 @@ export default function Create() {
                         <Link href="/tickets"><ArrowLeft className="h-4 w-4" /></Link>
                     </Button>
                     <h2 className="text-lg font-bold flex items-center gap-2">
-                        <Ticket className="h-5 w-5 text-red-600" /> Nuevo Ticket
+                        <Ticket className="h-5 w-5 text-red-600 dark:text-red-400" /> Nuevo Ticket
                     </h2>
                 </div>
 
-                <h1 className="text-2xl font-bold text-red-600 mb-2">
+                <h1 className="text-2xl font-bold text-red-600 dark:text-red-400 p-2">
                     Abrir Nuevo Ticket
                 </h1>
-                <p className="text-sm text-gray-600 mb-6">
+                <p className="text-sm text-gray-600 mb-6 p-2">
                     Rellene el siguiente formulario para abrir un nuevo ticket
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                     {/* Información del Personal */}
-                    <div className="bg-white border border-[#706F6F] rounded-xl p-6">
-                        <h2 className="text-red-600 font-semibold mb-6">
+                    <div className="bg-white dark:bg-zinc-900 border border-[#706F6F] dark:border-zinc-800 rounded-xl p-6">
+                        <h2 className=" text-red-600 dark:text-red-400 font-semibold mb-6">
                             Información del Personal
                         </h2>
 
@@ -168,15 +176,15 @@ export default function Create() {
                     </div>
 
                     {/* Información de Área */}
-                    <div className="bg-white border border-[#706F6F] rounded-xl p-6">
-                        <h2 className="text-red-600 font-semibold mb-6">
+                    <div className="bg-white dark:bg-zinc-900 border border-[#706F6F] dark:border-zinc-800 rounded-xl p-6">
+                        <h2 className=" text-red-600 dark:text-red-400 font-semibold mb-6">
                             Información de Área
                         </h2>
 
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-6">
                                 <div className="flex items-center gap-3">
-                                    <Label className="text-[#3C3C3B] w-28">Departamento:</Label>
+                                    <Label className="w-28">Departamento:</Label>
                                     <Select value={dept} onValueChange={handleDeptChange}>
                                         <SelectTrigger className="border-[#706F6F]">
                                             <SelectValue placeholder="Seleccione..." />
@@ -192,7 +200,7 @@ export default function Create() {
                                 </div>
 
                                 <div className="flex items-center gap-3">
-                                    <Label className="text-[#3C3C3B] w-20">División:</Label>
+                                    <Label className="w-20">División:</Label>
                                     <Select value={div} onValueChange={handleDivChange} disabled={!dept}>
                                         <SelectTrigger className="border-[#706F6F]">
                                             <SelectValue placeholder="Seleccione..." />
@@ -207,9 +215,13 @@ export default function Create() {
                                     </Select>
                                 </div>
                             </div>
+                            <div className="flex justify-between">
+                                {errors.department_id && <p className=" text-red-600 dark:text-red-400 text-xs">{errors.department_id}</p>}    
+                                {errors.division_id && <p className=" text-red-600 dark:text-red-400 text-xs">{errors.division_id}</p>}
+                            </div>
 
                             <div className="flex items-center gap-3">
-                                <Label className="text-[#3C3C3B] w-36">Temas de ayuda:</Label>
+                                <Label className="w-36">Temas de ayuda:</Label>
                                 <Select
                                     value={data.help_topic_id}
                                     onValueChange={(val) => setData("help_topic_id", val)}
@@ -227,18 +239,14 @@ export default function Create() {
                                     </SelectContent>
                                 </Select>
                             </div>
-
-                            {/* Errores de validación */}
-                            {errors.department_id && <p className="text-red-500 text-xs">{errors.department_id}</p>}
-                            {errors.division_id && <p className="text-red-500 text-xs">{errors.division_id}</p>}
-                            {errors.help_topic_id && <p className="text-red-500 text-xs">{errors.help_topic_id}</p>}
+                            {errors.help_topic_id && <p className="text-red-600 dark:text-red-400 text-xs">{errors.help_topic_id}</p>}
                         </div>
                     </div>
                 </div>
 
                 {/* Mensaje */}
-                <div className="bg-white border border-[#3C3C3B] rounded-xl p-6 mt-6">
-                    <h2 className="text-red-600 font-bold mb-4">
+                <div className="bg-white dark:bg-zinc-900 border border-[#706F6F] dark:border-zinc-800 rounded-xl p-6 mt-6">
+                    <h2 className=" text-red-600 dark:text-red-400 font-bold mb-4">
                         Mensaje a notificar
                     </h2>
 
@@ -250,7 +258,7 @@ export default function Create() {
                                     value={data.subject}
                                     onChange={(e) => setData("subject", e.target.value)}
                                 />
-                                {errors.subject && <p className="text-red-500 text-xs">{errors.subject}</p>}
+                                {errors.subject && <p className="text-red-600 dark:text-red-400 text-xs">{errors.subject}</p>}
                             </div>
 
                             <div>
@@ -260,7 +268,7 @@ export default function Create() {
                                     value={data.message}
                                     onChange={(e) => setData("message", e.target.value)}
                                 />
-                                {errors.message && <p className="text-red-500 text-xs">{errors.message}</p>}
+                                {errors.message && <p className="text-red-600 dark:text-red-400 text-xs">{errors.message}</p>}
                             </div>
                         </div>
 
@@ -279,7 +287,7 @@ export default function Create() {
                         <Button
                             type="submit"
                             disabled={processing}
-                            className="bg-red-600 hover:bg-red-700 px-10"
+                            className="bg-red-600 hover:bg-red-700 text-white px-10"
                         >
                             {processing ? "Enviando..." : "Enviar"}
                         </Button>
