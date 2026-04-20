@@ -60,7 +60,7 @@ class TicketController extends Controller
         // $slaPlan = $priority->slaPlan;
         $helpTopic = HelpTopic::with(['priority', 'slaPlan'])->findOrFail($validated['help_topic_id']);
         $priority  = $helpTopic->priority;
-        $slaPlan   = $helpTopic->slaPlan;
+        // $slaPlan   = $helpTopic->slaPlan;
 
         $statusOpen = Status::where('name', 'Abierto')->firstOrFail();
 
@@ -68,7 +68,7 @@ class TicketController extends Controller
         $code = $this->generateTicketCode();
 
         $creationDate = Carbon::now();
-        $expirationDate = $creationDate->copy()->addHours($slaPlan->grace_time_hours);
+        // $expirationDate = $creationDate->copy()->addHours($slaPlan->grace_time_hours);
 
         // Manejar archivo adjunto
         $attachPath = null;
@@ -83,13 +83,13 @@ class TicketController extends Controller
             'subject'         => $validated['subject'],
             'message'         => $validated['message'],
             'attach'          => $attachPath,
-            'expiration_date' => $expirationDate,
+            'expiration_date' => null,
             'closing_date'    => null,
             'requesting_user' => Auth::id(),
             'assigned_user'   => null,
             'help_topic_id'   => $helpTopic->id,
             'priority_id'     => $priority->id,
-            'sla_plan_id'     => $slaPlan->id,
+            'sla_plan_id'     => null,
             'department_id'   => $validated['department_id'],
             'status_id'       => $statusOpen->id,
         ]);

@@ -30,8 +30,8 @@ return new class extends Migration
             $table->foreignIdFor(User::class, 'requesting_user')->constrained();
             $table->foreignIdFor(User::class, 'assigned_user')->nullable()->constrained();
             $table->foreignIdFor(HelpTopic::class)->constrained();
-            $table->foreignIdFor(Priority::class)->constrained()->nullable();
-            $table->foreignIdFor(SlaPlan::class)->constrained()->nullable();
+            $table->foreignIdFor(Priority::class)->nullable()->constrained();
+            $table->foreignIdFor(SlaPlan::class)->nullable()->constrained();
             $table->foreignIdFor(Department::class)->constrained();
             $table->foreignIdFor(Status::class)->constrained();
             $table->softDeletes();
