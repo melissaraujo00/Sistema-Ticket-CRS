@@ -45,14 +45,19 @@ const byCategory = [
     { name: 'IT',        value: 38, color: '#3b82f6' },
     { name: 'RRHH',      value: 24, color: '#10b981' },
     { name: 'Logística', value: 20, color: '#f59e0b' },
-    { name: 'Otros',     value: 18, color: '#8b5cf6' },
+    { name: 'Transporte',     value: 18, color: '#8666d0' },
+    { name: 'Servicios generales',     value: 18, color: '#f65c5c' },
+    { name: 'Contabilidad',     value: 18, color: '#5cd5f6' },
+    { name: 'Bodega',     value: 18, color: '#ff0000' },
+
+
 ];
 
 const byPriority = [
     { name: 'Baja',    total: 15, color: '#10b981' },
     { name: 'Media',   total: 42, color: '#3b82f6' },
     { name: 'Alta',    total: 27, color: '#f59e0b' },
-    { name: 'Urgente', total: 13, color: '#ef4444' },
+    { name: 'Critica', total: 13, color: '#ef4444' },
 ];
 
 // ─── página ───────────────────────────────────────────────────────────────────

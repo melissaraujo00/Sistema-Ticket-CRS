@@ -12,7 +12,7 @@ const STATIC_TICKETS = [
             { name: 'Ana V.',     color: '#10b981' },
             { name: 'Luis H.',    color: '#f59e0b' },
         ],
-        priority: 'Urgente',
+        priority: 'Critico',
         progress: 60,
     },
     {
@@ -74,7 +74,7 @@ const STATIC_TICKETS = [
 ];
 
 const PRIORITY_STYLES = {
-    Urgente: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    Critico: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
     Alta:    'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
     Media:   'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
     Baja:    'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
