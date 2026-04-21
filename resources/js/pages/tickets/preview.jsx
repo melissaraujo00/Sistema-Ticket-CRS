@@ -4,16 +4,16 @@ import AppLayout from "@/layouts/app-layout";
 import { Button } from "@/components/ui/button";
 import { Loader2, Image as ImageIcon, Pencil, Check } from "lucide-react";
 
-export default function Preview({ 
-    data, 
-    auth, 
-    departments, 
-    divisions, 
-    helpTopics, 
-    breadcrumbs, 
-    onEdit, 
-    onSubmit, 
-    processing 
+export default function Preview({
+    data,
+    auth,
+    departments,
+    divisions,
+    helpTopics,
+    breadcrumbs,
+    onEdit,
+    onSubmit,
+    processing
 }) {
     const deptName = departments.find(d => d.id.toString() === data.department_id)?.name || "No especificado";
     const divName = divisions.find(d => d.id.toString() === data.division_id)?.name || "No especificado";
@@ -87,16 +87,21 @@ export default function Preview({
                             </div>
                         </div>
 
-                        {data.attach && (
+                        {data.attachments && data.attachments.length > 0 && (
                             <div className="bg-white dark:bg-zinc-900 border border-[#706F6F] dark:border-zinc-700 rounded-xl p-6 shadow-sm">
                                 <h2 className="text-lg font-bold text-red-600 dark:text-red-400 mb-4">Archivos Adjuntos Preparados</h2>
-                                <div className="flex items-center p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg border border-zinc-100 dark:border-zinc-800 gap-4">
-                                    <div className="p-2.5 bg-blue-100 dark:bg-blue-900/40 rounded-md text-blue-600 dark:text-blue-400">
-                                        <ImageIcon className="w-6 h-6" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{data.attach.name}</p>
-                                    </div>
+                                <div className="space-y-3">
+                                    {data.attachments.map((file, index) => (
+                                        <div key={index} className="flex items-center p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg border border-zinc-100 dark:border-zinc-800 gap-4">
+                                            <div className="p-2.5 bg-blue-100 dark:bg-blue-900/40 rounded-md text-blue-600 dark:text-blue-400">
+                                                <ImageIcon className="w-6 h-6" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{file.name}</p>
+                                                <p className="text-xs text-zinc-500">{(file.size / 1024).toFixed(0)} KB</p>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         )}

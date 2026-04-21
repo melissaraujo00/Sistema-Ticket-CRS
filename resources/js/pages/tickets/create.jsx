@@ -49,6 +49,7 @@ export default function Create() {
         message: "",
         attachments: [], // será un array de archivos
     });
+    console.log(data)
 
     const filteredDivisions = dept
         ? divisions.filter((d) => parseInt(d.department_id) === parseInt(dept))
