@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use Illuminate\Support\Facades\Log;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -36,23 +37,60 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
+        $user = $request->user();
+        $nav = [];
+
+        if ($user) {
+            if ($user->hasRole('superadmin')) {
+                $nav[] = ['title' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'LayoutGrid'];
+
+            } elseif ($user->hasRole('admin')) {
+                $nav[] = ['title' => 'Panel de Área', 'url' => route('dashboard'), 'icon' => 'LayoutGrid'];
+
+            } elseif ($user->hasRole('agent')) {
+                $nav[] = ['title' => 'Mi Panel Técnico', 'url' => route('dashboard'), 'icon' => 'LayoutGrid'];
+
+            } elseif ($user->hasRole('user')) {
+                $nav[] = ['title' => 'Mis Solicitudes', 'url' => route('dashboard'), 'icon' => 'LayoutGrid'];
+            }
+
+
+            // 3. TICKETS PENDIENTES (Validación por PERMISO)
+            if ($user->can('assign_tickets')) {
+                $nav[] = ['title' => 'Pendientes', 'url' => route('tickets.unassigned'), 'icon' => 'ClipboardList'];
+            }
+
+            // 4. FAQs (Acceso universal)
+            $nav[] = ['title' => 'FAQs', 'url' => route('faqs.index'), 'icon' => 'BookOpen'];
+
+            // 5. CONFIGURACIÓN (Submenú agrupado para Superadmin)
+            if ($user->hasPermissionTo('manage_catalogs')) {
+                $nav[] = [
+                    'title' => 'Configuración',
+                    'icon' => 'Settings',
+                    'items' => [
+                        ['title' => 'Planes SLA', 'url' => route('sla-plans.index'), 'icon' => 'FileText'],
+                        ['title' => 'Prioridades', 'url' => route('priorities.index'), 'icon' => 'AlertTriangle'],
+                    ]
+                ];
+            }
+
+            // 6. USUARIOS
+            if ($user->hasPermissionTo('manage_users')) {
+                $nav[] = ['title' => 'Usuarios', 'url' => route('users.index'), 'icon' => 'Users'];
+            }
+        }
 
         return [
             ...parent::share($request),
-            'name' => config('app.name'),
-            'quote' => ['message' => trim($message), 'author' => trim($author)],
-
             'auth' => [
-                'user' => $request->user()
-                    ? array_merge(
-                        $request->user()->toArray(),
-
-                        [   'roles' => $request->user()->getRoleNames(),
-                            'permissions' => $request->user()->getAllPermissions()->pluck('name')->toArray()]
-                    )
-                    :null,
+                'user' => $user ? array_merge($user->toArray(), [
+                    'roles' => $user->getRoleNames()->toArray(),
+                    'permissions' => $user->getAllPermissions()->pluck('name')->toArray()
+                ]) : null,
             ],
+            // Menú final dictado por el servidor
+            'navigation' => $nav,
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),

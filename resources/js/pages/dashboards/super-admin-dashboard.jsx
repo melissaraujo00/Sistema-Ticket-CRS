@@ -1,32 +1,7 @@
-import AppLayout from '@/layouts/app-layout';
-import { Head } from '@inertiajs/react';
-import {
-    AlertTriangle,
-    CheckCircle2,
-    Clock,
-    FileText,
-    TrendingDown,
-    TrendingUp,
-} from 'lucide-react';
-import {
-    Area,
-    AreaChart,
-    Bar,
-    BarChart,
-    Cell,
-    Pie,
-    PieChart,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-    YAxis,
-} from 'recharts';
+import { AlertTriangle, CheckCircle2, Clock, FileText, TrendingDown, TrendingUp, } from 'lucide-react';
+import { Area, AreaChart, Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, } from 'recharts';
 
 // ─── breadcrumbs ──────────────────────────────────────────────────────────────
-
-const breadcrumbs = [
-    { title: 'Dashboard', href: '/dashboard' },
-];
 
 // ─── datos estáticos ──────────────────────────────────────────────────────────
 // TODO: conectar con props de Inertia cuando esté listo el backend
@@ -228,12 +203,10 @@ function ProgressBar({ pct }) {
 
 // ─── página principal ─────────────────────────────────────────────────────────
 
-export default function Dashboard() {
+export default function SuperAdminDashboard() {
     return (
         <div>
-
             <div className="flex flex-col gap-5 p-5">
-
                 {/* ── KPI cards ─────────────────────────────────────────── */}
                 <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                     <KpiCard
@@ -276,7 +249,6 @@ export default function Dashboard() {
 
                 {/* ── Gráficas ──────────────────────────────────────────── */}
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-
                     {/* Área — tickets por mes (2 columnas) */}
                     <div className="lg:col-span-2">
                         <Card
@@ -300,11 +272,11 @@ export default function Dashboard() {
                                     <AreaChart data={ticketsByMonth} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
                                         <defs>
                                             <linearGradient id="gradOpen" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%"  stopColor="#3b82f6" stopOpacity={0.15} />
+                                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15} />
                                                 <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                                             </linearGradient>
                                             <linearGradient id="gradResolved" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%"  stopColor="#10b981" stopOpacity={0.15} />
+                                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.15} />
                                                 <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                                             </linearGradient>
                                         </defs>
@@ -314,8 +286,24 @@ export default function Dashboard() {
                                             contentStyle={{ fontSize: 12, borderRadius: 8, border: '0.5px solid #e5e7eb' }}
                                             labelStyle={{ fontWeight: 500 }}
                                         />
-                                        <Area type="monotone" dataKey="abiertos"  stroke="#3b82f6" strokeWidth={2} fill="url(#gradOpen)"     dot={false} name="Abiertos" />
-                                        <Area type="monotone" dataKey="resueltos" stroke="#10b981" strokeWidth={2} fill="url(#gradResolved)" dot={false} name="Resueltos" />
+                                        <Area
+                                            type="monotone"
+                                            dataKey="abiertos"
+                                            stroke="#3b82f6"
+                                            strokeWidth={2}
+                                            fill="url(#gradOpen)"
+                                            dot={false}
+                                            name="Abiertos"
+                                        />
+                                        <Area
+                                            type="monotone"
+                                            dataKey="resueltos"
+                                            stroke="#10b981"
+                                            strokeWidth={2}
+                                            fill="url(#gradResolved)"
+                                            dot={false}
+                                            name="Resueltos"
+                                        />
                                     </AreaChart>
                                 </ResponsiveContainer>
                             </div>
@@ -327,14 +315,10 @@ export default function Dashboard() {
                         <div style={{ height: 160 }}>
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
-                                    <Pie
-                                        data={byCategory}
-                                        cx="50%" cy="50%"
-                                        innerRadius={45} outerRadius={70}
-                                        dataKey="value"
-                                        paddingAngle={2}
-                                    >
-                                        {byCategory.map((c) => <Cell key={c.name} fill={c.color} />)}
+                                    <Pie data={byCategory} cx="50%" cy="50%" innerRadius={45} outerRadius={70} dataKey="value" paddingAngle={2}>
+                                        {byCategory.map((c) => (
+                                            <Cell key={c.name} fill={c.color} />
+                                        ))}
                                     </Pie>
                                     <Tooltip
                                         formatter={(v, n) => [`${v}%`, n]}
@@ -362,7 +346,9 @@ export default function Dashboard() {
                                     <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
                                     <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: '0.5px solid #e5e7eb' }} />
                                     <Bar dataKey="total" radius={[4, 4, 0, 0]} name="Tickets">
-                                        {byPriority.map((e) => <Cell key={e.name} fill={e.color} />)}
+                                        {byPriority.map((e) => (
+                                            <Cell key={e.name} fill={e.color} />
+                                        ))}
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
@@ -375,11 +361,11 @@ export default function Dashboard() {
                             <div className="grid grid-cols-2 gap-2">
                                 {[
                                     { n: '3.2h', l: 'Tiempo prom. respuesta' },
-                                    { n: '87%',  l: 'Satisfacción usuarios'  },
-                                    { n: '12',   l: 'Agentes activos'        },
-                                    { n: '94%',  l: 'Cumplimiento SLA'       },
+                                    { n: '87%', l: 'Satisfacción usuarios' },
+                                    { n: '12', l: 'Agentes activos' },
+                                    { n: '94%', l: 'Cumplimiento SLA' },
                                 ].map((m) => (
-                                    <div key={m.l} className="rounded-lg bg-gray-50 p-3 text-center dark:bg-sidebar-accent">
+                                    <div key={m.l} className="dark:bg-sidebar-accent rounded-lg bg-gray-50 p-3 text-center">
                                         <p className="text-xl font-medium text-gray-900 dark:text-white">{m.n}</p>
                                         <p className="mt-0.5 text-[10px] leading-tight text-gray-500">{m.l}</p>
                                     </div>
@@ -392,8 +378,8 @@ export default function Dashboard() {
                                 {[
                                     { name: 'Carlos Mendoza', tickets: 18, pct: 90 },
                                     { name: 'Ana Villanueva', tickets: 14, pct: 70 },
-                                    { name: 'Luis Herrera',   tickets: 11, pct: 55 },
-                                    { name: 'María González', tickets: 9,  pct: 45 },
+                                    { name: 'Luis Herrera', tickets: 11, pct: 55 },
+                                    { name: 'María González', tickets: 9, pct: 45 },
                                 ].map((a) => (
                                     <div key={a.name}>
                                         <div className="flex items-center justify-between text-xs">
@@ -411,14 +397,12 @@ export default function Dashboard() {
                 </div>
 
                 {/* ── Tabla tickets activos ─────────────────────────────── */}
-                <div className="rounded-xl border border-sidebar-border bg-white dark:bg-sidebar">
-
-                    <div className="flex items-start justify-between border-b border-sidebar-border px-5 py-4">
+                <div className="border-sidebar-border dark:bg-sidebar rounded-xl border bg-white">
+                    <div className="border-sidebar-border flex items-start justify-between border-b px-5 py-4">
                         <div>
                             <h3 className="text-base font-medium text-gray-900 dark:text-white">Tickets activos</h3>
                             <p className="mt-0.5 text-xs text-gray-400">
-                                <span className="font-medium text-gray-700 dark:text-gray-300">30 resueltos</span>{' '}
-                                este mes
+                                <span className="font-medium text-gray-700 dark:text-gray-300">30 resueltos</span> este mes
                             </p>
                         </div>
                         <a
@@ -432,18 +416,25 @@ export default function Dashboard() {
                     <div className="overflow-x-auto">
                         <table className="w-full min-w-[640px]">
                             <thead>
-                                <tr className="border-b border-sidebar-border">
-                                    <th className="py-2.5 pl-5 pr-3 text-left text-[10px] font-semibold uppercase tracking-widest text-gray-400">Ticket</th>
-                                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-gray-400">Agentes</th>
-                                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-gray-400">Prioridad</th>
-                                    <th className="py-2.5 pl-3 pr-5 text-right text-[10px] font-semibold uppercase tracking-widest text-gray-400">Progreso</th>
+                                <tr className="border-sidebar-border border-b">
+                                    <th className="py-2.5 pr-3 pl-5 text-left text-[10px] font-semibold tracking-widest text-gray-400 uppercase">
+                                        Ticket
+                                    </th>
+                                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold tracking-widest text-gray-400 uppercase">
+                                        Agentes
+                                    </th>
+                                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold tracking-widest text-gray-400 uppercase">
+                                        Prioridad
+                                    </th>
+                                    <th className="py-2.5 pr-5 pl-3 text-right text-[10px] font-semibold tracking-widest text-gray-400 uppercase">
+                                        Progreso
+                                    </th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-sidebar-border">
+                            <tbody className="divide-sidebar-border divide-y">
                                 {activeTickets.map((t) => (
-                                    <tr key={t.id} className="group transition-colors hover:bg-gray-50 dark:hover:bg-sidebar-accent">
-
-                                        <td className="py-3 pl-5 pr-3">
+                                    <tr key={t.id} className="group dark:hover:bg-sidebar-accent transition-colors hover:bg-gray-50">
+                                        <td className="py-3 pr-3 pl-5">
                                             <div className="flex items-center gap-3">
                                                 <div
                                                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold text-white"
@@ -466,7 +457,9 @@ export default function Dashboard() {
 
                                         <td className="px-3 py-3">
                                             {t.priority ? (
-                                                <span className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] font-medium ${PRIORITY_STYLES[t.priority]}`}>
+                                                <span
+                                                    className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] font-medium ${PRIORITY_STYLES[t.priority]}`}
+                                                >
                                                     {t.priority}
                                                 </span>
                                             ) : (
@@ -474,32 +467,26 @@ export default function Dashboard() {
                                             )}
                                         </td>
 
-                                        <td className="py-3 pl-3 pr-5">
+                                        <td className="py-3 pr-5 pl-3">
                                             <ProgressBar pct={t.progress} />
                                         </td>
-
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
 
-                    <div className="flex items-center justify-between border-t border-sidebar-border px-5 py-3">
+                    <div className="border-sidebar-border flex items-center justify-between border-t px-5 py-3">
                         <p className="text-[11px] text-gray-400">
-                            Mostrando{' '}
-                            <span className="font-medium text-gray-600 dark:text-gray-300">1–6</span>{' '}
-                            de{' '}
-                            <span className="font-medium text-gray-600 dark:text-gray-300">27</span>{' '}
-                            tickets
+                            Mostrando <span className="font-medium text-gray-600 dark:text-gray-300">1–6</span> de{' '}
+                            <span className="font-medium text-gray-600 dark:text-gray-300">27</span> tickets
                         </p>
                         <div className="flex gap-1">
                             {['←', '1', '2', '3', '→'].map((p) => (
                                 <button
                                     key={p}
                                     className={`flex h-7 w-7 items-center justify-center rounded-md text-xs transition-colors ${
-                                        p === '1'
-                                            ? 'bg-blue-500 font-semibold text-white'
-                                            : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                        p === '1' ? 'bg-blue-500 font-semibold text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
                                     }`}
                                 >
                                     {p}
@@ -507,9 +494,7 @@ export default function Dashboard() {
                             ))}
                         </div>
                     </div>
-
                 </div>
-
             </div>
         </div>
     );

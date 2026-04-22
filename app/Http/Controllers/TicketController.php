@@ -9,6 +9,7 @@ use App\Models\Priority;
 use App\Models\SlaPlan;
 use App\Models\Status;
 use App\Models\Ticket;
+use App\Models\User;
 use Illuminate\Container\Attributes\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -62,7 +63,7 @@ class TicketController extends Controller
     $priority = $helpTopic->priority;
     $slaPlan = $priority->slaPlan;
 
-    $statusOpen = Status::where('name', 'open')->firstOrFail();
+    $statusOpen = Status::where('name', 'Abierto')->firstOrFail();
 
     // Generar código único
     $code = $this->generateTicketCode();
@@ -105,6 +106,56 @@ private function generateTicketCode()
     $sequence = $lastTicket ? intval(substr($lastTicket->code, -4)) + 1 : 1;
     return sprintf('%s-%s-%04d', $prefix, $date, $sequence);
 }
+
+
+
+    // CAMBIAR DE SER NECESARIO
+    public function unassigned()
+    {
+        // 1. Buscamos tickets donde assigned_user es null (nadie los está atendiendo)
+        $tickets = Ticket::with(['department', 'priority', 'requestingUser', 'status'])
+            ->whereNull('assigned_user')
+            ->orderBy('creation_date', 'asc')
+            ->get();
+
+        // 2. Buscamos a todos los usuarios con rol de agente (Técnicos)
+        $tecnicos = User::role('agent')->get(['id', 'name']);
+
+        // 3. Enviamos los datos a la vista en React
+        return Inertia::render('tickets/unassigned', [
+            'tickets' => $tickets,
+            'tecnicos' => $tecnicos
+        ]);
+    }
+
+
+    // CAMBIAR DE SER NECESARIO
+    public function assign(Request $request, Ticket $ticket)
+    {
+        // Validamos que el técnico exista
+        $request->validate([
+            'tecnico_id' => 'required|exists:users,id'
+        ]);
+
+        // 1. Asignamos al técnico
+        $ticket->assigned_user = $request->tecnico_id;
+
+        // 2. Buscamos el estado "En Proceso" exacto
+        $statusInProgress = Status::where('name', 'En Proceso')->first();
+
+        // Si encontramos el estado en la base de datos, lo actualizamos
+        if ($statusInProgress) {
+            $ticket->status_id = $statusInProgress->id;
+        }
+
+        // 3. Guardamos los cambios
+        $ticket->save();
+
+        return back()->with('success', 'Técnico asignado y ticket marcado "En Proceso" exitosamente.');
+    }
+
+
+
     /**
      * Display the specified resource.
      */
@@ -136,4 +187,6 @@ private function generateTicketCode()
     {
         //
     }
+
+
 }

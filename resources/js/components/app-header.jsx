@@ -10,44 +10,30 @@ import { UserMenuContent } from '@/components/user-menu-content';
 import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Menu, Search, Users } from 'lucide-react';
 
+// 1. Importamos todos los iconos que Laravel podría mandarnos
+import { BookOpen, Folder, LayoutGrid, Menu, Search, Users, FileText, AlertTriangle, ClipboardList } from 'lucide-react';
 import { CruzRojaLogo } from '../components/CruzRojaLogo';
-import { usePermissions } from '@/hooks/usePermissions';
 
-const mainNavItems = [
-    {
-        title: 'Dashboard',
-        url: '/dashboard',
-        icon: LayoutGrid,
-    },
-];
-
+// 2. Creamos el diccionario para convertir el texto de Laravel en un componente visual
+const ICONS = {
+    LayoutGrid,
+    Folder,
+    BookOpen,
+    Users,
+    FileText,
+    AlertTriangle,
+    ClipboardList,
+};
 
 const activeItemStyles = 'text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100';
 
 export function AppHeader({ breadcrumbs = [] }) {
     const page = usePage();
-    const { auth } = page.props;
+
+    // 3. Extraemos 'navigation' directamente de las props globales que mandó Laravel
+    const { auth, navigation = [] } = page.props;
     const getInitials = useInitials();
-
-    // 3. Obtenemos la función para validar roles por nombre
-    const { hasRole } = usePermissions();
-
-    // 4. Creamos la lista de navegación dinámica
-    const allNavItems = [
-        ...mainNavItems,
-        // Solo agregamos "Usuarios" si el nombre del rol es 'superadmin'
-        ...(hasRole('superadmin')
-            ? [
-                  {
-                      title: 'Usuarios',
-                      url: '/users',
-                      icon: Users,
-                  },
-              ]
-            : []),
-    ];
 
     return (
         <>
@@ -69,9 +55,11 @@ export function AppHeader({ breadcrumbs = [] }) {
                                 <div className="mt-6 flex h-full flex-1 flex-col space-y-4">
                                     <div className="flex h-full flex-col justify-between text-sm">
                                         <div className="flex flex-col space-y-4">
-                                            {allNavItems.map((item) => (
+                                            {/* 4. Iteramos sobre 'navigation' en lugar de 'allNavItems' */}
+                                            {navigation.map((item) => (
                                                 <Link key={item.title} href={item.url} className="flex items-center space-x-2 font-medium">
-                                                    {item.icon && <Icon iconNode={item.icon} className="h-5 w-5" />}
+                                                    {/* Usamos el diccionario ICONS para renderizar el icono correcto */}
+                                                    {item.icon && ICONS[item.icon] && <Icon iconNode={ICONS[item.icon]} className="h-5 w-5" />}
                                                     <span>{item.title}</span>
                                                 </Link>
                                             ))}
@@ -90,7 +78,8 @@ export function AppHeader({ breadcrumbs = [] }) {
                     <div className="ml-6 hidden h-full items-center space-x-6 lg:flex">
                         <NavigationMenu className="flex h-full items-stretch">
                             <NavigationMenuList className="flex h-full items-stretch space-x-2">
-                                {allNavItems.map((item, index) => (
+                                {/* 5. Iteramos sobre 'navigation' también en la vista de escritorio */}
+                                {navigation.map((item, index) => (
                                     <NavigationMenuItem key={index} className="relative flex h-full items-center">
                                         <Link
                                             href={item.url}
@@ -100,7 +89,7 @@ export function AppHeader({ breadcrumbs = [] }) {
                                                 'h-9 cursor-pointer px-3',
                                             )}
                                         >
-                                            {item.icon && <Icon iconNode={item.icon} className="mr-2 h-4 w-4" />}
+                                            {item.icon && ICONS[item.icon] && <Icon iconNode={ICONS[item.icon]} className="mr-2 h-4 w-4" />}
                                             {item.title}
                                         </Link>
                                         {page.url === item.url && (

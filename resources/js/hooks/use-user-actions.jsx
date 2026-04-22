@@ -13,7 +13,7 @@ export function useUserActions(user = null) {
         ext: user?.ext ?? '',
         birthdate: user?.birthdate ?? '',
         department_id: user?.department_id ?? '',
-        role: user?.roles?.[0] ?? '',
+        role: user?.roles?.[0]?.name ?? '',
     });
 
     const store = (e, onSuccess) => {
