@@ -5,6 +5,7 @@ import AppLayout from '@/layouts/app-layout';
 import SuperAdminDashboard from '../pages/dashboards/super-admin-dashboard';
 import AgentDashboard from '../pages/dashboards/agent-dashboard';
 import UserDashboard from '../pages/dashboards/user-dashboard'; // Asegúrate de tener este importado
+import AreaAdminDashboard from '../pages/dashboards/area-admin-dashboard';
 
 const breadcrumbs = [
     { title: 'Dashboard', href: '/dashboard' }
@@ -21,7 +22,8 @@ export default function Dashboard() {
     // Le damos prioridad de arriba hacia abajo
     const getPrimaryRole = () => {
         if (userRoles.includes('superadmin')) return 'superadmin';
-        if (userRoles.includes('tecnico')) return 'tecnico';
+        if (userRoles.includes('admin')) return 'admin';
+        if (userRoles.includes('agent')) return 'agent';
         if (userRoles.includes('user')) return 'user';
 
         return 'default'; // Si no tiene ningún rol asignado
@@ -35,7 +37,10 @@ export default function Dashboard() {
             case 'superadmin':
                 return <SuperAdminDashboard />;
 
-            case 'tecnico':
+            case 'admin':
+                return <AreaAdminDashboard />;
+
+            case 'agent':
                 return <AgentDashboard />;
 
             case 'user':
@@ -44,7 +49,7 @@ export default function Dashboard() {
             default:
                 // Vista de seguridad en caso de que el usuario no tenga rol
                 return (
-                    <div className="flex items-center justify-center h-full bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                    <div className="flex h-full items-center justify-center rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
                         <div className="text-center">
                             <h2 className="text-lg font-bold text-gray-900">Acceso Restringido</h2>
                             <p className="text-gray-500">No tienes un rol asignado para ver el panel.</p>

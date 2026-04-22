@@ -1,80 +1,8 @@
+import { Download } from 'lucide-react';
 import { ProgressBar } from '@/components/componts-dashadmin/dash-components';
 
-// ─── datos estáticos (reemplazar con props de Inertia cuando esté listo el backend) ──
-const STATIC_TICKETS = [
-    {
-        id: '#TKT-0041',
-        subject: 'Error crítico en módulo de RRHH',
-        categoryInitial: 'IT',
-        categoryColor: '#3b82f6',
-        agents: [
-            { name: 'Carlos M.',  color: '#3b82f6' },
-            { name: 'Ana V.',     color: '#10b981' },
-            { name: 'Luis H.',    color: '#f59e0b' },
-        ],
-        priority: 'Critico',
-        progress: 60,
-    },
-    {
-        id: '#TKT-0040',
-        subject: 'Solicitud de equipo logístico',
-        categoryInitial: 'LG',
-        categoryColor: '#f59e0b',
-        agents: [{ name: 'María G.', color: '#8b5cf6' }],
-        priority: null,
-        progress: 10,
-    },
-    {
-        id: '#TKT-0039',
-        subject: 'Falla en plataforma de capacitación',
-        categoryInitial: 'CP',
-        categoryColor: '#10b981',
-        agents: [
-            { name: 'Pedro S.',  color: '#ef4444' },
-            { name: 'Sandra L.', color: '#06b6d4' },
-        ],
-        priority: 'Media',
-        progress: 100,
-    },
-    {
-        id: '#TKT-0038',
-        subject: 'Implementar app móvil de donaciones',
-        categoryInitial: 'DV',
-        categoryColor: '#10b981',
-        agents: [
-            { name: 'Carlos M.', color: '#3b82f6' },
-            { name: 'Ana V.',    color: '#10b981' },
-            { name: 'Luis H.',   color: '#f59e0b' },
-            { name: 'Pedro S.',  color: '#ef4444' },
-        ],
-        priority: 'Alta',
-        progress: 100,
-    },
-    {
-        id: '#TKT-0037',
-        subject: 'Actualizar portal de voluntarios',
-        categoryInitial: 'WB',
-        categoryColor: '#06b6d4',
-        agents: [{ name: 'Sandra L.', color: '#06b6d4' }],
-        priority: 'Baja',
-        progress: 25,
-    },
-    {
-        id: '#TKT-0036',
-        subject: 'Rediseño del portal administrativo',
-        categoryInitial: 'UX',
-        categoryColor: '#f43f5e',
-        agents: [
-            { name: 'María G.', color: '#8b5cf6' },
-            { name: 'Ana V.',   color: '#10b981' },
-        ],
-        priority: 'Media',
-        progress: 40,
-    },
-];
-
 const PRIORITY_STYLES = {
-    Critico: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    Urgente: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
     Alta:    'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
     Media:   'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
     Baja:    'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
@@ -106,26 +34,37 @@ function AgentAvatars({ agents }) {
     );
 }
 
-export default function TicketsTable({ tickets = STATIC_TICKETS, total = 27, onVerTodos }) {
+/**
+ * Props:
+ *  - tickets      : array
+ *  - total        : number
+ *  - onExport     : fn()          — abre el modal de exportación
+ *  - onVerTodos   : fn()
+ *  - onSelectTicket : fn(ticket)  — abre el preview lateral
+ */
+export default function TicketsTable({ tickets = [], total = 0, onExport, onVerTodos, onSelectTicket }) {
     return (
         <div className="rounded-xl border border-sidebar-border bg-white dark:bg-sidebar">
 
-            <div className="flex items-start justify-between border-b border-sidebar-border px-5 py-4">
+            {/* encabezado */}
+            <div className="flex items-center justify-between border-b border-sidebar-border px-5 py-4">
                 <div>
                     <h3 className="text-base font-medium text-gray-900 dark:text-white">Tickets activos</h3>
                     <p className="mt-0.5 text-xs text-gray-400">
                         <span className="font-medium text-gray-700 dark:text-gray-300">30 resueltos</span>{' '}
-                        este mes
+                        este mes — <span className="text-blue-500 cursor-pointer hover:underline" onClick={onVerTodos}>ver todos</span>
                     </p>
                 </div>
                 <button
-                    onClick={onVerTodos}
-                    className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-medium text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400"
+                    onClick={onExport}
+                    className="flex items-center gap-1.5 rounded-lg border border-sidebar-border px-3 py-1.5 text-[11px] font-medium text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-sidebar-accent"
                 >
-                    Ver todos
+                    <Download size={13} />
+                    Exportar
                 </button>
             </div>
 
+            {/* tabla */}
             <div className="overflow-x-auto">
                 <table className="w-full min-w-[640px]">
                     <thead>
@@ -138,8 +77,12 @@ export default function TicketsTable({ tickets = STATIC_TICKETS, total = 27, onV
                     </thead>
                     <tbody className="divide-y divide-sidebar-border">
                         {tickets.map((t) => (
-                            <tr key={t.id} className="group transition-colors hover:bg-gray-50 dark:hover:bg-sidebar-accent">
-
+                            <tr
+                                key={t.id}
+                                onClick={() => onSelectTicket?.(t)}
+                                className="group cursor-pointer transition-colors hover:bg-blue-50/50 dark:hover:bg-sidebar-accent"
+                                title="Click para ver detalle"
+                            >
                                 <td className="py-3 pl-5 pr-3">
                                     <div className="flex items-center gap-3">
                                         <div
@@ -156,11 +99,9 @@ export default function TicketsTable({ tickets = STATIC_TICKETS, total = 27, onV
                                         </div>
                                     </div>
                                 </td>
-
                                 <td className="px-3 py-3">
                                     <AgentAvatars agents={t.agents} />
                                 </td>
-
                                 <td className="px-3 py-3">
                                     {t.priority ? (
                                         <span className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] font-medium ${PRIORITY_STYLES[t.priority]}`}>
@@ -170,17 +111,16 @@ export default function TicketsTable({ tickets = STATIC_TICKETS, total = 27, onV
                                         <span className="text-xs text-gray-400">No asignado</span>
                                     )}
                                 </td>
-
                                 <td className="py-3 pl-3 pr-5">
                                     <ProgressBar pct={t.progress} />
                                 </td>
-
                             </tr>
                         ))}
                     </tbody>
                 </table>
             </div>
 
+            {/* footer */}
             <div className="flex items-center justify-between border-t border-sidebar-border px-5 py-3">
                 <p className="text-[11px] text-gray-400">
                     Mostrando{' '}
@@ -204,7 +144,6 @@ export default function TicketsTable({ tickets = STATIC_TICKETS, total = 27, onV
                     ))}
                 </div>
             </div>
-
         </div>
     );
 }

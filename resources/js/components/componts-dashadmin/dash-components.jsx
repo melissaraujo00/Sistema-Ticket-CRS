@@ -1,10 +1,6 @@
 import { TrendingDown, TrendingUp } from 'lucide-react';
 
 // ─── KpiCard ──────────────────────────────────────────────────────────────────
-/**
- * Tarjeta de métrica principal del dashboard.
- * Props: icon, iconBg, iconColor, value, label, delta, positive
- */
 export function KpiCard({ icon: Icon, iconBg, iconColor, value, label, delta, positive }) {
     return (
         <div className="flex items-start gap-3 rounded-xl border border-sidebar-border bg-white p-4 dark:bg-sidebar">
@@ -24,10 +20,6 @@ export function KpiCard({ icon: Icon, iconBg, iconColor, value, label, delta, po
 }
 
 // ─── DashCard ─────────────────────────────────────────────────────────────────
-/**
- * Contenedor de sección con cabecera opcional.
- * Props: title, subtitle, action, children, className
- */
 export function DashCard({ title, subtitle, action, children, className = '' }) {
     return (
         <div className={`rounded-xl border border-sidebar-border bg-white dark:bg-sidebar ${className}`}>
@@ -35,9 +27,7 @@ export function DashCard({ title, subtitle, action, children, className = '' }) 
                 <div className="flex items-start justify-between border-b border-sidebar-border px-4 py-3">
                     <div>
                         <h3 className="text-sm font-medium text-gray-900 dark:text-white">{title}</h3>
-                        {subtitle && (
-                            <p className="mt-0.5 text-[11px] text-gray-500">{subtitle}</p>
-                        )}
+                        {subtitle && <p className="mt-0.5 text-[11px] text-gray-500">{subtitle}</p>}
                     </div>
                     {action && <div>{action}</div>}
                 </div>
@@ -48,11 +38,6 @@ export function DashCard({ title, subtitle, action, children, className = '' }) 
 }
 
 // ─── ProgressBar ──────────────────────────────────────────────────────────────
-/**
- * Barra de progreso con color dinámico.
- * 100% → verde | 50–99% → azul | 25–49% → ámbar | 0–24% → rojo
- * Props: pct (number 0–100)
- */
 function getProgressColor(pct) {
     if (pct === 100) return '#10b981';
     if (pct >= 50)   return '#3b82f6';
