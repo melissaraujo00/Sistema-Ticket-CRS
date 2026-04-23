@@ -17,4 +17,14 @@ class PublicController extends Controller
             'knowledges' => $knowledges
         ]);
     }
+
+
+    public function faqs()
+    {
+        $knowledges = knowledge::with('category')->get();
+
+        return Inertia::render('faqs/index', [
+            'knowledges' => $knowledges
+        ]);
+    }
 }

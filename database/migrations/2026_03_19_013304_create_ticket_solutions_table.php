@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\SolutionType;
 use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
@@ -19,8 +20,7 @@ return new class extends Migration
             $table->foreignIdFor(User::class)->constrained();
             $table->text('message');
             $table->date('date');
-            $table->text('attach');
-            $table->string('type')->default('public_reply');
+            $table->foreignIdFor(SolutionType::class)->constrained()->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

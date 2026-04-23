@@ -10,6 +10,7 @@ use App\Models\Priority;
 use App\Models\SlaPlan;
 use App\Models\Status;
 use App\Models\Ticket;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
@@ -22,12 +23,14 @@ use Illuminate\Support\Facades\Storage;
 class TicketController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of all tickets (requires view_all_tickets permission).
      */
-    // app/Http/Controllers/TicketController.php
-
     public function index()
     {
+        if (!auth()->user()->can('view_all_tickets')) {
+            abort(403, 'No tienes permiso para ver todos los tickets.');
+        }
+
         $tickets = Ticket::with(['department', 'assignedUser', 'status'])
                         ->orderBy('created_at', 'desc')
                         ->get();
@@ -38,10 +41,14 @@ class TicketController extends Controller
     }
 
     /**
-     * Muestra el formulario para crear un nuevo ticket.
+     * Show the form for creating a new ticket (requires create_tickets permission).
      */
     public function create()
     {
+        if (!auth()->user()->can('create_tickets')) {
+            abort(403, 'No tienes permiso para crear tickets.');
+        }
+
         $departments = Department::all(['id', 'name']);
         $divisions = Division::all(['id', 'name', 'department_id']);
         $helpTopics = HelpTopic::select('id', 'name_topic', 'division_id')->get();
@@ -54,13 +61,14 @@ class TicketController extends Controller
     }
 
     /**
-     * Guarda el ticket en la base de datos.
+     * Store a newly created ticket (requires create_tickets permission).
      */
-    // En tu controlador (TicketController)
-
-
     public function store(StoreTicketRequest $request)
     {
+        if (!auth()->user()->can('create_tickets')) {
+            abort(403, 'No tienes permiso para crear tickets.');
+        }
+
         $validated = $request->validated();
 
         DB::beginTransaction();
@@ -128,6 +136,9 @@ class TicketController extends Controller
         }
     }
 
+    /**
+     * Generate a unique ticket code.
+     */
     private function generateTicketCode()
     {
         $prefix = 'TKT';
@@ -136,38 +147,87 @@ class TicketController extends Controller
         $sequence = $lastTicket ? intval(substr($lastTicket->code, -4)) + 1 : 1;
         return sprintf('%s-%s-%04d', $prefix, $date, $sequence);
     }
+
     /**
-     * Display the specified resource.
+     * Display the specified ticket (requires view_all_tickets permission).
      */
     public function show(Ticket $ticket)
     {
+        if (!auth()->user()->can('view_all_tickets')) {
+            abort(403, 'No tienes permiso para ver este ticket.');
+        }
+
         $ticket->load(['department', 'division', 'helpTopic', 'status', 'priority']);
 
         return Inertia::render('tickets/show', [
             'ticket' => $ticket
         ]);
     }
+
     /**
-     * Show the form for editing the specified resource.
+     * Display tickets of the authenticated user (requires view_own_tickets permission).
      */
-    public function edit(Ticket $ticket)
+    public function myTickets()
     {
-        //
+        if (!auth()->user()->can('view_own_tickets')) {
+            abort(403, 'No tienes permiso para ver tus tickets.');
+        }
+
+        $tickets = Ticket::with(['department', 'assignedUser', 'status'])
+                        ->where('requesting_user', auth()->id())
+                        ->orderBy('created_at', 'desc')
+                        ->get();
+
+        return Inertia::render('tickets/index', [
+            'tickets' => $tickets,
+        ]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Display unassigned tickets (requires assign_tickets permission).
      */
-    public function update(Request $request, Ticket $ticket)
+    public function unassigned()
     {
-        //
+        if (!auth()->user()->can('assign_tickets')) {
+            abort(403, 'No tienes permiso para ver tickets pendientes de asignación.');
+        }
+
+        $tickets = Ticket::with(['department', 'priority', 'requestingUser', 'status'])
+            ->whereNull('assigned_user')
+            ->orderBy('creation_date', 'asc')
+            ->get();
+
+        $tecnicos = User::role('agent')->get(['id', 'name']);
+
+        return Inertia::render('tickets/unassigned', [
+            'tickets' => $tickets,
+            'tecnicos' => $tecnicos
+        ]);
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Assign a technician to a ticket (requires assign_tickets permission).
      */
-    public function destroy(Ticket $ticket)
+    public function assign(Request $request, Ticket $ticket)
     {
-        //
+        if (!auth()->user()->can('assign_tickets')) {
+            abort(403, 'No tienes permiso para asignar tickets.');
+        }
+
+        $request->validate([
+            'tecnico_id' => 'required|exists:users,id'
+        ]);
+
+        $ticket->assigned_user = $request->tecnico_id;
+
+        $statusInProgress = Status::where('name', 'En Proceso')->first();
+        if ($statusInProgress) {
+            $ticket->status_id = $statusInProgress->id;
+        }
+
+        $ticket->save();
+
+        return back()->with('success', 'Técnico asignado y ticket marcado "En Proceso" exitosamente.');
     }
+
 }
