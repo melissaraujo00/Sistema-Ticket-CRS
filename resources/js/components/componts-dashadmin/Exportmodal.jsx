@@ -16,7 +16,7 @@ const SECTIONS = [
 // ─── Excel con xlsx ───────────────────────────────────────────────────────────
 
 async function doExportExcel({ selected, data, dateRange }) {
-    const XLSX = (await import('xlsx')).default;
+    const XLSX = await import('xlsx');
     const wb   = XLSX.utils.book_new();
 
     const addSheet = (name, rows) => {
