@@ -45,15 +45,13 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('tickets', TicketController::class);
 
     // --- D. ÁREA TÉCNICA (técnicos y administradores) ---
-    Route::middleware(['role:tecnico|admin'])->prefix('tecnico')->group(function () {
-
-        Route::get('/dashboard', function () {
-            return Inertia::render('tecnico/Dashboard');
-        })->name('tecnico.dashboard');
+    Route::middleware(['role:agent|admin'])->prefix('agent')->group(function () {Route::get('/dashboard', function () {
+        return Inertia::render('dashboards/agent-dashboard');
+        })->name('agent.dashboard');
 
         Route::get('/ticket/{id}', function ($id) {
             return Inertia::render('dashboards/detalleTicket', ['id' => $id]);
-        })->name('tecnico.ticket');
+        })->name('agent.ticket');
 
         // Rutas de estadísticas (sin cambios)
         Route::get('/total-asignados', [TecnicoController::class, 'totalTicketsAsignados']);

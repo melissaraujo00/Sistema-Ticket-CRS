@@ -8,8 +8,22 @@ import {
 import { UserMenuContent } from '@/components/user-menu-content';
 import { useAppearance } from '@/hooks/use-appearance';
 import {
-    Moon, Sun, Bell, ChevronDown,
-    LayoutGrid, Folder, ClipboardList, BookOpen, Settings, FileText, AlertTriangle, Users
+    Moon,
+    Sun,
+    Bell,
+    ChevronDown,
+    LayoutGrid,
+    Folder,
+    ClipboardList,
+    BookOpen,
+    Settings,
+    FileText,
+    AlertTriangle,
+    Users,
+    Ticket,
+    PlusCircle,
+    List,
+    HelpCircle,
 } from 'lucide-react';
 
 // ==========================================
@@ -24,7 +38,11 @@ const ICONS = {
     Settings,
     FileText,
     AlertTriangle,
-    Users
+    Users,
+    Ticket,
+    PlusCircle,
+    List,
+    HelpCircle,
 };
 
 // ==========================================

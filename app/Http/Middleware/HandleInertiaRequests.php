@@ -49,7 +49,7 @@ class HandleInertiaRequests extends Middleware
             } elseif ($user->hasRole('admin')) {
                 $nav[] = ['title' => 'Panel de Área', 'url' => route('dashboard'), 'icon' => 'LayoutGrid'];
             } elseif ($user->hasRole('agent')) {
-                $nav[] = ['title' => 'Mi Panel Técnico', 'url' => route('tecnico.dashboard'), 'icon' => 'LayoutGrid'];
+                $nav[] = ['title' => 'Mi Panel Técnico', 'url' => route('dashboard'), 'icon' => 'LayoutGrid'];
             } elseif ($user->hasRole('user')) {
                 $nav[] = ['title' => 'Mis Solicitudes', 'url' => route('dashboard'), 'icon' => 'LayoutGrid'];
             }
@@ -61,7 +61,9 @@ class HandleInertiaRequests extends Middleware
             // 2.1 Ver mis propios tickets (todos los autenticados)
             // Asumimos un permiso 'view_own_tickets' o simplemente lo mostramos a todos.
             // Para mayor control, puedes usar $user->can('view_own_tickets')
-            $nav[] = ['title' => 'Mis Tickets', 'url' => route('tickets.my'), 'icon' => 'Ticket'];
+            if ($user->can('view_own_tickets')) {
+                $nav[] = ['title' => 'Mis Tickets', 'url' => route('tickets.my'), 'icon' => 'Ticket'];
+            }
 
             // 2.2 Crear un nuevo ticket (permiso básico)
             if ($user->can('create_tickets')) {
