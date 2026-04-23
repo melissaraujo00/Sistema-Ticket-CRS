@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Eye, CheckCircle, Star, X } from "lucide-react";
 import { GenericTable } from "@/components/GenericTable";
-import { route } from 'ziggy-js';
-
+import { route } from "ziggy-js";
 
 const breadcrumbs = [
     { title: "Dashboard", href: "/dashboard" },
@@ -24,29 +23,31 @@ export default function Index() {
     const [ticketToClose, setTicketToClose] = useState(null);
     const [rating, setRating] = useState(0);
     const [comment, setComment] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const hasPermission = (perm) => auth.user?.permissions?.includes(perm);
-
-    // Filtrar tickets por asunto o código
+    // Filtrar tickets por código o asunto
     const filteredTickets = tickets.filter((ticket) =>
         `${ticket.code} ${ticket.subject}`.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // Función para abrir el modal de calificación
     const handleOpenRating = (ticket) => {
+        if (ticket.status?.name !== "Resuelto") {
+            toast.warning("Este ticket no está en estado Resuelto");
+            return;
+        }
         setTicketToClose(ticket);
         setRating(0);
         setComment("");
         setRatingModalOpen(true);
     };
 
-    // Enviar calificación y cerrar ticket
     const submitCloseTicket = (e) => {
         e.preventDefault();
         if (rating === 0) {
             toast.error("Debes seleccionar una calificación");
             return;
         }
+        setIsSubmitting(true);
 
         router.post(
             route("tickets.close", ticketToClose.id),
@@ -55,60 +56,72 @@ export default function Index() {
                 onSuccess: () => {
                     toast.success("Ticket cerrado exitosamente");
                     setRatingModalOpen(false);
+                    router.reload({ only: ["tickets"] });
                 },
                 onError: (errors) => {
+                    console.error(errors);
                     toast.error("Error al cerrar el ticket");
                 },
+                onFinish: () => setIsSubmitting(false),
             }
         );
     };
 
-    // Definir columnas para la tabla genérica
+    // Definición de columnas mejorada
     const columns = [
         {
             header: "Ticket",
             render: (ticket) => (
-                <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500">
-                        <span className="text-xs font-bold">{ticket.code?.slice(-4)}</span>
-                    </div>
-                    <div>
-                        <span className="font-semibold block">{ticket.code}</span>
-                        <span className="text-xs text-zinc-500">{ticket.subject}</span>
-                    </div>
+                <div className="flex flex-col">
+                    <span className="font-mono text-sm font-bold text-red-600 dark:text-red-400">
+                        {ticket.code}
+                    </span>
+                    <span className="text-sm text-zinc-700 dark:text-zinc-300">
+                        {ticket.subject}
+                    </span>
                 </div>
             ),
         },
         {
             header: "Estado",
             render: (ticket) => {
+                const statusName = ticket.status?.name || "Sin estado";
                 const statusStyles = {
-                    open: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
-                    in_progress: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-                    resolved: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-                    closed: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400",
+                    Abierto: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+                    "En Proceso": "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+                    Resuelto: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+                    Cerrado: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400",
                 };
-                const statusLabels = {
-                    open: "Abierto",
-                    in_progress: "En Proceso",
-                    resolved: "Resuelto",
-                    closed: "Cerrado",
-                };
+                const styleClass = statusStyles[statusName] || "bg-gray-100 text-gray-700";
                 return (
-                    <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${statusStyles[ticket.status] || statusStyles.open}`}
-                    >
-                        {statusLabels[ticket.status] || ticket.status}
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${styleClass}`}>
+                        {statusName}
                     </span>
                 );
             },
+        },
+        {
+            header: "Departamento",
+            render: (ticket) => (
+                <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                    {ticket.department?.name || "N/A"}
+                </span>
+            ),
+        },
+        {
+            header: "Asignado a",
+            render: (ticket) => (
+                <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                    {ticket.assigned_user?.name || ticket.assignedUser?.name || "Sin asignar"}
+                </span>
+            ),
         },
         {
             header: "Fecha de creación",
             className: "hidden md:table-cell",
             render: (ticket) => (
                 <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                    {new Date(ticket.created_at).toLocaleDateString("es-ES")}
+                    {new Date(ticket.creation_date || ticket.created_at).toLocaleDateString("es-ES")}
                 </span>
             ),
         },
@@ -129,7 +142,7 @@ export default function Index() {
                         </Link>
                     </Button>
 
-                    {ticket.status === "resolved" && (
+                    {ticket.status?.name === "Resuelto" && (
                         <Button
                             variant="ghost"
                             size="icon"
@@ -151,7 +164,7 @@ export default function Index() {
             <Toaster position="top-right" richColors />
 
             <div className="p-4 md:p-8 space-y-6">
-                {/* Cabecera con búsqueda y botón nuevo */}
+                {/* Cabecera */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
@@ -180,11 +193,11 @@ export default function Index() {
                     </div>
                 </div>
 
-                {/* Tabla Genérica */}
+                {/* Tabla */}
                 <GenericTable data={filteredTickets} columns={columns} />
             </div>
 
-            {/* Modal de Calificación (similar al original) */}
+            {/* Modal de calificación */}
             {ratingModalOpen && ticketToClose && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4">
                     <div className="w-full max-w-md animate-in zoom-in-95 duration-200 rounded-2xl bg-white p-6 shadow-2xl dark:bg-zinc-900">
@@ -200,6 +213,7 @@ export default function Index() {
                             <button
                                 onClick={() => setRatingModalOpen(false)}
                                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                disabled={isSubmitting}
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -220,8 +234,11 @@ export default function Index() {
                                         type="button"
                                         onClick={() => setRating(star)}
                                         className={`transition-all hover:scale-110 ${
-                                            rating >= star ? "text-yellow-400" : "text-gray-200 dark:text-gray-600"
+                                            rating >= star
+                                                ? "text-yellow-400"
+                                                : "text-gray-200 dark:text-gray-600"
                                         }`}
+                                        disabled={isSubmitting}
                                     >
                                         <Star className="w-10 h-10 fill-current" />
                                     </button>
@@ -234,14 +251,15 @@ export default function Index() {
                                 className="w-full rounded-lg border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 text-sm mb-6 resize-none dark:bg-zinc-800 dark:border-zinc-700"
                                 rows="3"
                                 placeholder="Agrega un comentario opcional sobre la atención recibida..."
+                                disabled={isSubmitting}
                             ></textarea>
 
                             <button
                                 type="submit"
-                                disabled={rating === 0}
+                                disabled={rating === 0 || isSubmitting}
                                 className="w-full rounded-lg bg-red-600 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                ENVIAR CALIFICACIÓN Y CERRAR
+                                {isSubmitting ? "Cerrando..." : "ENVIAR CALIFICACIÓN Y CERRAR"}
                             </button>
                         </form>
                     </div>

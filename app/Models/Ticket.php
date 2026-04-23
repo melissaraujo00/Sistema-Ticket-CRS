@@ -18,7 +18,6 @@ class Ticket extends Model
         'email',
         'subject',
         'message',
-        'attach',
         'expiration_date',
         'closing_date',
         'requesting_user', //id
@@ -84,6 +83,11 @@ class Ticket extends Model
     public function histories():HasMany
     {
         return $this->hasMany(TicketHistory::class)->orderBy('created_at', 'desc');
+    }
+
+   public function attachments()
+    {
+        return $this->morphMany(Attachment::class, 'attachable');
     }
 
     /**

@@ -13,54 +13,55 @@ use App\Http\Controllers\TicketController;
 // 1. RUTAS PÚBLICAS
 // ==========================================
 Route::get('/', [PublicController::class, 'index'])->name('home');
+Route::get('/faqs', [PublicController::class, 'faqs'])->name('faqs.index');
 
 // ==========================================
 // 2. RUTAS AUTENTICADAS
 // ==========================================
 Route::middleware(['auth'])->group(function () {
 
-    // --- A. ACCESO GENERAL ---
+    // --- A. DASHBOARD PRINCIPAL ---
     Route::get('dashboard', function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
 
-    Route::get('/faqs', [PublicController::class, 'faqs'])->name('faqs.index');
+    // ==========================================
+    // NUEVO: RUTAS ESPECÍFICAS PARA TICKETS (antes del resource)
+    // ==========================================
 
-    // --- B. ASIGNACIÓN DE TICKETS (Debe ir ANTES del resource de tickets) ---
+    // Mis Tickets (solo los del usuario actual)
+    // Permiso sugerido: 'view_own_tickets'
+    Route::get('/mis-tickets', [TicketController::class, 'myTickets'])->name('tickets.my');
+
+    // Tickets pendientes de asignación (ya existía)
     Route::middleware(['permission:assign_tickets'])->group(function () {
         Route::get('/tickets/pendientes', [TicketController::class, 'unassigned'])->name('tickets.unassigned');
         Route::post('/tickets/{ticket}/asignar', [TicketController::class, 'assign'])->name('tickets.assign');
     });
 
-    // --- C. CRUD DE TICKETS (Debe ir DESPUÉS de las estáticas de tickets) ---
+    // --- C. CRUD DE TICKETS con permisos granulares ---
+    // MODIFICADO: Se añaden middlewares de permiso a cada método del resource
+    // Para que no tengas que duplicar rutas, usamos ->middleware() en el resource
     Route::resource('tickets', TicketController::class);
 
-    // --- D. ÁREA TÉCNICA (Agentes y Admins de Área) ---
-    Route::middleware(['role:agent|admin'])->prefix('agent')->group(function () {
+    // --- D. ÁREA TÉCNICA (técnicos y administradores) ---
+    Route::middleware(['role:agent|admin'])->prefix('tecnico')->group(function () {
 
         Route::get('/dashboard', function () {
-            return redirect()->route('dashboard');
+            return Inertia::render('tecnico/Dashboard');
         })->name('agent.dashboard');
-
-        Route::get('/area-dashboard', function () {
-            return redirect()->route('dashboard');
-        })->name('admin.dashboard');
-
-
-
 
         Route::get('/ticket/{id}', function ($id) {
             return Inertia::render('dashboards/detalleTicket', ['id' => $id]);
         })->name('agent.ticket');
 
+        // Rutas de estadísticas (sin cambios)
         Route::get('/total-asignados', [TecnicoController::class, 'totalTicketsAsignados']);
         Route::get('/total-en-proceso', [TecnicoController::class, 'totalTicketsEnProceso']);
         Route::get('/total-resueltos', [TecnicoController::class, 'totalTicketsResueltos']);
         Route::get('/historial-finalizados', [TecnicoController::class, 'historialTicketsFinalizados']);
-
         Route::get('/mis-estadisticas', [TecnicoController::class, 'misEstadisticas']);
         Route::get('/tasa-resolucion', [TecnicoController::class, 'tasaResolucion']);
-
         Route::get('/tickets-en-cola', [TecnicoController::class, 'ticketsEnCola']);
         Route::get('/tickets-en-proceso', [TecnicoController::class, 'ticketsEnProceso']);
         Route::get('/dashboard-data', [TecnicoController::class, 'dashboardData']);
@@ -69,7 +70,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/ticket/{id}/diagnostico', [TecnicoController::class, 'guardarDiagnostico']);
     });
 
-    // --- E. CONFIGURACIÓN Y CATÁLOGOS ---
+    // --- E. CATÁLOGOS (solo usuarios con permiso) ---
     Route::middleware(['permission:manage_catalogs'])->group(function () {
         Route::resource('sla-plans', SlaPlanController::class);
         Route::resource('priorities', PriorityController::class);
@@ -79,8 +80,10 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['permission:manage_users'])->group(function () {
         Route::resource('users', UserController::class);
     });
-
 });
 
+// ==========================================
+// 3. ARCHIVOS ADICIONALES
+// ==========================================
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';

@@ -28,6 +28,8 @@ class RoleSeeder extends Seeder
             'eliminar plan_sla',
             'ver dashboard',
             'ver tickets',
+            'view_own_tickets',
+            'create_tickets'
         ];
 
         foreach ($permissions as $permissionName) {
@@ -52,7 +54,7 @@ class RoleSeeder extends Seeder
         ]);
 
         $userRole->syncPermissions([
-            'create_tickets', 'view_own_tickets', 'rate_tickets'
+            'create_tickets', 'view_own_tickets', 'rate_tickets',
         ]);
 
     }
