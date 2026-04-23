@@ -89,4 +89,11 @@ class User extends Authenticatable
     {
         return $this->hasMany(TicketHistory::class, 'assigned_user');
     }
+
+    public function headedDepartments()
+    {
+        return $this->belongsToMany(Department::class, 'department_user')
+                    ->wherePivot('role', 'head')
+                    ->withTimestamps();
+    }
 }

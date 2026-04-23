@@ -11,6 +11,7 @@ use App\Models\SlaPlan;
 use App\Models\Status;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Notifications\NewTicketNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
@@ -64,89 +65,84 @@ class TicketController extends Controller
      * Store a newly created ticket (requires create_tickets permission).
      */
     public function store(StoreTicketRequest $request)
-    {
-        if (!auth()->user()->can('create_tickets')) {
-            abort(403, 'No tienes permiso para crear tickets.');
-        }
+{
+    if (!auth()->user()->can('create_tickets')) {
+        abort(403, 'No tienes permiso para crear tickets.');
+    }
 
-        $validated = $request->validated();
+    $validated = $request->validated();
 
-        DB::beginTransaction();
+    DB::beginTransaction();
 
-        try {
-            $helpTopic = HelpTopic::with(['priority', 'slaPlan'])->findOrFail($validated['help_topic_id']);
-            $priority  = $helpTopic->priority;
-            $statusOpen = Status::where('name', 'Abierto')->firstOrFail();
+    try {
+        $helpTopic = HelpTopic::with(['priority', 'slaPlan'])->findOrFail($validated['help_topic_id']);
+        $priority  = $helpTopic->priority;
+        $statusOpen = Status::where('name', 'Abierto')->firstOrFail();
 
-            $code = $this->generateTicketCode();
-            $creationDate = Carbon::now();
+        $code = $this->generateTicketCode();
+        $creationDate = Carbon::now();
 
-            // Crear el ticket
-            $ticket = Ticket::create([
-                'code'            => $code,
-                'creation_date'   => $creationDate,
-                'email'           => Auth::user()->email,
-                'subject'         => $validated['subject'],
-                'message'         => $validated['message'],
-                'expiration_date' => null,
-                'closing_date'    => null,
-                'requesting_user' => Auth::id(),
-                'assigned_user'   => null,
-                'help_topic_id'   => $helpTopic->id,
-                'priority_id'     => $priority->id,
-                'sla_plan_id'     => null,
-                'department_id'   => $validated['department_id'],
-                'status_id'       => $statusOpen->id,
-            ]);
+        // Crear el ticket
+        $ticket = Ticket::create([
+            'code'            => $code,
+            'creation_date'   => $creationDate,
+            'email'           => Auth::user()->email,
+            'subject'         => $validated['subject'],
+            'message'         => $validated['message'],
+            'expiration_date' => null,
+            'closing_date'    => null,
+            'requesting_user' => Auth::id(),
+            'assigned_user'   => null,
+            'help_topic_id'   => $helpTopic->id,
+            'priority_id'     => $priority->id,
+            'sla_plan_id'     => null,
+            'department_id'   => $validated['department_id'],
+            'status_id'       => $statusOpen->id,
+        ]);
 
-            // Procesar múltiples archivos
-            if ($request->hasFile('attachments')) {
-                foreach ($request->file('attachments') as $file) {
-                    $originalName = $file->getClientOriginalName();
-                    $extension    = $file->getClientOriginalExtension();
-                    $newFileName  = Str::random(40) . '.' . $extension;
+        // Procesar múltiples archivos
+        if ($request->hasFile('attachments')) {
+            foreach ($request->file('attachments') as $file) {
+                $originalName = $file->getClientOriginalName();
+                $extension    = $file->getClientOriginalExtension();
+                $newFileName  = Str::random(40) . '.' . $extension;
 
-                    $path = $file->storeAs(
-                        "tickets/{$ticket->id}",
-                        $newFileName,
-                        'public'
-                    );
+                $path = $file->storeAs(
+                    "tickets/{$ticket->id}",
+                    $newFileName,
+                    'public'
+                );
 
-                    $ticket->attachments()->create([
-                        'file_name' => $originalName,
-                        'file_path' => $path,
-                        'file_type' => $file->getMimeType(),
-                        'file_size' => $file->getSize(),
-                    ]);
-                }
+                $ticket->attachments()->create([
+                    'file_name' => $originalName,
+                    'file_path' => $path,
+                    'file_type' => $file->getMimeType(),
+                    'file_size' => $file->getSize(),
+                ]);
             }
-
-            // Disparar evento
-            event(new \App\Events\TicketCreated($ticket));
-
-            DB::commit();
-
-            return redirect()->route('tickets.index')->with('success', 'Ticket creado correctamente');
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error al crear ticket: ' . $e->getMessage());
-
-            return redirect()->back()->withInput()->with('error', 'Ocurrió un error al crear el ticket. Por favor, inténtelo de nuevo.');
         }
-    }
 
-    /**
-     * Generate a unique ticket code.
-     */
-    private function generateTicketCode()
-    {
-        $prefix = 'TKT';
-        $date = Carbon::now()->format('Ymd');
-        $lastTicket = Ticket::whereDate('creation_date', Carbon::today())->orderBy('id', 'desc')->first();
-        $sequence = $lastTicket ? intval(substr($lastTicket->code, -4)) + 1 : 1;
-        return sprintf('%s-%s-%04d', $prefix, $date, $sequence);
+        // Cargar departamento con sus jefes (precargar relación)
+        $ticket->load('department.heads');
+
+        // Notificar a los jefes del departamento
+        foreach ($ticket->department->heads as $head) {
+            $head->notify(new \App\Notifications\NewTicketNotification($ticket));
+        }
+
+        // Disparar evento
+        event(new \App\Events\TicketCreated($ticket));
+
+        DB::commit();
+
+        return redirect()->route('tickets.index')->with('success', 'Ticket creado correctamente');
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Error al crear ticket: ' . $e->getMessage());
+        return redirect()->back()->withInput()->with('error', 'Ocurrió un error: ' . $e->getMessage());
     }
+}
 
     /**
      * Display the specified ticket (requires view_all_tickets permission).
