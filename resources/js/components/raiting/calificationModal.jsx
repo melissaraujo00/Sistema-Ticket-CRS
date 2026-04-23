@@ -1,9 +1,25 @@
 import { useState } from "react";
+import Swal from "sweetalert2";
 
 export default function TicketRatingModal({ isOpen, onClose }) {
 
   const [rating, setRating] = useState(0);
-  const [comentario, setComentario] = useState("")
+  const [comentario, setComentario] = useState("");
+
+  const handleEnviar = () => {
+
+    // cerrar modal
+    onClose();
+
+    // alerta de éxito
+    Swal.fire({
+      icon: "success",
+      title: "Calificación enviada",
+      text: "La calificación se envió con éxito",
+      confirmButtonColor: "#16a34a"
+    });
+
+  };
 
   if (!isOpen) {
     return null;
@@ -14,7 +30,6 @@ export default function TicketRatingModal({ isOpen, onClose }) {
 
       <div className="bg-white w-full max-w-md rounded-xl shadow-xl overflow-hidden">
 
-        {/* Header */}
         <div className="bg-red-600 text-white text-center py-3">
           <h1 className="text-lg font-bold">
             Cruz Roja - Centro de Soporte
@@ -55,7 +70,6 @@ export default function TicketRatingModal({ isOpen, onClose }) {
               Califique el servicio recibido
             </p>
 
-            {/* Estrellas */}
             <div className="flex items-center gap-1 text-2xl mb-3">
 
               {[1, 2, 3, 4, 5].map((star) => (
@@ -77,7 +91,6 @@ export default function TicketRatingModal({ isOpen, onClose }) {
 
             </div>
 
-            {/* Comentario */}
             <h3
               className={`font-semibold text-sm ${rating > 3 ? "text-green-700" : "text-red-700"
                 }`}
@@ -102,12 +115,11 @@ export default function TicketRatingModal({ isOpen, onClose }) {
 
           </div>
 
-          {/* Botones */}
+          {/* Botón */}
           <div className="flex justify-center gap-2">
 
-
-
             <button
+              onClick={handleEnviar}
               disabled={rating === 0 || comentario.trim() === ""}
               className={`px-4 py-2 text-sm rounded-md w-40 text-white 
                 ${rating === 0 || comentario.trim() === ""
