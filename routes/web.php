@@ -48,6 +48,12 @@ Route::middleware(['auth'])->group(function () {
     // Para que no tengas que duplicar rutas, usamos ->middleware() en el resource
     Route::resource('tickets', TicketController::class);
 
+    // Rutas de SLA Plans
+    Route::get('/sla-plans/trashed', [SlaPlanController::class, 'trashed'])->name('sla-plans.trashed');
+    Route::put('/sla-plans/{id}/restore', [SlaPlanController::class, 'restore'])->name('sla-plans.restore');
+    Route::resource('/sla-plans',  SlaPlanController::class);
+    // Rutas de prioridades
+    Route::resource('priorities', PriorityController::class);
     // --- D. ÁREA TÉCNICA (técnicos y administradores) ---
     Route::middleware(['role:agent|admin'])->prefix('agent')->group(function () {Route::get('/dashboard', function () {
         return Inertia::render('dashboards/agent-dashboard');

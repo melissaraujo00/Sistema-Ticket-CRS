@@ -82,4 +82,28 @@ class SlaPlanController extends Controller
         $slaPlan->delete();
         return redirect()->route('sla-plans.index')->with('success', 'Plan eliminado (puede restaurarse).');
     }
+
+    /**
+    * Display a list of soft-deleted SLA Plans.
+    */
+    public function trashed()
+    {
+        $planes = SlaPlan::onlyTrashed()->get();
+
+        return Inertia::render('sla-plans/trashed', [
+            'planes' => $planes,
+        ]);
+    }
+
+    /**
+    * Restore a soft-deleted SLA Plan.
+    */
+    public function restore($id): RedirectResponse
+    {
+        $plan = SlaPlan::onlyTrashed()->findOrFail($id);
+        $plan->restore();
+
+        return redirect()->route('sla-plans.trashed')
+            ->with('success', 'Plan SLA restaurado exitosamente.');
+    }
 }
