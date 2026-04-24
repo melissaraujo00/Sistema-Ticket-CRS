@@ -34,10 +34,10 @@ class TecnicoDataSeeder extends Seeder
 
 
         // Crear estados de tickets
-        $estadoAbierto = Status::firstOrCreate(['name' => 'Abierto']);
-        $estadoEnProceso = Status::firstOrCreate(['name' => 'En Proceso']);
-        $estadoResuelto = Status::firstOrCreate(['name' => 'Resuelto']);
-        $estadoCerrado = Status::firstOrCreate(['name' => 'Cerrado']);
+        $estadoAbierto   = Status::where('name', 'Abierto')->firstOrFail();
+        $estadoEnProceso = Status::where('name', 'En Proceso')->firstOrFail();
+        $estadoResuelto  = Status::where('name', 'Resuelto')->firstOrFail();
+        $estadoCerrado   = Status::where('name', 'Cerrado')->firstOrFail();
 
         // Crear prioridades
         $prioridadBaja = Priority::firstOrCreate(['name' => 'Baja', 'color' => '#28a745', 'level' => 1]);
