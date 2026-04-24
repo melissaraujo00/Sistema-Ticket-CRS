@@ -21,7 +21,6 @@ return new class extends Migration
             $table->text('message');
             $table->date('date');
             $table->foreignIdFor(SolutionType::class)->nullable()->constrained();
-            $table->text('message');
             $table->softDeletes();
             $table->timestamps();
         });
