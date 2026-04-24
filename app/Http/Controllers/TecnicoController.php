@@ -6,6 +6,8 @@ use App\Models\Ticket;
 use App\Models\TicketSolution;
 use App\Models\User;
 use App\Models\Status;
+use App\Models\Attachment;
+use App\Models\SolutionType;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -323,11 +325,14 @@ class TecnicoController extends Controller
             'assignedUser',
             'helpTopic',
             'department',
-            'histories'
+            'histories',
+            'attachments',
+            'ticketSolutions.attachments',
+            'ticketSolutions.solutionType'
         ])
-        ->where('id', $id)
-        ->where('assigned_user', $agent->id)
-        ->first();
+            ->where('id', $id)
+            ->where('assigned_user', $agent->id)
+            ->first();
 
         if (!$ticket) {
             return response()->json([
@@ -351,7 +356,22 @@ class TecnicoController extends Controller
             'solicitante' => $ticket->requestingUser->name ?? 'N/A',
             'problema' => $ticket->subject,
             'detalles_del_problema' => $ticket->message,
-            'adjuntos' => $ticket->attach,
+            'adjuntos' => $ticket->attachments->map(fn($a) => [
+                'name' => $a->file_name,
+                'path' => $a->file_path,
+                'type' => $a->file_type
+            ]),
+            'soluciones' => $ticket->ticketSolutions->map(fn($s) => [
+                'id' => $s->id,
+                'mensaje' => $s->message,
+                'fecha' => $s->date,
+                'tipo' => $s->solutionType->name ?? 'N/A',
+                'adjuntos' => $s->attachments->map(fn($a) => [
+                    'name' => $a->file_name,
+                    'path' => $a->file_path,
+                    'type' => $a->file_type
+                ])
+            ]),
             'area_del_agent' => $ticket->assignedUser->department->name ?? 'N/A',
             'historial' => $ticket->histories->map(function ($history) {
                 return [
@@ -390,68 +410,66 @@ class TecnicoController extends Controller
             ], 404);
         }
 
-        $pathsAdjuntos = [];
+        $solutionType = SolutionType::firstOrCreate(
+            ['name' => $request->tipo_diagnostico],
+            ['description' => 'Creado desde diagnóstico técnico']
+        );
 
-        // Laravel convierte adjuntos[] a adjuntos_ en el request cuando se usa FormData
-        if ($request->hasFile('adjuntos_')) {
-            foreach ($request->file('adjuntos_') as $file) {
-                // Validar tamaño de archivo individual
-                if ($file->getSize() > 10240 * 1024) { // 10MB
-                    return response()->json([
-                        'message' => 'El archivo ' . $file->getClientOriginalName() . ' excede el tamaño máximo de 10MB.'
-                    ], 422);
+        $solution = TicketSolution::create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $agent->id,
+            'message' => $request->observacion,
+            'date' => now(),
+            'solution_type_id' => $solutionType->id,
+        ]);
+
+        $filesProcessed = 0;
+
+        // Manejar adjuntos
+        $inputNames = ['adjuntos', 'adjuntos_'];
+        foreach ($inputNames as $inputName) {
+            if ($request->hasFile($inputName)) {
+                foreach ($request->file($inputName) as $file) {
+                    if ($file->getSize() > 10240 * 1024) {
+                        return response()->json([
+                            'message' => 'El archivo ' . $file->getClientOriginalName() . ' excede el tamaño máximo de 10MB.'
+                        ], 422);
+                    }
+
+                    $path = $file->store('diagnosticos', 'public');
+
+                    $solution->attachments()->create([
+                        'file_name' => $file->getClientOriginalName(),
+                        'file_path' => $path,
+                        'file_type' => $file->getMimeType(),
+                        'file_size' => $file->getSize(),
+                    ]);
+
+                    $filesProcessed++;
                 }
-                $pathsAdjuntos[] = $file->store('diagnosticos', 'public');
-            }
-        } elseif ($request->hasFile('adjuntos')) {
-            foreach ($request->file('adjuntos') as $file) {
-                // Validar tamaño de archivo individual
-                if ($file->getSize() > 10240 * 1024) { // 10MB
-                    return response()->json([
-                        'message' => 'El archivo ' . $file->getClientOriginalName() . ' excede el tamaño máximo de 10MB.'
-                    ], 422);
-                }
-                $pathsAdjuntos[] = $file->store('diagnosticos', 'public');
             }
         }
 
-        // Validar que se hayan subido archivos
-        if (empty($pathsAdjuntos)) {
+        if ($filesProcessed === 0) {
             return response()->json([
                 'message' => 'Debe adjuntar al menos un archivo como evidencia del diagnóstico.'
             ], 422);
         }
 
-        // Preparar datos para inserción
-        $attachJson = json_encode($pathsAdjuntos);
-        $diagnosticType = 'diagnostico_' . strtolower(str_replace(' ', '_', $request->tipo_diagnostico));
-
-        // Log para depuración
-        Log::info('Insertando diagnóstico:', [
+        Log::info('Diagnóstico guardado:', [
             'ticket_id' => $ticket->id,
-            'user_id' => $agent->id,
-            'observacion' => $request->observacion,
-            'attach_json' => $attachJson,
-            'type' => $diagnosticType,
-            'files_count' => count($pathsAdjuntos)
+            'solution_id' => $solution->id,
+            'files_count' => $filesProcessed
         ]);
 
-        // Usar DB::insert para evitar problemas con el modelo TicketSolution
-        $insertResult = DB::table('ticket_solutions')->insert([
-            'ticket_id' => $ticket->id,
-            'user_id' => $agent->id,
-            'message' => $request->observacion,
-            'date' => now()->format('Y-m-d'),
-            'attach' => $attachJson, // Guardar como Array JSON
-            'type' => $diagnosticType,
-            'created_at' => now(),
-            'updated_at' => now()
-        ]);
+        $estadoRevision = Status::where('name', 'like', '%Revisión%')
+            ->orWhere('name', 'like', '%revision%')
+            ->first();
 
-        Log::info('Resultado de inserción de diagnóstico:', ['result' => $insertResult]);
+        if (!$estadoRevision) {
+            $estadoRevision = Status::firstOrCreate(['name' => 'Pendiente Revisión']);
+        }
 
-        // Actualizar el estado del ticket para que el jefe lo revise
-        $estadoRevision = Status::firstOrCreate(['name' => 'Pendiente Revisión']);
         $ticket->status_id = $estadoRevision->id;
         $ticket->save();
 
