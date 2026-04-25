@@ -39,7 +39,7 @@ class TecnicoController extends Controller
      */
     public function dashboardData(): JsonResponse
     {
-        $tecnico = Auth::user();
+        $agent = Auth::user();
         $statuses = $this->getCachedStatuses();
 
         $statusCerrado = null;
@@ -64,7 +64,7 @@ class TecnicoController extends Controller
         }
 
         $query = Ticket::with(['priority', 'department', 'status', 'requestingUser'])
-            ->where('assigned_user', $tecnico->id);
+            ->where('assigned_user', $agent->id);
 
         if ($statusPendienteRevision) {
             $query->where('status_id', '!=', $statusPendienteRevision->id);
@@ -110,8 +110,8 @@ class TecnicoController extends Controller
     }
     public function totalTicketsAsignados(): JsonResponse
     {
-        $tecnico = Auth::user();
-        $total = Ticket::where('assigned_user', $tecnico->id)->count();
+        $agent = Auth::user();
+        $total = Ticket::where('assigned_user', $agent->id)->count();
 
         return response()->json([
             'total_asignados' => $total
@@ -123,14 +123,14 @@ class TecnicoController extends Controller
      */
     public function totalTicketsEnProceso(): JsonResponse
     {
-        $tecnico = Auth::user();
+        $agent = Auth::user();
 
         $statusEnProceso = Status::where('name', 'like', '%proceso%')
             ->orWhere('name', 'like', '%Proceso%')
             ->orWhere('name', 'like', '%progreso%')
             ->first();
 
-        $total = Ticket::where('assigned_user', $tecnico->id)
+        $total = Ticket::where('assigned_user', $agent->id)
             ->when($statusEnProceso, function ($query) use ($statusEnProceso) {
                 return $query->where('status_id', $statusEnProceso->id);
             })
@@ -146,7 +146,7 @@ class TecnicoController extends Controller
      */
     public function totalTicketsResueltos(): JsonResponse
     {
-        $tecnico = Auth::user();
+        $agent = Auth::user();
 
         $statusResuelto = Status::where('name', 'like', '%resuelto%')
             ->orWhere('name', 'like', '%Resuelto%')
@@ -155,7 +155,7 @@ class TecnicoController extends Controller
             ->orWhere('name', 'like', '%finalizado%')
             ->first();
 
-        $total = Ticket::where('assigned_user', $tecnico->id)
+        $total = Ticket::where('assigned_user', $agent->id)
             ->when($statusResuelto, function ($query) use ($statusResuelto) {
                 return $query->where('status_id', $statusResuelto->id);
             })
@@ -171,7 +171,7 @@ class TecnicoController extends Controller
      */
     public function historialTicketsFinalizados(): JsonResponse
     {
-        $tecnico = Auth::user();
+        $agent = Auth::user();
 
         $statusCerrado = Status::where('name', 'like', '%cerrado%')
             ->orWhere('name', 'like', '%Cerrado%')
@@ -180,7 +180,7 @@ class TecnicoController extends Controller
             ->first();
 
         $tickets = Ticket::with(['priority', 'department', 'status'])
-            ->where('assigned_user', $tecnico->id)
+            ->where('assigned_user', $agent->id)
             ->when($statusCerrado, function ($query) use ($statusCerrado) {
                 return $query->where('status_id', $statusCerrado->id);
             })
@@ -197,9 +197,9 @@ class TecnicoController extends Controller
      */
     public function tasaResolucion(): JsonResponse
     {
-        $tecnico = Auth::user();
+        $agent = Auth::user();
 
-        $totalAsignados = Ticket::where('assigned_user', $tecnico->id)->count();
+        $totalAsignados = Ticket::where('assigned_user', $agent->id)->count();
 
         if ($totalAsignados === 0) {
             return response()->json([
@@ -214,7 +214,7 @@ class TecnicoController extends Controller
             ->orWhere('name', 'like', '%finalizado%')
             ->first();
 
-        $totalResueltos = Ticket::where('assigned_user', $tecnico->id)
+        $totalResueltos = Ticket::where('assigned_user', $agent->id)
             ->when($statusResuelto, function ($query) use ($statusResuelto) {
                 return $query->where('status_id', $statusResuelto->id);
             })
@@ -234,7 +234,7 @@ class TecnicoController extends Controller
      */
     public function ticketsEnCola(): JsonResponse
     {
-        $tecnico = Auth::user();
+        $agent = Auth::user();
 
         $statusCerrado = Status::where('name', 'like', '%cerrado%')
             ->orWhere('name', 'like', '%Cerrado%')
@@ -243,7 +243,7 @@ class TecnicoController extends Controller
             ->first();
 
         $tickets = Ticket::with(['priority', 'department', 'status'])
-            ->where('assigned_user', $tecnico->id)
+            ->where('assigned_user', $agent->id)
             ->when($statusCerrado, function ($query) use ($statusCerrado) {
                 return $query->where('status_id', '!=', $statusCerrado->id);
             })
@@ -260,7 +260,7 @@ class TecnicoController extends Controller
      */
     public function ticketsEnProceso(): JsonResponse
     {
-        $tecnico = Auth::user();
+        $agent = Auth::user();
 
         $statusEnProceso = Status::where('name', 'like', '%proceso%')
             ->orWhere('name', 'like', '%Proceso%')
@@ -268,7 +268,7 @@ class TecnicoController extends Controller
             ->first();
 
         $tickets = Ticket::with(['priority', 'department', 'status'])
-            ->where('assigned_user', $tecnico->id)
+            ->where('assigned_user', $agent->id)
             ->when($statusEnProceso, function ($query) use ($statusEnProceso) {
                 return $query->where('status_id', $statusEnProceso->id);
             })
@@ -285,10 +285,10 @@ class TecnicoController extends Controller
      */
     public function ticketsAsignados(): JsonResponse
     {
-        $tecnico = Auth::user();
+        $agent = Auth::user();
 
         $tickets = Ticket::with(['priority', 'department', 'status', 'requestingUser'])
-            ->where('assigned_user', $tecnico->id)
+            ->where('assigned_user', $agent->id)
             ->get(['id', 'subject', 'department_id', 'status_id', 'priority_id', 'requesting_user', 'creation_date']);
 
         $ticketsTransformados = $tickets->map(function ($ticket) {
@@ -313,7 +313,7 @@ class TecnicoController extends Controller
      */
     public function verTicket($id): JsonResponse
     {
-        $tecnico = Auth::user();
+        $agent = Auth::user();
 
         $ticket = Ticket::with([
             'status',
@@ -326,7 +326,7 @@ class TecnicoController extends Controller
             'histories'
         ])
         ->where('id', $id)
-        ->where('assigned_user', $tecnico->id)
+        ->where('assigned_user', $agent->id)
         ->first();
 
         if (!$ticket) {
@@ -352,7 +352,7 @@ class TecnicoController extends Controller
             'problema' => $ticket->subject,
             'detalles_del_problema' => $ticket->message,
             'adjuntos' => $ticket->attach,
-            'area_del_tecnico' => $ticket->assignedUser->department->name ?? 'N/A',
+            'area_del_agent' => $ticket->assignedUser->department->name ?? 'N/A',
             'historial' => $ticket->histories->map(function ($history) {
                 return [
                     'fecha' => $history->created_at,
@@ -378,10 +378,10 @@ class TecnicoController extends Controller
             'observacion' => 'required|string',
         ]);
 
-        $tecnico = Auth::user();
+        $agent = Auth::user();
 
         $ticket = Ticket::where('id', $id)
-            ->where('assigned_user', $tecnico->id)
+            ->where('assigned_user', $agent->id)
             ->first();
 
         if (!$ticket) {
@@ -429,7 +429,7 @@ class TecnicoController extends Controller
         // Log para depuración
         Log::info('Insertando diagnóstico:', [
             'ticket_id' => $ticket->id,
-            'user_id' => $tecnico->id,
+            'user_id' => $agent->id,
             'observacion' => $request->observacion,
             'attach_json' => $attachJson,
             'type' => $diagnosticType,
@@ -439,7 +439,7 @@ class TecnicoController extends Controller
         // Usar DB::insert para evitar problemas con el modelo TicketSolution
         $insertResult = DB::table('ticket_solutions')->insert([
             'ticket_id' => $ticket->id,
-            'user_id' => $tecnico->id,
+            'user_id' => $agent->id,
             'message' => $request->observacion,
             'date' => now()->format('Y-m-d'),
             'attach' => $attachJson, // Guardar como Array JSON
@@ -466,7 +466,7 @@ class TecnicoController extends Controller
      */
     public function misEstadisticas(): JsonResponse
     {
-        $tecnico = Auth::user();
+        $agent = Auth::user();
 
         $statusCerrado = Status::where('name', 'like', '%cerrado%')
             ->orWhere('name', 'like', '%finalizado%')
@@ -477,18 +477,18 @@ class TecnicoController extends Controller
             ->orWhere('name', 'like', '%progreso%')
             ->first();
 
-        $totalAsignados = Ticket::where('assigned_user', $tecnico->id)->count();
+        $totalAsignados = Ticket::where('assigned_user', $agent->id)->count();
 
         $totalResueltos = $statusCerrado
-            ? Ticket::where('assigned_user', $tecnico->id)->where('status_id', $statusCerrado->id)->count()
+            ? Ticket::where('assigned_user', $agent->id)->where('status_id', $statusCerrado->id)->count()
             : 0;
 
         $totalEnProceso = $statusEnProceso
-            ? Ticket::where('assigned_user', $tecnico->id)->where('status_id', $statusEnProceso->id)->count()
+            ? Ticket::where('assigned_user', $agent->id)->where('status_id', $statusEnProceso->id)->count()
             : 0;
 
         $totalEnCola = $statusCerrado
-            ? Ticket::where('assigned_user', $tecnico->id)->where('status_id', '!=', $statusCerrado->id)->count()
+            ? Ticket::where('assigned_user', $agent->id)->where('status_id', '!=', $statusCerrado->id)->count()
             : $totalAsignados;
 
         $tasaResolucion = $totalAsignados > 0 ? ($totalResueltos / $totalAsignados) * 100 : 0;

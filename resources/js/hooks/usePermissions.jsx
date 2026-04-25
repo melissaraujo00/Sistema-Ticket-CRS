@@ -17,15 +17,15 @@ export function usePermissions() {
     const { auth } = usePage().props;
 
     const hasPermission = (permission) => {
-        return auth?.permissions?.includes(permission) ?? false;
+        return auth?.user?.permissions?.includes(permission) ?? false;
     };
 
     const hasRole = (role) => {
-        return auth?.roles?.includes(role) ?? false;
+        return auth?.user?.roles?.includes(role) ?? false;
     };
 
     const getDisplayRole = () => {
-        const roleKey = auth?.roles?.[0];
+        const roleKey = auth?.user?.roles?.[0];
         return ROLE_TRANSLATIONS[roleKey] || 'Sin rol';
     };
 
@@ -34,7 +34,7 @@ export function usePermissions() {
         hasRole,
         getDisplayRole,
         authUser: auth?.user,
-        userRoles: auth?.roles ?? [],
-        userPermissions: auth?.permissions ?? [],
+        userRoles: auth?.user?.roles ?? [],
+        userPermissions: auth?.user?.permissions ?? [],
     };
 }

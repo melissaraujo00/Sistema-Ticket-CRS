@@ -23,6 +23,7 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'institution_code',
         'email',
         'phone_number',
         'ext',
@@ -88,5 +89,12 @@ class User extends Authenticatable
     public function ticketAssignments():HasMany
     {
         return $this->hasMany(TicketHistory::class, 'assigned_user');
+    }
+
+    public function headedDepartments()
+    {
+        return $this->belongsToMany(Department::class, 'department_user')
+                    ->wherePivot('role', 'head')
+                    ->withTimestamps();
     }
 }

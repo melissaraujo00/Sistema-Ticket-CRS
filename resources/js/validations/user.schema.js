@@ -32,7 +32,7 @@ export const createUserSchema = z.object({
             message: 'Selecciona un departamento',
         }),
 
-    role: z.enum(['admin', 'agent', 'user', 'tecnico'], {
+    role: z.enum(['admin', 'agent', 'user'], {
         errorMap: () => ({ message: 'Selecciona un rol' })
     }),
 

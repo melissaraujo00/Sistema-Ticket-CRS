@@ -134,6 +134,14 @@ export default function Index() {
                                 </Link>
                             </Button>
                         )}
+
+                        {hasPermission("eliminar plan_sla") && (
+                            <Button asChild variant="outline">
+                                <Link href="/sla-plans/trashed">
+                                    <Trash2 className="mr-2 h-4 w-4" /> Ver Borrados
+                                </Link>
+                            </Button>
+                        )}
                     </div>
                 </div>
 

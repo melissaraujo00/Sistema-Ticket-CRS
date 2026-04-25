@@ -15,8 +15,7 @@ class TicketSolution extends Model
         'user_id',
         'message',
         'date',
-        'attach',
-        'type'
+        'solution_type_id',
     ];
 
     protected $casts = [  'date' => 'date',
@@ -30,4 +29,17 @@ class TicketSolution extends Model
     public function user():BelongsTo{
         return $this->belongsTo(User::class);
     }
+
+    public function attachments()
+    {
+        return $this->morphMany(Attachment::class, 'attachable');
+    }
+
+    
+
+    public function solutionType()
+    {
+        return $this->belongsTo(SolutionType::class);
+    }
+
 }

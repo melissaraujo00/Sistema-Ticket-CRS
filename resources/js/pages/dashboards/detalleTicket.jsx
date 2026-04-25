@@ -11,10 +11,10 @@ export default function TicketDetails({ id }) {
     useEffect(() => {
         const fetchTicket = async () => {
             try {
-                const response = await axios.get(`/tecnico/ver-ticket/${id}`);
+                const response = await axios.get(`/agent/ver-ticket/${id}`);
                 setTicket(response.data.ticket);
             } catch (error) {
-                console.error("Error fetching ticket details:", error);
+                console.error("Error al obtener detalles del ticket:", error);
             }
         };
 
@@ -92,7 +92,7 @@ export default function TicketDetails({ id }) {
                                 </div>
                                 <div className="grid grid-cols-[100px_1fr] gap-2">
                                     <span className="font-bold text-xs text-gray-900">Area</span>
-                                    <span>{data.area_del_tecnico}</span>
+                                    <span>{data.area_del_agent}</span>
                                 </div>
                             </div>
 

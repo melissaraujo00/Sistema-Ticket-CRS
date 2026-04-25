@@ -5,93 +5,54 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import { NotificationsDropdown } from '@/components/NotificationsDropdown';
 import { UserMenuContent } from '@/components/user-menu-content';
 import { useAppearance } from '@/hooks/use-appearance';
 import {
-    Moon, Sun, Bell, ChevronDown,
-    LayoutGrid, ListChecks, Users, Ticket, HelpCircle, Clock
+    Moon,
+    Sun,
+    Bell,
+    ChevronDown,
+    LayoutGrid,
+    Folder,
+    ClipboardList,
+    BookOpen,
+    Settings,
+    FileText,
+    AlertTriangle,
+    Users,
+    Ticket,
+    PlusCircle,
+    List,
+    HelpCircle,
 } from 'lucide-react';
 
 // ==========================================
-// 1. CONFIGURACIÓN DE RUTAS Y PERMISOS
+// 1. DICCIONARIO DE ICONOS (Server-Driven)
 // ==========================================
-const mainNavItems = [
-    {
-        title: 'Dashboard',
-        url: '/dashboard',
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Mis Tickets',
-        url: '/tickets',
-        icon: Ticket,
-    },
-    {
-        title: 'FAQs',
-        url: '/faqs',
-        icon: HelpCircle,
-    },
-    {
-        title: 'Ticket',
-        icon: ListChecks,
-        // Usamos "items" para los submenús
-        items: [
-            {
-                title: 'Prioridades',
-                url: '/priorities',
-                icon: ListChecks,
-                permission: 'ver prioridades'
-            },
-            {
-                title: 'Planes SLA',
-                url: '/sla-plans',
-                icon: Clock,
-                permission: 'ver sla plans'
-            },
-        ]
-    },
-    {
-        title: 'Usuarios',
-        url: '/users',
-        icon: Users,
-        permission: 'ver usuarios'
-    },
-];
-
-// Función para filtrar según permisos de Spatie
-function filterNavItems(items, hasPermission) {
-    return items.reduce((filteredItems, item) => {
-        if (item.permission && !hasPermission(item.permission)) {
-            return filteredItems;
-        }
-
-        if (item.items) {
-            const filteredChildren = item.items.filter(child =>
-                !child.permission || hasPermission(child.permission)
-            );
-
-            if (filteredChildren.length > 0) {
-                filteredItems.push({ ...item, items: filteredChildren });
-            }
-        } else {
-            filteredItems.push(item);
-        }
-
-        return filteredItems;
-    }, []);
-}
+// Mapea los strings que envía el backend ("LayoutGrid") a los componentes de Lucide
+const ICONS = {
+    LayoutGrid,
+    Folder,
+    ClipboardList,
+    BookOpen,
+    Settings,
+    FileText,
+    AlertTriangle,
+    Users,
+    Ticket,
+    PlusCircle,
+    List,
+    HelpCircle,
+};
 
 // ==========================================
 // 2. COMPONENTE PRINCIPAL DEL HEADER
 // ==========================================
 export function AppSidebarHeader({ breadcrumbs = [] }) {
-    const { auth } = usePage().props;
+    // Extraemos la prop 'navigation' que inyectamos desde HandleInertiaRequests
+    const { auth, navigation = [] } = usePage().props;
     const { appearance, updateAppearance } = useAppearance();
-
-    // Lógica de permisos
-    const userPermissions = auth?.user?.permissions || [];
-    const hasPermission = (perm) => userPermissions.includes(perm);
-    const filteredNavItems = filterNavItems(mainNavItems, hasPermission);
 
     const toggleTheme = () => {
         updateAppearance(appearance === 'dark' ? 'light' : 'dark');
@@ -115,10 +76,7 @@ export function AppSidebarHeader({ breadcrumbs = [] }) {
                         {appearance === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                     </button>
 
-                    <button className="relative flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-muted-foreground hover:text-foreground transition-colors">
-                        <Bell className="w-4 h-4" />
-                        <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-destructive border border-background"></span>
-                    </button>
+                    <NotificationsDropdown />
 
                     <div className="h-6 w-px bg-border hidden md:block"></div>
 
@@ -127,7 +85,7 @@ export function AppSidebarHeader({ breadcrumbs = [] }) {
                             <button className="flex items-center gap-3 outline-none hover:bg-accent hover:text-accent-foreground p-1.5 rounded-md transition-colors cursor-pointer text-left">
                                 <div className="hidden text-right md:block">
                                     <span className="block text-sm font-medium text-foreground">
-                                        {auth?.user?.name || 'Meli'}
+                                        {auth?.user?.name || 'Administrador'}
                                     </span>
                                     <span className="block text-xs text-muted-foreground capitalize">
                                         {auth?.user?.roles?.[0] || 'Usuario'}
@@ -147,32 +105,32 @@ export function AppSidebarHeader({ breadcrumbs = [] }) {
                 </div>
             </div>
 
-            {/* FILA 2: Rutas Dinámicas Horizontales */}
+            {/* FILA 2: Rutas Dinámicas Horizontales (Server-Driven) */}
             <div className="flex items-center px-4 md:px-6 h-12 bg-muted/10 border-t border-border overflow-x-auto hide-scrollbar">
                 <nav className="flex items-center gap-6 text-sm font-medium h-full">
 
-                    {/* Mapeamos las rutas dinámicamente */}
-                    {filteredNavItems.map((item, index) => {
-                        const Icon = item.icon;
+                    {/* Mapeamos las rutas dinámicamente desde Laravel */}
+                    {navigation.map((item, index) => {
+                        const Icon = item.icon ? ICONS[item.icon] : null;
 
-                        // Si el ítem tiene submenús (ej. Ticket > Prioridades)
+                        // Si el ítem tiene submenús (ej. Configuración -> Planes SLA)
                         if (item.items && item.items.length > 0) {
                             return (
                                 <DropdownMenu key={`menu-${index}`}>
                                     <DropdownMenuTrigger asChild>
-                                        <button className="flex items-center gap-2 h-full border-b-2 border-transparent transition-colors px-1 text-muted-foreground hover:text-foreground hover:border-gray-300 outline-none cursor-pointer whitespace-nowrap">
-                                            {Icon && <Icon className="w-4 h-4" />}
+                                        <button className="text-muted-foreground hover:text-foreground flex h-full cursor-pointer items-center gap-2 border-b-2 border-transparent px-1 whitespace-nowrap transition-colors outline-none hover:border-gray-300">
+                                            {Icon && <Icon className="h-4 w-4" />}
                                             {item.title}
-                                            <ChevronDown className="w-3 h-3 opacity-50" />
+                                            <ChevronDown className="h-3 w-3 opacity-50" />
                                         </button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="start" className="w-48 mt-1">
+                                    <DropdownMenuContent align="start" className="mt-1 w-48">
                                         {item.items.map((subItem, subIndex) => {
-                                            const SubIcon = subItem.icon;
+                                            const SubIcon = subItem.icon ? ICONS[subItem.icon] : null;
                                             return (
                                                 <DropdownMenuItem key={`sub-${subIndex}`} asChild>
-                                                    <Link href={subItem.url} className="flex w-full items-center cursor-pointer">
-                                                        {SubIcon && <SubIcon className="mr-2 h-4 w-4 text-muted-foreground" />}
+                                                    <Link href={subItem.url} className="flex w-full cursor-pointer items-center">
+                                                        {SubIcon && <SubIcon className="text-muted-foreground mr-2 h-4 w-4" />}
                                                         {subItem.title}
                                                     </Link>
                                                 </DropdownMenuItem>
@@ -183,19 +141,24 @@ export function AppSidebarHeader({ breadcrumbs = [] }) {
                             );
                         }
 
-                        // Si el ítem es un enlace directo (ej. Dashboard)
-                        const isActive = currentUrl.startsWith(item.url);
+                        let isActive = false;
+                        try {
+                            const itemPath = new URL(item.url, item.url.startsWith('http') ? undefined : 'http://x').pathname;
+                            isActive = currentUrl.startsWith(itemPath);
+                        } catch (e) {
+                            isActive = currentUrl.startsWith(item.url);
+                        }
                         return (
                             <Link
                                 key={`link-${index}`}
                                 href={item.url}
-                                className={`flex items-center gap-2 h-full border-b-2 transition-colors px-1 whitespace-nowrap ${
+                                className={`flex h-full items-center gap-2 border-b-2 px-1 whitespace-nowrap transition-colors ${
                                     isActive
-                                    ? 'border-red-600 text-red-600'
-                                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300'
+                                        ? 'border-red-600 text-red-600'
+                                        : 'text-muted-foreground hover:text-foreground border-transparent hover:border-gray-300'
                                 }`}
                             >
-                                {Icon && <Icon className="w-4 h-4" />}
+                                {Icon && <Icon className="h-4 w-4" />}
                                 {item.title}
                             </Link>
                         );
