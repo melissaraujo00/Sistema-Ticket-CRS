@@ -13,10 +13,10 @@ class StatusesTableSeeder extends Seeder
             'Pendiente a asignación',
             'Asignado',
             'Abierto',
-            'En Proceso',      // ← Nombre consistente con TecnicoDataSeeder
+            'En Proceso',
             'Resuelto',
             'Cerrado',
-            // 'En espera',     // Opcional: si lo necesitas, agrégalo
+            'No Resuelto',
         ];
 
         foreach ($statuses as $name) {

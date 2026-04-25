@@ -18,8 +18,9 @@ class TicketSolution extends Model
         'solution_type_id',
     ];
 
-    protected $casts = [  'date' => 'date',
-                            'attach' => 'array'];
+    protected $casts = [
+        'date' => 'date',
+    ];
 
     public function ticket(): BelongsTo
     {

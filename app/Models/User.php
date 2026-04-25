@@ -54,10 +54,7 @@ class User extends Authenticatable
      */
     protected function casts(): array
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return ['email_verified_at' => 'datetime', 'password' => 'hashed',];
     }
 
     public function ticketsRequested(): HasMany
@@ -65,7 +62,7 @@ class User extends Authenticatable
         return $this->hasMany(Ticket::class, 'requesting_user');
     }
 
-    public function ticketsAssigned():HasMany
+    public function ticketsAssigned(): HasMany
     {
         return $this->hasMany(Ticket::class, 'assigned_user');
     }
@@ -86,7 +83,7 @@ class User extends Authenticatable
     /**
      * Historial de todas las veces que le han asignado un ticket a este técnico.
      */
-    public function ticketAssignments():HasMany
+    public function ticketAssignments(): HasMany
     {
         return $this->hasMany(TicketHistory::class, 'assigned_user');
     }
@@ -94,7 +91,7 @@ class User extends Authenticatable
     public function headedDepartments()
     {
         return $this->belongsToMany(Department::class, 'department_user')
-                    ->wherePivot('role', 'head')
-                    ->withTimestamps();
+            ->wherePivot('role', 'head')
+            ->withTimestamps();
     }
 }

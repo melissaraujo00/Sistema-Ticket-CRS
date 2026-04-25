@@ -2,6 +2,7 @@ import { Link } from '@inertiajs/react';
 import axios from 'axios';
 import { Activity, AlertCircle, CheckCircle2, Clock, Computer, Globe, Monitor, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { toast, Toaster } from 'sonner';
 
 
 export default function AgentDashboard() {
@@ -21,6 +22,14 @@ export default function AgentDashboard() {
     const [observacionDiagnostico, setObservacionDiagnostico] = useState('');
     const [adjuntosDiagnostico, setAdjuntosDiagnostico] = useState([]);
     const [diagnosticStatus, setDiagnosticStatus] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showUnresolvedModal, setShowUnresolvedModal] = useState(false);
+    const [unresolvedData, setUnresolvedData] = useState({
+        avances: '',
+        justificacion: '',
+        adjuntos: []
+    });
+    const [validationErrors, setValidationErrors] = useState({});
 
     useEffect(() => {
         const fetchData = async () => {
@@ -120,32 +129,79 @@ export default function AgentDashboard() {
         }
     };
 
+    const submitUnresolved = async () => {
+        setValidationErrors({});
+        try {
+            if (!selectedTicketId) return;
+            
+            setIsSubmitting(true);
+            const formData = new FormData();
+            formData.append('avances', unresolvedData.avances);
+            formData.append('justificacion', unresolvedData.justificacion);
+            
+            unresolvedData.adjuntos.forEach(file => {
+                formData.append('adjuntos[]', file);
+            });
+
+            await axios.post(`/agent/ticket/${selectedTicketId}/no-resolver`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            toast.success('Reporte de incidencia enviado con éxito');
+            setUnresolvedData({ avances: '', justificacion: '', adjuntos: [] });
+            setShowUnresolvedModal(false);
+            setSelectedTicketId(null);
+            setShowDiagnosticPanel(false);
+
+            const response = await axios.get('/agent/dashboard-data');
+            setTicketsAsignados(response.data.tickets_asignados || []);
+            setHistorialFinalizados(response.data.historial_finalizados || []);
+            setEstadisticas(response.data.estadisticas || null);
+
+        } catch (error) {
+            if (error.response && error.response.status === 422) {
+                const errors = error.response.data.errors;
+                setValidationErrors(errors);
+                
+                // Mostrar primer error general
+                const firstError = Object.values(errors)[0][0];
+                toast.error(firstError);
+            } else {
+                console.error('Error al enviar reporte de incidencia:', error);
+                toast.error('Error crítico al enviar el reporte. Por favor intente más tarde.');
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     return (
         <div className="mx-auto flex h-full w-full flex-col space-y-6 p-4 font-sans text-gray-800 sm:p-6 md:p-6 lg:p-8">
+            <Toaster position="top-right" richColors />
             {/* KPI Cards */}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                <div className="group relative flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-colors hover:border-red-200">
-                    <div className="mb-1 text-sm font-semibold text-gray-600">Tickets Asignados</div>
-                    <div className="text-3xl font-bold">{stats.total_tickets_asignados}</div>
+                <div className="group relative flex flex-col overflow-hidden rounded-xl border border-red-50 bg-gradient-to-br from-red-50 to-red-100 p-5 shadow-sm transition-colors hover:border-red-100">
+                    <div className="mb-1 text-sm font-semibold text-red-700">Tickets Asignados</div>
+                    <div className="text-3xl font-bold text-red-800">{stats.total_tickets_asignados}</div>
                     <AlertCircle
-                        className="absolute top-1/2 right-5 h-8 w-8 -translate-y-1/2 text-red-100 transition-colors group-hover:text-red-400"
-                        opacity={0.6}
+                        className="absolute top-1/2 right-5 h-8 w-8 -translate-y-1/2 text-red-300 transition-colors group-hover:text-red-400"
+                        opacity={0.8}
                     />
                 </div>
-                <div className="group relative flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-colors hover:border-orange-200">
-                    <div className="mb-1 text-sm font-semibold text-gray-600">En Proceso</div>
-                    <div className="text-3xl font-bold">{stats.total_tickets_proceso}</div>
+                <div className="group relative flex flex-col overflow-hidden rounded-xl border border-orange-50 bg-gradient-to-br from-orange-50 to-orange-100 p-5 shadow-sm transition-colors hover:border-orange-100">
+                    <div className="mb-1 text-sm font-semibold text-orange-700">En Proceso</div>
+                    <div className="text-3xl font-bold text-orange-800">{stats.total_tickets_proceso}</div>
                     <Clock
-                        className="absolute top-1/2 right-5 h-8 w-8 -translate-y-1/2 text-orange-100 transition-colors group-hover:text-orange-400"
-                        opacity={0.6}
+                        className="absolute top-1/2 right-5 h-8 w-8 -translate-y-1/2 text-orange-300 transition-colors group-hover:text-orange-400"
+                        opacity={0.8}
                     />
                 </div>
-                <div className="group relative flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-colors hover:border-green-200">
-                    <div className="mb-1 text-sm font-semibold text-gray-600">Total Resueltos</div>
-                    <div className="text-3xl font-bold">{stats.total_tickets_resueltos}</div>
+                <div className="group relative flex flex-col overflow-hidden rounded-xl border border-green-50 bg-gradient-to-br from-green-50 to-green-100 p-5 shadow-sm transition-colors hover:border-green-100">
+                    <div className="mb-1 text-sm font-semibold text-green-700">Total Resueltos</div>
+                    <div className="text-3xl font-bold text-green-800">{stats.total_tickets_resueltos}</div>
                     <CheckCircle2
-                        className="absolute top-1/2 right-5 h-8 w-8 -translate-y-1/2 text-green-100 transition-colors group-hover:text-green-400"
-                        opacity={0.6}
+                        className="absolute top-1/2 right-5 h-8 w-8 -translate-y-1/2 text-green-300 transition-colors group-hover:text-green-400"
+                        opacity={0.8}
                     />
                 </div>
             </div>
@@ -350,6 +406,13 @@ export default function AgentDashboard() {
                                                                 {status}
                                                             </span>
                                                         );
+                                                    } else if (statusLower === 'no resuelto') {
+                                                        return (
+                                                            <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800">
+                                                                <span className="mr-1.5 h-2 w-2 rounded-full bg-amber-500"></span>
+                                                                {status}
+                                                            </span>
+                                                        );
                                                     } else if (statusLower === 'cancelado') {
                                                         return (
                                                             <span className="inline-flex items-center rounded-full border border-red-200 bg-red-100 px-2.5 py-1 text-xs font-bold text-red-800">
@@ -406,20 +469,38 @@ export default function AgentDashboard() {
                                             <td className="px-4 py-4 text-xs leading-tight text-gray-500">
                                                 <div dangerouslySetInnerHTML={{ __html: (row.creado_por || '').replace('\n', '<br/>') }} />
                                             </td>
-                                            <td className="flex min-w-[140px] flex-col items-center gap-1.5 px-4 py-4">
+                                            <td className="flex min-w-[160px] flex-col items-center gap-3 px-4 py-4">
                                                 <Link
                                                     href={`/agent/ticket/${row.id}`}
-                                                    className="w-full max-w-[120px] rounded bg-blue-500 px-3 py-1.5 text-center text-[10px] font-bold text-white shadow-sm transition-colors hover:bg-blue-600"
+                                                    className="w-full rounded bg-blue-500 px-4 py-3 text-center text-xs font-bold text-white shadow-sm transition-colors hover:bg-blue-600"
                                                 >
                                                     Ver Detalles
                                                 </Link>
                                                 {(() => {
                                                     const status = row.estado || row.status?.name || '';
                                                     const statusLower = status.toLowerCase();
-                                                    const isClosedOrResolved =
-                                                        statusLower === 'cerrado' || statusLower === 'resuelto' || statusLower === 'finalizado';
+                                                    const isTerminal =
+                                                        statusLower === 'cerrado' || 
+                                                        statusLower === 'resuelto' || 
+                                                        statusLower === 'finalizado' ||
+                                                        statusLower === 'no resuelto';
+                                                    
+                                                    const tieneDiagnostico = row.tiene_diagnostico;
 
-                                                    if (!isClosedOrResolved) {
+                                                    if (isTerminal) {
+                                                        const label = statusLower === 'no resuelto' ? 'Incidencia Reportada' : 'Diagnóstico Realizado';
+                                                        return (
+                                                            <div className={`w-full px-4 py-3 text-center text-xs font-medium ${statusLower === 'no resuelto' ? 'text-amber-600' : 'text-green-600'}`}>
+                                                                {label}
+                                                            </div>
+                                                        );
+                                                    } else if (tieneDiagnostico) {
+                                                        return (
+                                                            <div className="w-full px-4 py-3 text-center text-xs font-medium text-green-600">
+                                                                Diagnóstico Realizado
+                                                            </div>
+                                                        );
+                                                    } else {
                                                         return (
                                                             <button
                                                                 onClick={() => {
@@ -431,16 +512,10 @@ export default function AgentDashboard() {
                                                                             ?.scrollIntoView({ behavior: 'smooth' });
                                                                     }, 100);
                                                                 }}
-                                                                className="w-full max-w-[120px] rounded bg-red-500 px-3 py-1.5 text-[10px] font-bold text-white shadow-sm transition-colors hover:bg-red-600"
+                                                                className="w-full rounded bg-red-500 px-4 py-3 text-xs font-bold text-white shadow-sm transition-colors hover:bg-red-600"
                                                             >
                                                                 Realizar Diagnostico
                                                             </button>
-                                                        );
-                                                    } else {
-                                                        return (
-                                                            <div className="w-full max-w-[120px] px-3 py-1.5 text-center text-[10px] font-medium text-gray-400">
-                                                                Ticket Cerrado
-                                                            </div>
                                                         );
                                                     }
                                                 })()}
@@ -486,7 +561,10 @@ export default function AgentDashboard() {
                         <p className="mb-4 text-[13px] font-medium text-gray-700">Seleccione el tipo de diagnóstico realizado (Opcional):</p>
                         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                             <button
-                                onClick={() => setTipoDiagnostico('Problema de Hardware')}
+                                onClick={() => {
+                                    setTipoDiagnostico('Problema de Hardware');
+                                    setShowCustomDiagnostic(false);
+                                }}
                                 className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${
                                     tipoDiagnostico === 'Problema de Hardware'
                                         ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
@@ -501,7 +579,10 @@ export default function AgentDashboard() {
                             </button>
 
                             <button
-                                onClick={() => setTipoDiagnostico('Problema de Software')}
+                                onClick={() => {
+                                    setTipoDiagnostico('Problema de Software');
+                                    setShowCustomDiagnostic(false);
+                                }}
                                 className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${
                                     tipoDiagnostico === 'Problema de Software'
                                         ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
@@ -518,7 +599,10 @@ export default function AgentDashboard() {
                             </button>
 
                             <button
-                                onClick={() => setTipoDiagnostico('Problema de Red')}
+                                onClick={() => {
+                                    setTipoDiagnostico('Problema de Red');
+                                    setShowCustomDiagnostic(false);
+                                }}
                                 className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${
                                     tipoDiagnostico === 'Problema de Red'
                                         ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
@@ -533,7 +617,10 @@ export default function AgentDashboard() {
                             </button>
 
                             <button
-                                onClick={() => setTipoDiagnostico('Equipo Médico')}
+                                onClick={() => {
+                                    setTipoDiagnostico('Equipo Médico');
+                                    setShowCustomDiagnostic(false);
+                                }}
                                 className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${
                                     tipoDiagnostico === 'Equipo Médico'
                                         ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
@@ -548,7 +635,10 @@ export default function AgentDashboard() {
                             </button>
 
                             <button
-                                onClick={() => setTipoDiagnostico('Sistema de Emergencias')}
+                                onClick={() => {
+                                    setTipoDiagnostico('Sistema de Emergencias');
+                                    setShowCustomDiagnostic(false);
+                                }}
                                 className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${
                                     tipoDiagnostico === 'Sistema de Emergencias'
                                         ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-200'
@@ -563,7 +653,10 @@ export default function AgentDashboard() {
                             </button>
 
                             <button
-                                onClick={() => setTipoDiagnostico('Infraestructura')}
+                                onClick={() => {
+                                    setTipoDiagnostico('Infraestructura');
+                                    setShowCustomDiagnostic(false);
+                                }}
                                 className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${
                                     tipoDiagnostico === 'Infraestructura'
                                         ? 'border-green-500 bg-green-50 ring-2 ring-green-200'
@@ -578,7 +671,10 @@ export default function AgentDashboard() {
                             </button>
 
                             <button
-                                onClick={() => setTipoDiagnostico('Sistema de Comunicación')}
+                                onClick={() => {
+                                    setTipoDiagnostico('Sistema de Comunicación');
+                                    setShowCustomDiagnostic(false);
+                                }}
                                 className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${
                                     tipoDiagnostico === 'Sistema de Comunicación'
                                         ? 'border-purple-500 bg-purple-50 ring-2 ring-purple-200'
@@ -593,7 +689,10 @@ export default function AgentDashboard() {
                             </button>
 
                             <button
-                                onClick={() => setShowCustomDiagnostic(true)}
+                                onClick={() => {
+                                    setTipoDiagnostico('');
+                                    setShowCustomDiagnostic(true);
+                                }}
                                 className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${
                                     showCustomDiagnostic
                                         ? 'border-gray-600 bg-gray-50 ring-2 ring-gray-200'
@@ -643,16 +742,37 @@ export default function AgentDashboard() {
                             <input
                                 type="file"
                                 multiple
+                                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.mp4,.mov,.avi,.wmv"
                                 className="block w-full cursor-pointer text-sm text-gray-500 transition-colors file:mr-4 file:rounded file:border-0 file:bg-red-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-red-700 hover:file:bg-red-100"
                                 onChange={(e) => {
                                     if (e.target.files) {
                                         const filesArray = Array.from(e.target.files);
+                                        // Validar tipos de archivo
+                                        const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-ms-wmv'];
+                                        
+                                        const maxSize = 10 * 1024 * 1024; // 10MB por archivo
+                                        const validFiles = [];
+                                        
+                                        for (const file of filesArray) {
+                                            if (!allowedTypes.includes(file.type) && !file.name.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx|jpg|jpeg|png|gif|mp4|mov|avi|wmv)$/i)) {
+                                                alert(`El archivo "${file.name}" no es un tipo permitido.`);
+                                                continue;
+                                            }
+                                            
+                                            if (file.size > maxSize) {
+                                                alert(`El archivo "${file.name}" excede el tamaño máximo de 10MB.`);
+                                                continue;
+                                            }
+                                            
+                                            validFiles.push(file);
+                                        }
+                                        
                                         // Maximo 4 archivos para no romper limite de DB
-                                        if (filesArray.length > 4) {
+                                        if (validFiles.length > 4) {
                                             alert('Se permite un máximo de 4 archivos.');
-                                            setAdjuntosDiagnostico(filesArray.slice(0, 4));
+                                            setAdjuntosDiagnostico(validFiles.slice(0, 4));
                                         } else {
-                                            setAdjuntosDiagnostico(filesArray);
+                                            setAdjuntosDiagnostico(validFiles);
                                         }
                                     }
                                 }}
@@ -674,10 +794,119 @@ export default function AgentDashboard() {
 
                         <div className="flex justify-end gap-3">
                             <button
-                                className="rounded bg-red-600 px-6 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-red-700"
-                                onClick={submitDiagnostic}
+                                className="rounded-lg bg-slate-100 px-6 py-2.5 text-xs font-bold text-slate-600 transition-all hover:bg-slate-200"
+                                onClick={() => setShowUnresolvedModal(true)}
+                                disabled={isSubmitting}
                             >
-                                COMPLETAR DIAGNOSTICO
+                                NO PUEDO RESOLVER
+                            </button>
+                            <button
+                                className={`flex items-center gap-2 rounded-lg bg-red-600 px-6 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-red-700 hover:shadow-md ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+                                onClick={submitDiagnostic}
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting ? (
+                                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                                ) : null}
+                                COMPLETAR DIAGNÓSTICO
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Profesional para No Puede Resolver */}
+            {showUnresolvedModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="bg-slate-50 px-6 py-4 border-b border-slate-100">
+                            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                <AlertCircle className="w-5 h-5 text-red-600" /> Reporte de Incidencia Técnica
+                            </h3>
+                            <p className="text-xs text-slate-500 mt-1">Documente el proceso y la justificación de la no resolución.</p>
+                        </div>
+                        
+                        <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Avances Realizados</label>
+                                <textarea
+                                    className={`w-full h-24 rounded-xl border text-sm p-4 focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all ${validationErrors.avances ? 'border-red-500 bg-red-50' : 'border-slate-200'}`}
+                                    placeholder="Describa qué acciones se intentaron realizar..."
+                                    value={unresolvedData.avances}
+                                    onChange={(e) => setUnresolvedData({...unresolvedData, avances: e.target.value})}
+                                ></textarea>
+                                {validationErrors.avances && (
+                                    <p className="mt-1 text-[10px] font-bold text-red-600">{validationErrors.avances[0]}</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Justificación Técnica</label>
+                                <textarea
+                                    className={`w-full h-24 rounded-xl border text-sm p-4 focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all ${validationErrors.justificacion ? 'border-red-500 bg-red-50' : 'border-slate-200'}`}
+                                    placeholder="Explique el motivo por el cual no se pudo resolver..."
+                                    value={unresolvedData.justificacion}
+                                    onChange={(e) => setUnresolvedData({...unresolvedData, justificacion: e.target.value})}
+                                ></textarea>
+                                {validationErrors.justificacion && (
+                                    <p className="mt-1 text-[10px] font-bold text-red-600">{validationErrors.justificacion[0]}</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Evidencias del Proceso (Fotos/Videos/Logs)</label>
+                                <div className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-xl transition-colors ${validationErrors['adjuntos.0'] ? 'border-red-500 bg-red-50' : 'border-slate-300 hover:border-red-400'}`}>
+                                    <div className="space-y-1 text-center">
+                                        <div className="flex text-sm text-slate-600">
+                                            <label className="relative cursor-pointer bg-white rounded-md font-medium text-red-600 hover:text-red-500 focus-within:outline-none">
+                                                <span>Subir archivos</span>
+                                                <input 
+                                                    type="file" 
+                                                    className="sr-only" 
+                                                    multiple
+                                                    onChange={(e) => {
+                                                        if (e.target.files) {
+                                                            setUnresolvedData({...unresolvedData, adjuntos: Array.from(e.target.files)});
+                                                        }
+                                                    }}
+                                                />
+                                            </label>
+                                            <p className="pl-1">o arrastrar y soltar</p>
+                                        </div>
+                                        <p className="text-xs text-slate-500">PNG, JPG, PDF, MP4 hasta 10MB</p>
+                                        {unresolvedData.adjuntos.length > 0 && (
+                                            <p className="text-xs font-bold text-red-600 mt-2">
+                                                {unresolvedData.adjuntos.length} archivos seleccionados
+                                            </p>
+                                        )}
+                                        {validationErrors['adjuntos.0'] && (
+                                            <p className="mt-1 text-[10px] font-bold text-red-600">{validationErrors['adjuntos.0'][0]}</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-6 bg-slate-50 border-t border-slate-100 flex gap-3">
+                            <button
+                                className="flex-1 rounded-xl bg-white border border-slate-200 py-3 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-50"
+                                onClick={() => {
+                                    setShowUnresolvedModal(false);
+                                    setUnresolvedData({ avances: '', justificacion: '', adjuntos: [] });
+                                }}
+                                disabled={isSubmitting}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                className={`flex-1 flex items-center justify-center gap-2 rounded-xl bg-red-600 py-3 text-sm font-bold text-white shadow-lg shadow-red-600/20 transition-all hover:bg-red-700 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+                                onClick={submitUnresolved}
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting ? (
+                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                                ) : null}
+                                Enviar Reporte Detallado
                             </button>
                         </div>
                     </div>

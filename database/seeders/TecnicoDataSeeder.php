@@ -34,10 +34,10 @@ class TecnicoDataSeeder extends Seeder
 
 
         // Crear estados de tickets
-        $estadoAbierto   = Status::where('name', 'Abierto')->firstOrFail();
+        $estadoAbierto = Status::where('name', 'Abierto')->firstOrFail();
         $estadoEnProceso = Status::where('name', 'En Proceso')->firstOrFail();
-        $estadoResuelto  = Status::where('name', 'Resuelto')->firstOrFail();
-        $estadoCerrado   = Status::where('name', 'Cerrado')->firstOrFail();
+        $estadoResuelto = Status::where('name', 'Resuelto')->firstOrFail();
+        $estadoCerrado = Status::where('name', 'Cerrado')->firstOrFail();
 
         // Crear prioridades
         $prioridadBaja = Priority::firstOrCreate(['name' => 'Baja', 'color' => '#28a745', 'level' => 1]);
@@ -49,12 +49,11 @@ class TecnicoDataSeeder extends Seeder
         $slaBasico = SlaPlan::firstOrCreate(['name' => 'Básico', 'grace_time_hours' => 48, 'working_hours' => 9]);
         $slaPremium = SlaPlan::firstOrCreate(['name' => 'Premium', 'grace_time_hours' => 24, 'working_hours' => 7]);
 
-        // --- INICIO DE LA REFACTORIZACIÓN ---
 
         // 1. BUSCAR categorías existentes (Creadas por CategorySeeder)
         $categoriaHardware = Category::where('name', 'Hardware')->first();
         $categoriaSoftware = Category::where('name', 'Software')->first();
-        $categoriaRed = Category::where('name', 'Redes y conectividad')->first(); // Nombre ajustado
+        $categoriaRed = Category::where('name', 'Redes y conectividad')->first();
 
         // 2. BUSCAR artículos de Knowledge Base existentes (Creados por KnowledgeSeeder)
         // Tomamos el primer artículo que corresponda a cada categoría
@@ -62,10 +61,8 @@ class TecnicoDataSeeder extends Seeder
         $knowledgeSoftware = Knowledge::where('category_id', $categoriaSoftware->id)->first();
         $knowledgeRed = Knowledge::where('category_id', $categoriaRed->id)->first();
 
-        // --- FIN DE LA REFACTORIZACIÓN ---
 
-        // Crear divisiones
-// Divisiones y Temas de Ayuda
+        // Divisiones y Temas de Ayuda
         $divisionHardware = Division::firstOrCreate(['name' => 'Soporte Hardware', 'characteristics' => 'Físico', 'department_id' => $deptSoporte->id]);
         $divisionSoftware = Division::firstOrCreate(['name' => 'Soporte Software', 'characteristics' => 'Apps', 'department_id' => $deptSistemas->id]);
         $divisionRed = Division::firstOrCreate(['name' => 'Soporte Red', 'characteristics' => 'Redes', 'department_id' => $deptSoporte->id]);
@@ -120,7 +117,7 @@ class TecnicoDataSeeder extends Seeder
                 'priority_id' => $prioridadCritica->id,
                 'sla_plan_id' => $slaPremium->id,
                 'department_id' => $deptSoporte->id,
-                'status_id' => $estadoAbierto->id,
+                'status_id' => $estadoEnProceso->id,
                 'creation_date' => Carbon::now()->subHours(6),
                 'expiration_date' => Carbon::now()->addHours(18),
                 'closing_date' => Carbon::now()->addMonth(),
