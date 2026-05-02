@@ -11,27 +11,43 @@ import {
 } from "@/components/ui/dialog"
 import CategoryTable from '@/pages/faqs/CategoryTable.jsx';
 import CategoryForm from '@/pages/faqs/CategoryForm.jsx';
+import KnowledgeTable from '@/pages/faqs/KnowledgeTable.jsx';
+import KnowledgeForm from '@/pages/faqs/KnowledgeForm.jsx';
+import Pagination from '@/components/Pagination';
 import { Button } from '@/components/ui/button.jsx';
 import { Plus } from 'lucide-react';
 import React, { useState } from 'react';
 
-export default function Faq({ knowledges = [], categories = [] }) {
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
+export default function Faq({ knowledges = { data: [], links: [] }, categories = [] }) {
+    const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState(null);
+
+    const [isFaqDialogOpen, setIsFaqDialogOpen] = useState(false);
+    const [selectedFaq, setSelectedFaq] = useState(null);
 
     const breadcrumbs = [
         { title: 'Dashboard', href: '/dashboard' },
         { title: 'Preguntas Frecuentes', href: '/faq' },
     ];
 
-    const handleEdit = (category) => {
+    const handleCategoryEdit = (category) => {
         setSelectedCategory(category);
-        setIsDialogOpen(true);
+        setIsCategoryDialogOpen(true);
     };
 
-    const handleCreate = () => {
+    const handleCategoryCreate = () => {
         setSelectedCategory(null);
-        setIsDialogOpen(true);
+        setIsCategoryDialogOpen(true);
+    };
+
+    const handleFaqEdit = (faq) => {
+        setSelectedFaq(faq);
+        setIsFaqDialogOpen(true);
+    };
+
+    const handleFaqCreate = () => {
+        setSelectedFaq(null);
+        setIsFaqDialogOpen(true);
     };
 
     return (
@@ -54,19 +70,51 @@ export default function Faq({ knowledges = [], categories = [] }) {
 
                     <TabsContent value="faq">
                         <div className="dark:bg-sidebar border-sidebar-border overflow-hidden rounded-xl border bg-white p-6 shadow-sm">
-                            <h2 className="mb-4 text-lg font-semibold">Lista de FAQs</h2>
-                            {knowledges.length > 0 ? (
-                                <ul className="space-y-4">
-                                    {knowledges.map((item) => (
-                                        <li key={item.id} className="border-b pb-2">
-                                            <h3 className="font-medium">{item.title}</h3>
-                                            <p className="text-sm text-gray-600">{item.content_response}</p>
-                                            <span className="text-xs text-blue-500">{item.category?.name}</span>
-                                        </li>
-                                    ))}
-                                </ul>
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Lista de FAQs</h2>
+
+                                <Dialog open={isFaqDialogOpen} onOpenChange={setIsFaqDialogOpen}>
+                                    <DialogTrigger asChild>
+                                        <Button 
+                                            onClick={handleFaqCreate}
+                                            className="bg-zinc-900 dark:bg-zinc-50 dark:text-zinc-900"
+                                        >
+                                            <Plus className="mr-2 h-4 w-4" /> Nuevo
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent className="sm:max-w-[600px]">
+                                        <DialogHeader>
+                                            <DialogTitle>
+                                                {selectedFaq ? 'Editar FAQ' : 'Agregar Nueva FAQ'}
+                                            </DialogTitle>
+                                            <DialogDescription>
+                                                {selectedFaq 
+                                                    ? 'Modifica los detalles de la pregunta frecuente.' 
+                                                    : 'Ingresa los detalles para crear una nueva pregunta frecuente.'}
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        
+                                        <KnowledgeForm 
+                                            faq={selectedFaq} 
+                                            categories={categories}
+                                            onSuccess={() => setIsFaqDialogOpen(false)} 
+                                        />
+                                    </DialogContent>
+                                </Dialog>
+                            </div>
+
+                            {knowledges.data.length > 0 ? (
+                                <>
+                                    <KnowledgeTable 
+                                        knowledges={knowledges.data} 
+                                        onEdit={handleFaqEdit} 
+                                    />
+                                    <Pagination links={knowledges.links} />
+                                </>
                             ) : (
-                                <p>No hay preguntas frecuentes registradas.</p>
+                                <p className="text-sm text-gray-500 text-center py-10">
+                                    No hay preguntas frecuentes registradas.
+                                </p>
                             )}
                         </div>
                     </TabsContent>
@@ -76,10 +124,10 @@ export default function Faq({ knowledges = [], categories = [] }) {
                             <div className="flex justify-between items-center mb-6">
                                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Gestión de Categorías</h2>
 
-                                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                                <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
                                     <DialogTrigger asChild>
                                         <Button 
-                                            onClick={handleCreate}
+                                            onClick={handleCategoryCreate}
                                             className="bg-zinc-900 dark:bg-zinc-50 dark:text-zinc-900"
                                         >
                                             <Plus className="mr-2 h-4 w-4" /> Nuevo
@@ -99,7 +147,7 @@ export default function Faq({ knowledges = [], categories = [] }) {
                                         
                                         <CategoryForm 
                                             category={selectedCategory} 
-                                            onSuccess={() => setIsDialogOpen(false)} 
+                                            onSuccess={() => setIsCategoryDialogOpen(false)} 
                                         />
                                     </DialogContent>
                                 </Dialog>
@@ -108,7 +156,7 @@ export default function Faq({ knowledges = [], categories = [] }) {
                             {categories.length > 0 ? (
                                 <CategoryTable 
                                     categories={categories} 
-                                    onEdit={handleEdit} 
+                                    onEdit={handleCategoryEdit} 
                                 />
                             ) : (
                                 <p className="text-sm text-gray-500 text-center py-10">

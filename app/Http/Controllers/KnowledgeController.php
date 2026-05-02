@@ -14,7 +14,7 @@ class KnowledgeController extends Controller
      */
     public function index()
     {
-        $knowledges = knowledge::with('category')->get();
+        $knowledges = knowledge::with('category')->latest()->paginate(10);
         $categories = Category::all();
         return Inertia::render('faqs/Faq', [
             'knowledges' => $knowledges,
@@ -35,7 +35,16 @@ class KnowledgeController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'title' => 'required|string|max:100',
+            'content_response' => 'required|string|max:255',
+            'category_id' => 'required|exists:categories,id',
+            'creation_date' => 'required|date',
+        ]);
+
+        knowledge::create($validated);
+
+        return back()->with('success', 'FAQ creada con éxito.');
     }
 
     /**
@@ -43,7 +52,7 @@ class KnowledgeController extends Controller
      */
     public function show(knowledge $knowledge)
     {
-        //
+        return response()->json($knowledge->load('category'));
     }
 
     /**
@@ -51,22 +60,33 @@ class KnowledgeController extends Controller
      */
     public function edit(knowledge $knowledge)
     {
-        //
+        return response()->json($knowledge);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, knowledge $knowledge)
+    public function update(Request $request, knowledge $faq)
     {
-        //
+        $validated = $request->validate([
+            'title' => 'required|string|max:100',
+            'content_response' => 'required|string|max:255',
+            'category_id' => 'required|exists:categories,id',
+            'creation_date' => 'required|date',
+        ]);
+
+        $faq->update($validated);
+
+        return back()->with('success', 'FAQ actualizada con éxito.');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(knowledge $knowledge)
+    public function destroy(knowledge $faq)
     {
-        //
+        $faq->delete();
+
+        return back()->with('success', 'FAQ eliminada con éxito.');
     }
 }
