@@ -4,7 +4,8 @@ import AppLayout from "@/layouts/app-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Loader2, PlusCircle, Palette, Check } from "lucide-react";
+import { Toaster, toast } from "sonner";
+import { ArrowLeft, Loader2 } from "lucide-react";
 
 export default function Create() {
     const { data, setData, post, processing, errors } = useForm({
@@ -15,11 +16,26 @@ export default function Create() {
 
     const submit = (e) => {
         e.preventDefault();
-        post("/priorities");
+
+        post("/priorities", {
+            onSuccess: () => {
+                setTimeout(() => {
+                    toast.success("¡Prioridad creada!", {
+                        description: "La nueva prioridad se ha añadido al listado correctamente.",
+                    });
+                }, 100);
+            },
+            onError: (errors) => {
+                toast.error("Hubo un problema", {
+                    description: "Por favor revisa los campos marcados en rojo.",
+                });
+            },
+        });
     };
 
     return (
         <AppLayout>
+            <Toaster richColors position="top-right" />
             <Head title="Nueva Prioridad" />
             <form
                 onSubmit={submit}
@@ -72,16 +88,20 @@ export default function Create() {
                                 </div>
                             </div>
                         </div>
-
                         {/* Campo: Nivel  */}
-                        <div className="flex items-center gap-4 group cursor-pointer" onClick={() => setData("level", !data.level)}>
-                            <div className={`w-10 h-6 rounded-full transition-colors flex items-center px-1 ${data.level ? 'bg-zinc-900 dark:bg-zinc-100' : 'bg-zinc-200 dark:bg-zinc-800'}`}>
-                                <div className={`w-4 h-4 rounded-full transition-transform ${data.level ? 'translate-x-4 bg-white dark:bg-zinc-900' : 'translate-x-0 bg-white'}`} />
-                            </div>
-                            <div className="space-y-0.5">
-                                <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200">Marcar como nivel crítico</p>
-                                <p className="text-xs text-zinc-500 font-medium">Esto resaltará las tareas asociadas.</p>
-                            </div>
+                        <div className="space-y-3">
+                            <Label htmlFor="name" className="text-s font-bold  text-zinc-500">
+                                Nivel
+                            </Label>
+                            <Input
+                                id="level"
+                                type="number"
+                                placeholder="Ej: 1, 2, 3"
+                                value={data.level}
+                                onChange={(e) => setData("level", e.target.value)}
+                                className="h-12 border-zinc-200 dark:border-zinc-800 bg-zinc-50/30 dark:bg-zinc-900/30 rounded-xl focus-visible:ring-zinc-500"
+                            />
+                            {errors.level && <p className="text-xs text-red-500 font-medium">{errors.level}</p>}
                         </div>
                     </div>
                 </div>

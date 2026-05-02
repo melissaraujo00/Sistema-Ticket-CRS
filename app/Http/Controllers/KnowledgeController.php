@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\knowledge;
+use App\Models\Category;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -14,9 +15,10 @@ class KnowledgeController extends Controller
     public function index()
     {
         $knowledges = knowledge::with('category')->get();
-
-        return Inertia::render('welcome', [
-            'knowledges' => $knowledges
+        $categories = Category::all();
+        return Inertia::render('faqs/Faq', [
+            'knowledges' => $knowledges,
+            'categories' => $categories,
         ]);
     }
 

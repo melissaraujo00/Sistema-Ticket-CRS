@@ -16,7 +16,8 @@ class Department extends Model
         'name',
         'description',
         'email_department',
-        'area_id'
+        'area_id',
+
     ];
 
     public function area():BelongsTo
@@ -54,4 +55,11 @@ class Department extends Model
     {
         return $this->hasMany(TicketHistory::class, 'new_department');
     }
+
+    public function heads()
+{
+    return $this->belongsToMany(User::class, 'department_user')
+                ->wherePivot('role', 'head')
+                ->withTimestamps();
+}
 }

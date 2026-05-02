@@ -1,25 +1,20 @@
+/* global route */
 import { router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 
-/**
- * 
- * * @param {Object|null} [user]
- * @returns {Object}
- */
 export function useUserActions(user = null) {
     const [isDeleting, setIsDeleting] = useState(false);
 
     const form = useForm({
         name: user?.name ?? '',
         email: user?.email ?? '',
-        password: '', 
+        password: '',
         phone_number: user?.phone_number ?? '',
-        ext: user?.ext ?? null,
+        ext: user?.ext ?? '',
         birthdate: user?.birthdate ?? '',
-        department_id: user?.department_id ?? null,
+        department_id: user?.department_id ?? '',
         role: user?.roles?.[0]?.name ?? '',
     });
-
 
     const store = (e, onSuccess) => {
         e.preventDefault();
@@ -60,19 +55,3 @@ export function useUserActions(user = null) {
     return { form, store, update, destroy, isDeleting };
 }
 
-/**
- * * @param {Object} user 
- * @returns {Object}
- */
-export function buildUpdateFormData(user) {
-    return {
-        name: user.name ?? '',
-        email: user.email ?? '',
-        password: '', 
-        phone_number: user.phone_number ?? '',
-        ext: user.ext ?? null,
-        birthdate: user.birthdate ?? '',
-        department_id: user.department_id ?? null,
-        role: user.roles?.[0]?.name ?? '',
-    };
-}

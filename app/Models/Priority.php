@@ -25,4 +25,9 @@ class Priority extends Model
     {
         return $this->hasMany(Ticket::class);
     }
+
+    public function slaPlan()
+    {
+        return $this->belongsTo(SlaPlan::class, 'sla_plan_id');
+    }
 }

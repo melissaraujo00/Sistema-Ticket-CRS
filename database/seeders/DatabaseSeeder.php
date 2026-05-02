@@ -8,18 +8,23 @@ use Database\Seeders\CategorySeeder;
 use Database\Seeders\DepartmentSeeder;
 use Database\Seeders\UserSeeder;
 
+
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
         $this->call([
             AreaSeeder::class,
-            CategorySeeder::class,
             DepartmentSeeder::class,
+            CategorySeeder::class,
+            KnowledgeSeeder::class,
             RoleSeeder::class,
             UserSeeder::class,
             UserRoleSeeder::class,
-            KnowledgeSeeder::class,
+            DepartmentHeadSeeder::class,
+            StatusesTableSeeder::class,
+            PrioritiesTableSeeder::class,
+            TecnicoDataSeeder::class,
         ]);
 
     }

@@ -2,45 +2,30 @@
 
 namespace Database\Seeders;
 
-
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 class UserRoleSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
+        // Asignar Super Admin
+        User::where('email', 'admin@admin.com')->first()?->syncRoles(['superadmin']);
 
-        $adminRole = Role::firstOrCreate(['name' => 'admin']);
+        // Asignar Administradores de Área
+        User::whereIn('email', ['admin.soporte@empresa.com', 'admin.sistemas@empresa.com'])
+            ->get()
+            ->each(fn($user) => $user->syncRoles(['admin']));
 
-        // Lista de permisos
-        $permissions = [
-            'crear prioridad',
-            'editar prioridad',
-            'eliminar prioridad',
-            'crear plan_sla',
-            'editar plan_sla',
-            'eliminar plan_sla',
-            'ver dashboard',
-            'gestionar usuarios',
+        // Asignar Agentes (Técnicos)
+        User::whereIn('email', ['tecnico1@empresa.com', 'tecnico2@empresa.com'])
+            ->get()
+            ->each(fn($user) => $user->syncRoles(['agent']));
 
-        ];
+        // Asignar Usuarios Solicitantes
+        User::whereIn('email', ['juan.perez@empresa.com', 'ana.martinez@empresa.com'])
+            ->get()
+            ->each(fn($user) => $user->syncRoles(['user']));
 
-        foreach ($permissions as $permission) {
-            Permission::firstOrCreate(['name' => $permission]);
-        }
-
-        $adminRole->syncPermissions(Permission::all());
-
-        $user = User::find(1);
-        if ($user) {
-            $user->assignRole($adminRole);
-        }
     }
 }

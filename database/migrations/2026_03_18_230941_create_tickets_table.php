@@ -24,14 +24,13 @@ return new class extends Migration
             $table->string('email', 100);
             $table->string('subject', 200);
             $table->text('message');
-            $table->string('attach', 255);
-            $table->date('expiration_date');
-            $table->date('closing_date');
+            $table->date('expiration_date')->nullable();
+            $table->date('closing_date')->nullable();
             $table->foreignIdFor(User::class, 'requesting_user')->constrained();
             $table->foreignIdFor(User::class, 'assigned_user')->nullable()->constrained();
             $table->foreignIdFor(HelpTopic::class)->constrained();
-            $table->foreignIdFor(Priority::class)->constrained();
-            $table->foreignIdFor(SlaPlan::class)->constrained();
+            $table->foreignIdFor(Priority::class)->nullable()->constrained();
+            $table->foreignIdFor(SlaPlan::class)->nullable()->constrained();
             $table->foreignIdFor(Department::class)->constrained();
             $table->foreignIdFor(Status::class)->constrained();
             $table->softDeletes();

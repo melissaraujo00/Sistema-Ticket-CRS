@@ -9,17 +9,18 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class TicketSolution extends Model
 {
     use SoftDeletes;
-    
+
     protected $fillable = [
         'ticket_id',
         'user_id',
         'message',
         'date',
-        'attach',
-        'type'
+        'solution_type_id',
     ];
 
-    protected $casts = [ 'type' => TicketSolution::class];
+    protected $casts = [
+        'date' => 'date',
+    ];
 
     public function ticket(): BelongsTo
     {
@@ -29,4 +30,17 @@ class TicketSolution extends Model
     public function user():BelongsTo{
         return $this->belongsTo(User::class);
     }
+
+    public function attachments()
+    {
+        return $this->morphMany(Attachment::class, 'attachable');
+    }
+
+    
+
+    public function solutionType()
+    {
+        return $this->belongsTo(SolutionType::class);
+    }
+
 }
