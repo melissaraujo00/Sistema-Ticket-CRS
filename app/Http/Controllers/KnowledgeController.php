@@ -12,13 +12,25 @@ class KnowledgeController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $knowledges = knowledge::with('category')->get();
+        $knowledges = knowledge::with('category')
+            ->when($request->search, function ($query, $search) {
+                $query->where('title', 'like', "%{$search}%");
+            })
+            ->when($request->category_id, function ($query, $categoryId) {
+                $query->where('category_id', $categoryId);
+            })
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
         $categories = Category::all();
+
         return Inertia::render('faqs/Faq', [
             'knowledges' => $knowledges,
             'categories' => $categories,
+            'filters' => $request->only(['search', 'category_id']),
         ]);
     }
 
@@ -35,7 +47,16 @@ class KnowledgeController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'title' => 'required|string|max:100',
+            'content_response' => 'required|string|max:255',
+            'category_id' => 'required|exists:categories,id',
+            'creation_date' => 'required|date',
+        ]);
+
+        knowledge::create($validated);
+
+        return back()->with('success', 'FAQ creada con éxito.');
     }
 
     /**
@@ -43,7 +64,7 @@ class KnowledgeController extends Controller
      */
     public function show(knowledge $knowledge)
     {
-        //
+        return response()->json($knowledge->load('category'));
     }
 
     /**
@@ -51,22 +72,33 @@ class KnowledgeController extends Controller
      */
     public function edit(knowledge $knowledge)
     {
-        //
+        return response()->json($knowledge);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, knowledge $knowledge)
+    public function update(Request $request, knowledge $faq)
     {
-        //
+        $validated = $request->validate([
+            'title' => 'required|string|max:100',
+            'content_response' => 'required|string|max:255',
+            'category_id' => 'required|exists:categories,id',
+            'creation_date' => 'required|date',
+        ]);
+
+        $faq->update($validated);
+
+        return back()->with('success', 'FAQ actualizada con éxito.');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(knowledge $knowledge)
+    public function destroy(knowledge $faq)
     {
-        //
+        $faq->delete();
+
+        return back()->with('success', 'FAQ eliminada con éxito.');
     }
 }

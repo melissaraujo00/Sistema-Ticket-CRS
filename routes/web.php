@@ -102,11 +102,12 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('users', UserController::class);
     });
 
-    Route::middleware(['role:admin|superadmin'])->group(function () {
+    // Knowledge
+    Route::middleware(['role:superadmin'])->group(function () {
         Route::resource('category', CategoryController::class);
     });
 
-    Route::middleware(['role:admin|superadmin'])->group(function () {
+    Route::middleware(['role:superadmin'])->group(function () {
         Route::resource('faq', KnowledgeController::class);
     });
 });

@@ -2,6 +2,7 @@ import { useForm } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useEffect } from 'react';
 
 export default function CategoryForm({ category = null, onSuccess }) {
@@ -9,12 +10,16 @@ export default function CategoryForm({ category = null, onSuccess }) {
 
     const { data, setData, post, put, processing, errors, reset } = useForm({
         name: category?.name || '',
+        description: category?.description || '',
     });
 
     // Sincronizar el formulario si la categoría cambia (cuando se abre para editar)
     useEffect(() => {
         if (category) {
-            setData('name', category.name);
+            setData({
+                name: category.name,
+                description: category.description || '',
+            });
         } else {
             reset();
         }
@@ -52,6 +57,19 @@ export default function CategoryForm({ category = null, onSuccess }) {
                     autoFocus
                 />
                 {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
+            </div>
+
+            <div className="grid gap-2">
+                <Label htmlFor="description">Descripción (Opcional)</Label>
+                <Textarea
+                    id="description"
+                    value={data.description}
+                    onChange={(e) => setData('description', e.target.value)}
+                    placeholder="Describe de qué trata esta categoría..."
+                    className={errors.description ? 'border-red-500' : ''}
+                    rows={3}
+                />
+                {errors.description && <p className="text-xs text-red-500">{errors.description}</p>}
             </div>
 
             <div className="flex justify-end gap-2 pt-4">

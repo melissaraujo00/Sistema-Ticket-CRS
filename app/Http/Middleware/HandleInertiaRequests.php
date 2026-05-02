@@ -81,9 +81,9 @@ class HandleInertiaRequests extends Middleware
             }
 
             // ==========================================
-            // 3. FAQs (Acceso solo para admin o superadmin)
+            // 3. FAQs (Acceso solo para superadmin)
             // ==========================================
-            if ($user->hasRole('superadmin|admin')) {
+            if ($user->hasRole('superadmin')) {
                 $nav[] = ['title' => 'FAQs', 'url' => route('faq.index'), 'icon' => 'BookOpen'];
             }
 
