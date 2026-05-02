@@ -9,7 +9,6 @@ export default function AgentDashboard() {
     const [ticketsAsignados, setTicketsAsignados] = useState([]);
     const [historialFinalizados, setHistorialFinalizados] = useState([]);
     const [estadisticas, setEstadisticas] = useState(null);
-    const [diagnosticTypes, setDiagnosticTypes] = useState([]);
 
     const [activeView, setActiveView] = useState('main');
     const [searchTerm, setSearchTerm] = useState('');
@@ -32,51 +31,14 @@ export default function AgentDashboard() {
     });
     const [validationErrors, setValidationErrors] = useState({});
 
-    // Función para cargar tipos de diagnóstico según el ticket
-    const loadDiagnosticTypesForTicket = async (ticketId) => {
-        try {
-            const ticketResponse = await axios.get(`/agent/ver-ticket/${ticketId}`);
-            const ticket = ticketResponse.data.ticket;
-            
-            if (ticket && ticket.temas_de_ayuda) {
-                const helpTopics = await axios.get('/agent/help-topics');
-                const helpTopic = helpTopics.data.find(ht => ht.name_topic === ticket.temas_de_ayuda);
-                
-                if (helpTopic) {
-                    const diagnosticResponse = await axios.get(`/agent/solution-types/help-topic/${helpTopic.id}`);
-                    setDiagnosticTypes(diagnosticResponse.data || []);
-                } else {
-                    const allTypesResponse = await axios.get('/agent/solution-types');
-                    setDiagnosticTypes(allTypesResponse.data || []);
-                }
-            } else {
-                const allTypesResponse = await axios.get('/agent/solution-types');
-                setDiagnosticTypes(allTypesResponse.data || []);
-            }
-        } catch (error) {
-            console.error('Error al cargar tipos de diagnóstico:', error);
-            try {
-                const fallbackResponse = await axios.get('/agent/solution-types');
-                setDiagnosticTypes(fallbackResponse.data || []);
-            } catch (fallbackError) {
-                console.error('Error al cargar tipos fallback:', fallbackError);
-                setDiagnosticTypes([]);
-            }
-        }
-    };
-
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [dashboardResponse, diagnosticTypesResponse] = await Promise.all([
-                    axios.get('/agent/dashboard-data'),
-                    axios.get('/agent/solution-types')
-                ]);
+                const response = await axios.get('/agent/dashboard-data');
 
-                setTicketsAsignados(dashboardResponse.data.tickets_asignados || []);
-                setHistorialFinalizados(dashboardResponse.data.historial_finalizados || []);
-                setEstadisticas(dashboardResponse.data.estadisticas || null);
-                setDiagnosticTypes(diagnosticTypesResponse.data || []);
+                setTicketsAsignados(response.data.tickets_asignados || []);
+                setHistorialFinalizados(response.data.historial_finalizados || []);
+                setEstadisticas(response.data.estadisticas || null);
             } catch (error) {
                 console.error('Error al obtener datos del dashboard:', error);
             }
@@ -541,10 +503,8 @@ export default function AgentDashboard() {
                                                     } else {
                                                         return (
                                                             <button
-                                                                onClick={async () => {
+                                                                onClick={() => {
                                                                     setSelectedTicketId(row.id);
-                                                                    // Cargar tipos de diagnóstico específicos para este ticket
-                                                                    await loadDiagnosticTypesForTicket(row.id);
                                                                     setShowDiagnosticPanel(true);
                                                                     setTimeout(() => {
                                                                         document
@@ -600,93 +560,133 @@ export default function AgentDashboard() {
                     <div className="p-6">
                         <p className="mb-4 text-[13px] font-medium text-gray-700">Seleccione el tipo de diagnóstico realizado (Opcional):</p>
                         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                            {diagnosticTypes.map((type) => {
-                                const isSelected = tipoDiagnostico === type.name;
-                                
-                                // Asignar iconos según el tipo de diagnóstico
-                                const getIcon = (typeName) => {
-                                    const name = typeName.toLowerCase();
-                                    if (name.includes('hardware')) return Monitor;
-                                    if (name.includes('software')) return Computer;
-                                    if (name.includes('red')) return Globe;
-                                    if (name.includes('médico') || name.includes('medico')) return Activity;
-                                    if (name.includes('emergencias')) return AlertCircle;
-                                    if (name.includes('infraestructura')) return CheckCircle2;
-                                    if (name.includes('comunicación') || name.includes('comunicacion')) return Computer;
-                                    return Monitor; // Icono por defecto
-                                };
-                                
-                                const getColorClasses = (typeName) => {
-                                    const name = typeName.toLowerCase();
-                                    if (name.includes('hardware') || name.includes('software') || name.includes('red')) {
-                                        return isSelected 
-                                            ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
-                                            : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50';
-                                    }
-                                    if (name.includes('médico') || name.includes('medico')) {
-                                        return isSelected 
-                                            ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
-                                            : 'border-gray-300 hover:border-red-400 hover:bg-red-50';
-                                    }
-                                    if (name.includes('emergencias')) {
-                                        return isSelected 
-                                            ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-200'
-                                            : 'border-gray-300 hover:border-orange-400 hover:bg-orange-50';
-                                    }
-                                    if (name.includes('infraestructura')) {
-                                        return isSelected 
-                                            ? 'border-green-500 bg-green-50 ring-2 ring-green-200'
-                                            : 'border-gray-300 hover:border-green-400 hover:bg-green-50';
-                                    }
-                                    if (name.includes('comunicación') || name.includes('comunicacion')) {
-                                        return isSelected 
-                                            ? 'border-purple-500 bg-purple-50 ring-2 ring-purple-200'
-                                            : 'border-gray-300 hover:border-purple-400 hover:bg-purple-50';
-                                    }
-                                    return isSelected 
-                                        ? 'border-gray-500 bg-gray-50 ring-2 ring-gray-200'
-                                        : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50';
-                                };
-                                
-                                const getIconColor = (typeName) => {
-                                    const name = typeName.toLowerCase();
-                                    if (name.includes('hardware') || name.includes('software') || name.includes('red')) {
-                                        return isSelected ? 'text-blue-600' : 'text-black group-hover:text-blue-600';
-                                    }
-                                    if (name.includes('médico') || name.includes('medico')) {
-                                        return isSelected ? 'text-red-600' : 'text-black group-hover:text-red-600';
-                                    }
-                                    if (name.includes('emergencias')) {
-                                        return isSelected ? 'text-orange-600' : 'text-black group-hover:text-orange-600';
-                                    }
-                                    if (name.includes('infraestructura')) {
-                                        return isSelected ? 'text-green-600' : 'text-black group-hover:text-green-600';
-                                    }
-                                    if (name.includes('comunicación') || name.includes('comunicacion')) {
-                                        return isSelected ? 'text-purple-600' : 'text-black group-hover:text-purple-600';
-                                    }
-                                    return isSelected ? 'text-gray-600' : 'text-black group-hover:text-gray-600';
-                                };
-                                
-                                const Icon = getIcon(type.name);
-                                
-                                return (
-                                    <button
-                                        key={type.id}
-                                        onClick={() => {
-                                            setTipoDiagnostico(type.name);
-                                            setShowCustomDiagnostic(false);
-                                        }}
-                                        className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${getColorClasses(type.name)}`}
-                                    >
-                                        <span className="mb-1 text-sm font-bold text-gray-800">{type.name}</span>
-                                        <span className="mb-3 text-center text-[10px] leading-tight text-gray-500">{type.description}</span>
-                                        <Icon
-                                            className={`h-8 w-8 transition-colors ${getIconColor(type.name)}`}
-                                        />
-                                    </button>
-                                );
-                            })}
+                            <button
+                                onClick={() => {
+                                    setTipoDiagnostico('Problema de Hardware');
+                                    setShowCustomDiagnostic(false);
+                                }}
+                                className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${
+                                    tipoDiagnostico === 'Problema de Hardware'
+                                        ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+                                        : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                                }`}
+                            >
+                                <span className="mb-1 text-sm font-bold text-gray-800">Problema de Hardware</span>
+                                <span className="mb-3 text-center text-[10px] leading-tight text-gray-500">Falla en componentes físicos</span>
+                                <Monitor
+                                    className={`h-8 w-8 transition-colors ${tipoDiagnostico === 'Problema de Hardware' ? 'text-blue-600' : 'text-black group-hover:text-blue-600'}`}
+                                />
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    setTipoDiagnostico('Problema de Software');
+                                    setShowCustomDiagnostic(false);
+                                }}
+                                className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${
+                                    tipoDiagnostico === 'Problema de Software'
+                                        ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+                                        : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                                }`}
+                            >
+                                <span className="mb-1 text-sm font-bold text-gray-800">Problema de Software</span>
+                                <span className="mb-3 text-center text-[10px] leading-tight text-gray-500">Falla en sistema o aplicaciones</span>
+                                <div
+                                    className={`rounded p-1 text-xs font-bold transition-colors ${tipoDiagnostico === 'Problema de Software' ? 'bg-blue-600 text-white' : 'bg-black text-white group-hover:bg-blue-600'}`}
+                                >
+                                    SW
+                                </div>
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    setTipoDiagnostico('Problema de Red');
+                                    setShowCustomDiagnostic(false);
+                                }}
+                                className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${
+                                    tipoDiagnostico === 'Problema de Red'
+                                        ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+                                        : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                                }`}
+                            >
+                                <span className="mb-1 text-sm font-bold text-gray-800">Problema de Red</span>
+                                <span className="mb-3 text-center text-[10px] leading-tight text-gray-500">Conexión e internet</span>
+                                <Globe
+                                    className={`h-8 w-8 transition-colors ${tipoDiagnostico === 'Problema de Red' ? 'text-blue-600' : 'text-black group-hover:text-blue-600'}`}
+                                />
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    setTipoDiagnostico('Equipo Médico');
+                                    setShowCustomDiagnostic(false);
+                                }}
+                                className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${
+                                    tipoDiagnostico === 'Equipo Médico'
+                                        ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
+                                        : 'border-gray-300 hover:border-red-400 hover:bg-red-50'
+                                }`}
+                            >
+                                <span className="mb-1 text-sm font-bold text-gray-800">Equipo Médico</span>
+                                <span className="mb-3 text-center text-[10px] leading-tight text-gray-500">Equipos de salud y diagnóstico</span>
+                                <Activity
+                                    className={`h-8 w-8 transition-colors ${tipoDiagnostico === 'Equipo Médico' ? 'text-red-600' : 'text-black group-hover:text-red-600'}`}
+                                />
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    setTipoDiagnostico('Sistema de Emergencias');
+                                    setShowCustomDiagnostic(false);
+                                }}
+                                className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${
+                                    tipoDiagnostico === 'Sistema de Emergencias'
+                                        ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-200'
+                                        : 'border-gray-300 hover:border-orange-400 hover:bg-orange-50'
+                                }`}
+                            >
+                                <span className="mb-1 text-sm font-bold text-gray-800">Sistema de Emergencias</span>
+                                <span className="mb-3 text-center text-[10px] leading-tight text-gray-500">Comunicaciones y alertas</span>
+                                <AlertCircle
+                                    className={`h-8 w-8 transition-colors ${tipoDiagnostico === 'Sistema de Emergencias' ? 'text-orange-600' : 'text-black group-hover:text-orange-600'}`}
+                                />
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    setTipoDiagnostico('Infraestructura');
+                                    setShowCustomDiagnostic(false);
+                                }}
+                                className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${
+                                    tipoDiagnostico === 'Infraestructura'
+                                        ? 'border-green-500 bg-green-50 ring-2 ring-green-200'
+                                        : 'border-gray-300 hover:border-green-400 hover:bg-green-50'
+                                }`}
+                            >
+                                <span className="mb-1 text-sm font-bold text-gray-800">Infraestructura</span>
+                                <span className="mb-3 text-center text-[10px] leading-tight text-gray-500">Instalaciones y servicios</span>
+                                <CheckCircle2
+                                    className={`h-8 w-8 transition-colors ${tipoDiagnostico === 'Infraestructura' ? 'text-green-600' : 'text-black group-hover:text-green-600'}`}
+                                />
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    setTipoDiagnostico('Sistema de Comunicación');
+                                    setShowCustomDiagnostic(false);
+                                }}
+                                className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${
+                                    tipoDiagnostico === 'Sistema de Comunicación'
+                                        ? 'border-purple-500 bg-purple-50 ring-2 ring-purple-200'
+                                        : 'border-gray-300 hover:border-purple-400 hover:bg-purple-50'
+                                }`}
+                            >
+                                <span className="mb-1 text-sm font-bold text-gray-800">Sistema de Comunicación</span>
+                                <span className="mb-3 text-center text-[10px] leading-tight text-gray-500">Radios y teléfonos</span>
+                                <Computer
+                                    className={`h-8 w-8 transition-colors ${tipoDiagnostico === 'Sistema de Comunicación' ? 'text-purple-600' : 'text-black group-hover:text-purple-600'}`}
+                                />
+                            </button>
 
                             <button
                                 onClick={() => {

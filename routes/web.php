@@ -9,8 +9,6 @@ use App\Http\Controllers\SlaPlanController;
 use App\Http\Controllers\PriorityController;
 use App\Http\Controllers\TecnicoController;
 use App\Http\Controllers\TicketController;
-use App\Http\Controllers\QualificationController;
-use App\Http\Controllers\SolutionTypeController;
 
 // ==========================================
 // 1. RUTAS PÚBLICAS
@@ -85,16 +83,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/ver-ticket/{id}', [TecnicoController::class, 'verTicket']);
         Route::post('/ticket/{id}/diagnostico', [TecnicoController::class, 'guardarDiagnostico']);
         Route::post('/ticket/{id}/no-resolver', [TecnicoController::class, 'noPuedeResolver']);
-        
-        // Rutas para tipos de diagnóstico
-        Route::get('/solution-types', [SolutionTypeController::class, 'index']);
-        Route::get('/solution-types/department/{departmentId}', [SolutionTypeController::class, 'getByDepartment']);
-        Route::get('/solution-types/help-topic/{helpTopicId}', [SolutionTypeController::class, 'getByHelpTopic']);
-        
-        // Ruta para obtener help topics
-        Route::get('/help-topics', function () {
-            return response()->json(\App\Models\HelpTopic::all(['id', 'name_topic']));
-        });
     });
 
     // --- E. CATÁLOGOS (solo usuarios con permiso) ---
@@ -107,8 +95,6 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['permission:manage_users'])->group(function () {
         Route::resource('users', UserController::class);
     });
-
-    Route::post('/qualifications', [QualificationController::class, 'store']);
 });
 
 // ==========================================

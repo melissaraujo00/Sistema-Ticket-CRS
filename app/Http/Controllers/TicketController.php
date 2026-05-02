@@ -10,7 +10,6 @@ use App\Models\Priority;
 use App\Models\SlaPlan;
 use App\Models\Status;
 use App\Models\Ticket;
-use App\Models\TicketSolution;
 use App\Models\User;
 use App\Notifications\NewTicketNotification;
 use App\Notifications\TicketAssignedNotification;
@@ -37,11 +36,9 @@ class TicketController extends Controller
         $tickets = Ticket::with(['department', 'assignedUser', 'status'])
                         ->orderBy('created_at', 'desc')
                         ->get();
-        
 
         return Inertia::render('tickets/index', [
             'tickets' => $tickets,
-            
         ]);
     }
 
@@ -174,17 +171,9 @@ class TicketController extends Controller
                         ->where('requesting_user', auth()->id())
                         ->orderBy('created_at', 'desc')
                         ->get();
-        $resueltos = TicketSolution::with(['ticket','user','ticket.department'])
-                        ->whereHas('ticket', function($query) {
-                            $query->where('requesting_user', auth()->id());
-                        })
-                        ->whereDoesntHave('ticket.qualification')
-                        ->orderBy('created_at', 'desc')
-                        ->get();
-        
+
         return Inertia::render('tickets/index', [
             'tickets' => $tickets,
-            'resueltos'=>$resueltos
         ]);
     }
 

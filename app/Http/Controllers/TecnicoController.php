@@ -456,17 +456,10 @@ class TecnicoController extends Controller
             ], 404);
         }
 
-        //Buscar si el tipo de diagnóstico ya existe
-        $solutionType = SolutionType::where('name', $request->tipo_diagnostico)->first();
-        
-        //Si no existe, crearlo (para tipos personalizados)
-        if (!$solutionType) {
-            $solutionType = SolutionType::create([
-                'name' => $request->tipo_diagnostico,
-                'description' => 'Tipo de diagnóstico creado desde diagnóstico técnico',
-                'is_active' => true,
-            ]);
-        }
+        $solutionType = SolutionType::firstOrCreate(
+            ['name' => $request->tipo_diagnostico],
+            ['description' => 'Creado desde diagnóstico técnico']
+        );
 
         $solution = TicketSolution::create([
             'ticket_id' => $ticket->id,

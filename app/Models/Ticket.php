@@ -72,7 +72,7 @@ class Ticket extends Model
 
     public function qualification():HasOne
     {
-        return $this->hasOne(Qualification::class,'ticket_id', 'id') ;
+        return $this->hasOne(Qualification::class);
     }
 
     public function ticketSolutions(): HasMany
