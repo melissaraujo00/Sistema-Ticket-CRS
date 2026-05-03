@@ -81,7 +81,7 @@ class TecnicoController extends Controller
             $statusPendienteRevision = Status::where('name', 'Pendiente Revisión')->first();
         }
 
-        $query = Ticket::with(['priority', 'department', 'status', 'requestingUser', 'ticketSolutions', 'histories'])
+        $query = Ticket::with(['priority', 'department', 'status', 'requestingUser', 'ticketSolutions', 'histories', 'helpTopic'])
             ->where('assigned_user', $agent->id);
 
         if ($statusPendienteRevision) {
@@ -117,13 +117,16 @@ class TecnicoController extends Controller
                 'prioridad' => $ticket->priority->name ?? 'N/A',
                 'creado_por' => $ticket->requestingUser->name ?? 'N/A',
                 'fecha_creacion' => $ticket->creation_date,
-                'tiene_diagnostico' => $ticket->ticketSolutions->count() > 0 || $ticket->histories->where('action_type', ActionTypeEnum::STATUS_CHANGED)->whereNotNull('internal_note')->count() > 0
+                'tiene_diagnostico' => $ticket->ticketSolutions->count() > 0 || $ticket->histories->where('action_type', ActionTypeEnum::STATUS_CHANGED)->whereNotNull('internal_note')->count() > 0,
+                'help_topic_id' => $ticket->help_topic_id,
+                'help_topic_name' => $ticket->helpTopic->name_topic ?? 'N/A'
             ];
         })->values();
 
         return response()->json([
             'tickets_asignados' => $ticketsMapeados,
             'historial_finalizados' => $historialFinalizados,
+            'solution_types' => SolutionType::where('department_id', $agent->department_id)->where('is_active', true)->get(),
             'estadisticas' => [
                 'tasa_resolucion_porcentaje' => round($tasaResolucion, 2),
                 'total_tickets_cola' => $totalEnCola,
