@@ -1,4 +1,3 @@
-/* global route */
 import { router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 

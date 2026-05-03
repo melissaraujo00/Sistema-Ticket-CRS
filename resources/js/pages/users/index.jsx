@@ -1,4 +1,3 @@
-/* global route */
 import DeleteEntityModal from '@/components/DeleteEntityModal';
 import { GenericTable } from '@/components/GenericTable';
 import { Button } from '@/components/ui/button';

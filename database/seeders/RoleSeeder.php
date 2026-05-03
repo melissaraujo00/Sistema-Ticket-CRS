@@ -14,9 +14,8 @@ class RoleSeeder extends Seeder
             'manage_users', 'manage_roles_permissions', 'manage_catalogs',
             'view_global_dashboard', 'view_audit_logs', 'manage_area_tickets',
             'assign_tickets', 'view_area_dashboard', 'view_assigned_tickets',
-            'solve_tickets', 'return_tickets', 'create_tickets',
-            'view_own_tickets', 'rate_tickets', 'eliminar plan_sla',
-            'ver dashboard',
+            'solve_tickets', 'return_tickets',
+            'view_own_tickets', 'rate_tickets',
             'gestionar usuarios',
             'ver prioridades',
             'ver sla plans',
@@ -28,8 +27,9 @@ class RoleSeeder extends Seeder
             'eliminar plan_sla',
             'ver dashboard',
             'ver tickets',
-            'view_own_tickets',
-            'create_tickets'
+            'create_tickets',
+            'view_all_tickets',
+            'manage_areas', 'manage_departments', 'manage_divisions',
         ];
 
         foreach ($permissions as $permissionName) {

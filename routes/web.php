@@ -9,6 +9,7 @@ use App\Http\Controllers\SlaPlanController;
 use App\Http\Controllers\PriorityController;
 use App\Http\Controllers\TecnicoController;
 use App\Http\Controllers\TicketController;
+use App\Http\Controllers\AreaController;
 
 // ==========================================
 // 1. RUTAS PÚBLICAS
@@ -30,7 +31,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
     Route::get('/notifications/fetch', [NotificationController::class, 'fetch'])->name('notifications.fetch');
 
-    
+
 
     Route::post('/tickets/{ticket}/asignar', [TicketController::class, 'assign'])->name('tickets.assign');
     // ==========================================
@@ -94,6 +95,12 @@ Route::middleware(['auth'])->group(function () {
     // --- F. GESTIÓN DE USUARIOS ---
     Route::middleware(['permission:manage_users'])->group(function () {
         Route::resource('users', UserController::class);
+    });
+
+    // --- G. ESTRUCTURA ORGANIZACIONAL ---
+    Route::middleware(['permission:manage_areas'])->group(function () {
+        // Exceptuamos create, show y edit porque usaremos modales en React
+        Route::resource('areas', AreaController::class)->except(['create', 'show', 'edit']);
     });
 });
 
