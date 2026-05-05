@@ -103,9 +103,18 @@ class TecnicoController extends Controller
                 && strpos($name, 'no resuelto') === false;
         })->count();
 
-        $totalEnProceso = $statusEnProceso ? $tickets->where('status_id', $statusEnProceso->id)->count() : 0;
+        $statusAsignado = $statuses['asignado'] ?? null;
+
+        $totalAsignadosCount = $statusAsignado ? $tickets->where('status_id', $statusAsignado->id)->count() : 0;
+        $totalEnProceso = $tickets->filter(function ($t) use ($statusEnProceso, $statusAsignado) {
+            $statusId = $t->status_id;
+            return ($statusEnProceso && $statusId == $statusEnProceso->id) || 
+                   ($statusAsignado && $statusId == $statusAsignado->id);
+        })->count();
+
         $totalEnCola = $ticketsActivos->count();
-        $tasaResolucion = $totalAsignados > 0 ? ($totalResueltos / $totalAsignados) * 100 : 0;
+        $totalTicketsTotal = $tickets->count();
+        $tasaResolucion = $totalTicketsTotal > 0 ? ($totalResueltos / $totalTicketsTotal) * 100 : 0;
 
         // Mapear tickets activos para la tabla principal
         $ticketsMapeados = $ticketsActivos->map(function ($ticket) {
@@ -117,7 +126,7 @@ class TecnicoController extends Controller
                 'prioridad' => $ticket->priority->name ?? 'N/A',
                 'creado_por' => $ticket->requestingUser->name ?? 'N/A',
                 'fecha_creacion' => $ticket->creation_date,
-                'tiene_diagnostico' => $ticket->ticketSolutions->count() > 0 || $ticket->histories->where('action_type', ActionTypeEnum::STATUS_CHANGED)->whereNotNull('internal_note')->count() > 0,
+                'tiene_diagnostico' => $ticket->ticketSolutions->count() > 0 || ($ticket->status->name !== 'Asignado' && $ticket->status->name !== 'En Proceso' && $ticket->histories->where('action_type', ActionTypeEnum::NOTE_ADDED)->whereNotNull('internal_note')->count() > 0),
                 'help_topic_id' => $ticket->help_topic_id,
                 'help_topic_name' => $ticket->helpTopic->name_topic ?? 'N/A'
             ];
@@ -131,7 +140,7 @@ class TecnicoController extends Controller
                 'tasa_resolucion_porcentaje' => round($tasaResolucion, 2),
                 'total_tickets_cola' => $totalEnCola,
                 'total_tickets_proceso' => $totalEnProceso,
-                'total_tickets_asignados' => $totalAsignados,
+                'total_tickets_asignados' => $totalAsignadosCount,
                 'total_tickets_resueltos' => $totalResueltos
             ]
         ]);
@@ -156,12 +165,11 @@ class TecnicoController extends Controller
         $statusEnProceso = Status::where('name', 'like', '%proceso%')
             ->orWhere('name', 'like', '%Proceso%')
             ->orWhere('name', 'like', '%progreso%')
-            ->first();
+            ->orWhere('name', 'Asignado')
+            ->pluck('id');
 
         $total = Ticket::where('assigned_user', $agent->id)
-            ->when($statusEnProceso, function ($query) use ($statusEnProceso) {
-                return $query->where('status_id', $statusEnProceso->id);
-            })
+            ->whereIn('status_id', $statusEnProceso)
             ->count();
 
         return response()->json([
@@ -293,13 +301,12 @@ class TecnicoController extends Controller
         $statusEnProceso = Status::where('name', 'like', '%proceso%')
             ->orWhere('name', 'like', '%Proceso%')
             ->orWhere('name', 'like', '%progreso%')
-            ->first();
+            ->orWhere('name', 'Asignado')
+            ->pluck('id');
 
         $tickets = Ticket::with(['priority', 'department', 'status'])
             ->where('assigned_user', $agent->id)
-            ->when($statusEnProceso, function ($query) use ($statusEnProceso) {
-                return $query->where('status_id', $statusEnProceso->id);
-            })
+            ->whereIn('status_id', $statusEnProceso)
             ->orderBy('creation_date', 'desc')
             ->get();
 
@@ -398,7 +405,7 @@ class TecnicoController extends Controller
                     'type' => $a->file_type
                 ])
             ]),
-            'incidencias' => $ticket->histories->where('action_type', ActionTypeEnum::STATUS_CHANGED)->whereNotNull('internal_note')->map(function ($history) {
+            'incidencias' => $ticket->histories->where('action_type', ActionTypeEnum::NOTE_ADDED)->map(function ($history) {
                 return [
                     'internal_note' => $history->internal_note,
                     'fecha' => $history->created_at,
@@ -524,9 +531,10 @@ class TecnicoController extends Controller
             ->orWhere('name', 'like', '%resuelto%')
             ->first();
 
-        $statusEnProceso = Status::where('name', 'like', '%proceso%')
+        $statusEnProcesoIds = Status::where('name', 'like', '%proceso%')
             ->orWhere('name', 'like', '%progreso%')
-            ->first();
+            ->orWhere('name', 'Asignado')
+            ->pluck('id');
 
         $totalAsignados = Ticket::where('assigned_user', $agent->id)->count();
 
@@ -534,9 +542,9 @@ class TecnicoController extends Controller
             ? Ticket::where('assigned_user', $agent->id)->where('status_id', $statusCerrado->id)->count()
             : 0;
 
-        $totalEnProceso = $statusEnProceso
-            ? Ticket::where('assigned_user', $agent->id)->where('status_id', $statusEnProceso->id)->count()
-            : 0;
+        $totalEnProceso = Ticket::where('assigned_user', $agent->id)
+            ->whereIn('status_id', $statusEnProcesoIds)
+            ->count();
 
         $totalEnCola = $statusCerrado
             ? Ticket::where('assigned_user', $agent->id)->where('status_id', '!=', $statusCerrado->id)->count()
@@ -583,7 +591,7 @@ class TecnicoController extends Controller
             TicketHistory::create([
                 'ticket_id' => $ticket->id,
                 'user_id' => $agent->id,
-                'action_type' => ActionTypeEnum::STATUS_CHANGED,
+                'action_type' => ActionTypeEnum::NOTE_ADDED,
                 'internal_note' => $request->internal_note,
                 'previous_department' => $ticket->department_id,
                 'assigned_user' => $ticket->assigned_user,
