@@ -65,10 +65,6 @@ class HandleInertiaRequests extends Middleware
                 $nav[] = ['title' => 'Mis Tickets', 'url' => route('tickets.my'), 'icon' => 'Ticket'];
             }
 
-            // 2.2 Crear un nuevo ticket (permiso básico)
-            if ($user->can('create_tickets')) {
-                $nav[] = ['title' => 'Nuevo Ticket', 'url' => route('tickets.create'), 'icon' => 'PlusCircle'];
-            }
 
             // 2.3 Ver todos los tickets (solo roles con permiso 'view_all_tickets')
             if ($user->can('view_all_tickets')) {
@@ -98,6 +94,7 @@ class HandleInertiaRequests extends Middleware
                     ]
                 ];
             }
+
 
             // ==========================================
             // 5. USUARIOS (permiso específico)

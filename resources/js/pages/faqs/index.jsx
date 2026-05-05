@@ -2,7 +2,7 @@ import AppLayout from '@/layouts/app-layout';
 import { Head } from '@inertiajs/react';
 
 // Importamos el mismo componente que se usa en la portada pública
-import FaqSection from '@/components/Welcome/FaqSection';
+import FaqSection from '@/components/welcome/FaqSection';
 
 export default function Index({ knowledges = [] }) {
     // Breadcrumbs para la barra superior

@@ -22,9 +22,7 @@ class StoreTicketIncidentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'avances' => 'required|string|min:10',
-            'justificacion' => 'required|string|min:10',
-            'adjuntos.*' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,pdf,mp4,mov,txt,log',
+            'internal_note' => 'required|string|min:10',
         ];
     }
 
@@ -34,12 +32,8 @@ class StoreTicketIncidentRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'avances.required' => 'Es obligatorio detallar los avances realizados.',
-            'avances.min' => 'La descripción de los avances debe tener al menos 10 caracteres.',
-            'justificacion.required' => 'Debe proporcionar una justificación técnica.',
-            'justificacion.min' => 'La justificación debe ser más descriptiva (mínimo 10 caracteres).',
-            'adjuntos.*.max' => 'Cada archivo de evidencia no debe superar los 10MB.',
-            'adjuntos.*.mimes' => 'Solo se permiten archivos de imagen, PDF, video o texto/log.',
+            'internal_note.required' => 'Es obligatorio detallar la nota interna.',
+            'internal_note.min' => 'La nota interna debe tener al menos 10 caracteres.',
         ];
     }
 }

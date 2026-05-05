@@ -9,6 +9,7 @@ export default function AgentDashboard() {
     const [ticketsAsignados, setTicketsAsignados] = useState([]);
     const [historialFinalizados, setHistorialFinalizados] = useState([]);
     const [estadisticas, setEstadisticas] = useState(null);
+    const [solutionTypes, setSolutionTypes] = useState([]);
 
     const [activeView, setActiveView] = useState('main');
     const [searchTerm, setSearchTerm] = useState('');
@@ -25,9 +26,7 @@ export default function AgentDashboard() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showUnresolvedModal, setShowUnresolvedModal] = useState(false);
     const [unresolvedData, setUnresolvedData] = useState({
-        avances: '',
-        justificacion: '',
-        adjuntos: []
+        internal_note: ''
     });
     const [validationErrors, setValidationErrors] = useState({});
 
@@ -39,6 +38,7 @@ export default function AgentDashboard() {
                 setTicketsAsignados(response.data.tickets_asignados || []);
                 setHistorialFinalizados(response.data.historial_finalizados || []);
                 setEstadisticas(response.data.estadisticas || null);
+                setSolutionTypes(response.data.solution_types || []);
             } catch (error) {
                 console.error('Error al obtener datos del dashboard:', error);
             }
@@ -121,6 +121,7 @@ export default function AgentDashboard() {
             setTicketsAsignados(response.data.tickets_asignados || []);
             setHistorialFinalizados(response.data.historial_finalizados || []);
             setEstadisticas(response.data.estadisticas || null);
+            setSolutionTypes(response.data.solution_types || []);
 
             setTimeout(() => setDiagnosticStatus(null), 3000);
         } catch (error) {
@@ -136,19 +137,14 @@ export default function AgentDashboard() {
             
             setIsSubmitting(true);
             const formData = new FormData();
-            formData.append('avances', unresolvedData.avances);
-            formData.append('justificacion', unresolvedData.justificacion);
-            
-            unresolvedData.adjuntos.forEach(file => {
-                formData.append('adjuntos[]', file);
-            });
+            formData.append('internal_note', unresolvedData.internal_note);
 
             await axios.post(`/agent/ticket/${selectedTicketId}/no-resolver`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
             toast.success('Reporte de incidencia enviado con éxito');
-            setUnresolvedData({ avances: '', justificacion: '', adjuntos: [] });
+            setUnresolvedData({ internal_note: '' });
             setShowUnresolvedModal(false);
             setSelectedTicketId(null);
             setShowDiagnosticPanel(false);
@@ -157,6 +153,7 @@ export default function AgentDashboard() {
             setTicketsAsignados(response.data.tickets_asignados || []);
             setHistorialFinalizados(response.data.historial_finalizados || []);
             setEstadisticas(response.data.estadisticas || null);
+            setSolutionTypes(response.data.solution_types || []);
 
         } catch (error) {
             if (error.response && error.response.status === 422) {
@@ -560,133 +557,34 @@ export default function AgentDashboard() {
                     <div className="p-6">
                         <p className="mb-4 text-[13px] font-medium text-gray-700">Seleccione el tipo de diagnóstico realizado (Opcional):</p>
                         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                            <button
-                                onClick={() => {
-                                    setTipoDiagnostico('Problema de Hardware');
-                                    setShowCustomDiagnostic(false);
-                                }}
-                                className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${
-                                    tipoDiagnostico === 'Problema de Hardware'
-                                        ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
-                                        : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                                }`}
-                            >
-                                <span className="mb-1 text-sm font-bold text-gray-800">Problema de Hardware</span>
-                                <span className="mb-3 text-center text-[10px] leading-tight text-gray-500">Falla en componentes físicos</span>
-                                <Monitor
-                                    className={`h-8 w-8 transition-colors ${tipoDiagnostico === 'Problema de Hardware' ? 'text-blue-600' : 'text-black group-hover:text-blue-600'}`}
-                                />
-                            </button>
+                            {(() => {
+                                const activeTicket = ticketsAsignados.find(t => t.id === selectedTicketId);
+                                const availableDiagnostics = solutionTypes.filter(st => {
+                                    if (!activeTicket) return false;
+                                    return st.help_topic_id === activeTicket.help_topic_id;
+                                });
 
-                            <button
-                                onClick={() => {
-                                    setTipoDiagnostico('Problema de Software');
-                                    setShowCustomDiagnostic(false);
-                                }}
-                                className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${
-                                    tipoDiagnostico === 'Problema de Software'
-                                        ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
-                                        : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                                }`}
-                            >
-                                <span className="mb-1 text-sm font-bold text-gray-800">Problema de Software</span>
-                                <span className="mb-3 text-center text-[10px] leading-tight text-gray-500">Falla en sistema o aplicaciones</span>
-                                <div
-                                    className={`rounded p-1 text-xs font-bold transition-colors ${tipoDiagnostico === 'Problema de Software' ? 'bg-blue-600 text-white' : 'bg-black text-white group-hover:bg-blue-600'}`}
-                                >
-                                    SW
-                                </div>
-                            </button>
-
-                            <button
-                                onClick={() => {
-                                    setTipoDiagnostico('Problema de Red');
-                                    setShowCustomDiagnostic(false);
-                                }}
-                                className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${
-                                    tipoDiagnostico === 'Problema de Red'
-                                        ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
-                                        : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                                }`}
-                            >
-                                <span className="mb-1 text-sm font-bold text-gray-800">Problema de Red</span>
-                                <span className="mb-3 text-center text-[10px] leading-tight text-gray-500">Conexión e internet</span>
-                                <Globe
-                                    className={`h-8 w-8 transition-colors ${tipoDiagnostico === 'Problema de Red' ? 'text-blue-600' : 'text-black group-hover:text-blue-600'}`}
-                                />
-                            </button>
-
-                            <button
-                                onClick={() => {
-                                    setTipoDiagnostico('Equipo Médico');
-                                    setShowCustomDiagnostic(false);
-                                }}
-                                className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${
-                                    tipoDiagnostico === 'Equipo Médico'
-                                        ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
-                                        : 'border-gray-300 hover:border-red-400 hover:bg-red-50'
-                                }`}
-                            >
-                                <span className="mb-1 text-sm font-bold text-gray-800">Equipo Médico</span>
-                                <span className="mb-3 text-center text-[10px] leading-tight text-gray-500">Equipos de salud y diagnóstico</span>
-                                <Activity
-                                    className={`h-8 w-8 transition-colors ${tipoDiagnostico === 'Equipo Médico' ? 'text-red-600' : 'text-black group-hover:text-red-600'}`}
-                                />
-                            </button>
-
-                            <button
-                                onClick={() => {
-                                    setTipoDiagnostico('Sistema de Emergencias');
-                                    setShowCustomDiagnostic(false);
-                                }}
-                                className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${
-                                    tipoDiagnostico === 'Sistema de Emergencias'
-                                        ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-200'
-                                        : 'border-gray-300 hover:border-orange-400 hover:bg-orange-50'
-                                }`}
-                            >
-                                <span className="mb-1 text-sm font-bold text-gray-800">Sistema de Emergencias</span>
-                                <span className="mb-3 text-center text-[10px] leading-tight text-gray-500">Comunicaciones y alertas</span>
-                                <AlertCircle
-                                    className={`h-8 w-8 transition-colors ${tipoDiagnostico === 'Sistema de Emergencias' ? 'text-orange-600' : 'text-black group-hover:text-orange-600'}`}
-                                />
-                            </button>
-
-                            <button
-                                onClick={() => {
-                                    setTipoDiagnostico('Infraestructura');
-                                    setShowCustomDiagnostic(false);
-                                }}
-                                className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${
-                                    tipoDiagnostico === 'Infraestructura'
-                                        ? 'border-green-500 bg-green-50 ring-2 ring-green-200'
-                                        : 'border-gray-300 hover:border-green-400 hover:bg-green-50'
-                                }`}
-                            >
-                                <span className="mb-1 text-sm font-bold text-gray-800">Infraestructura</span>
-                                <span className="mb-3 text-center text-[10px] leading-tight text-gray-500">Instalaciones y servicios</span>
-                                <CheckCircle2
-                                    className={`h-8 w-8 transition-colors ${tipoDiagnostico === 'Infraestructura' ? 'text-green-600' : 'text-black group-hover:text-green-600'}`}
-                                />
-                            </button>
-
-                            <button
-                                onClick={() => {
-                                    setTipoDiagnostico('Sistema de Comunicación');
-                                    setShowCustomDiagnostic(false);
-                                }}
-                                className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${
-                                    tipoDiagnostico === 'Sistema de Comunicación'
-                                        ? 'border-purple-500 bg-purple-50 ring-2 ring-purple-200'
-                                        : 'border-gray-300 hover:border-purple-400 hover:bg-purple-50'
-                                }`}
-                            >
-                                <span className="mb-1 text-sm font-bold text-gray-800">Sistema de Comunicación</span>
-                                <span className="mb-3 text-center text-[10px] leading-tight text-gray-500">Radios y teléfonos</span>
-                                <Computer
-                                    className={`h-8 w-8 transition-colors ${tipoDiagnostico === 'Sistema de Comunicación' ? 'text-purple-600' : 'text-black group-hover:text-purple-600'}`}
-                                />
-                            </button>
+                                return availableDiagnostics.map(diag => (
+                                    <button
+                                        key={diag.id}
+                                        onClick={() => {
+                                            setTipoDiagnostico(diag.name);
+                                            setShowCustomDiagnostic(false);
+                                        }}
+                                        className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${
+                                            tipoDiagnostico === diag.name
+                                                ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+                                                : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                                        }`}
+                                    >
+                                        <span className="mb-1 text-sm font-bold text-gray-800 text-center">{diag.name}</span>
+                                        <span className="mb-3 text-center text-[10px] leading-tight text-gray-500">{diag.description || 'Diagnóstico del sistema'}</span>
+                                        <Activity
+                                            className={`h-8 w-8 transition-colors ${tipoDiagnostico === diag.name ? 'text-blue-600' : 'text-black group-hover:text-blue-600'}`}
+                                        />
+                                    </button>
+                                ));
+                            })()}
 
                             <button
                                 onClick={() => {
@@ -828,62 +726,16 @@ export default function AgentDashboard() {
                         
                         <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
                             <div>
-                                <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Avances Realizados</label>
+                                <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Nota Interna (Justificación / Avances)</label>
                                 <textarea
-                                    className={`w-full h-24 rounded-xl border text-sm p-4 focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all ${validationErrors.avances ? 'border-red-500 bg-red-50' : 'border-slate-200'}`}
-                                    placeholder="Describa qué acciones se intentaron realizar..."
-                                    value={unresolvedData.avances}
-                                    onChange={(e) => setUnresolvedData({...unresolvedData, avances: e.target.value})}
+                                    className={`w-full h-32 rounded-xl border text-sm p-4 focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all ${validationErrors.internal_note ? 'border-red-500 bg-red-50' : 'border-slate-200'}`}
+                                    placeholder="Describa los avances realizados y la justificación de por qué no se pudo resolver el ticket..."
+                                    value={unresolvedData.internal_note}
+                                    onChange={(e) => setUnresolvedData({...unresolvedData, internal_note: e.target.value})}
                                 ></textarea>
-                                {validationErrors.avances && (
-                                    <p className="mt-1 text-[10px] font-bold text-red-600">{validationErrors.avances[0]}</p>
+                                {validationErrors.internal_note && (
+                                    <p className="mt-1 text-[10px] font-bold text-red-600">{validationErrors.internal_note[0]}</p>
                                 )}
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Justificación Técnica</label>
-                                <textarea
-                                    className={`w-full h-24 rounded-xl border text-sm p-4 focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all ${validationErrors.justificacion ? 'border-red-500 bg-red-50' : 'border-slate-200'}`}
-                                    placeholder="Explique el motivo por el cual no se pudo resolver..."
-                                    value={unresolvedData.justificacion}
-                                    onChange={(e) => setUnresolvedData({...unresolvedData, justificacion: e.target.value})}
-                                ></textarea>
-                                {validationErrors.justificacion && (
-                                    <p className="mt-1 text-[10px] font-bold text-red-600">{validationErrors.justificacion[0]}</p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Evidencias del Proceso (Fotos/Videos/Logs)</label>
-                                <div className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-xl transition-colors ${validationErrors['adjuntos.0'] ? 'border-red-500 bg-red-50' : 'border-slate-300 hover:border-red-400'}`}>
-                                    <div className="space-y-1 text-center">
-                                        <div className="flex text-sm text-slate-600">
-                                            <label className="relative cursor-pointer bg-white rounded-md font-medium text-red-600 hover:text-red-500 focus-within:outline-none">
-                                                <span>Subir archivos</span>
-                                                <input 
-                                                    type="file" 
-                                                    className="sr-only" 
-                                                    multiple
-                                                    onChange={(e) => {
-                                                        if (e.target.files) {
-                                                            setUnresolvedData({...unresolvedData, adjuntos: Array.from(e.target.files)});
-                                                        }
-                                                    }}
-                                                />
-                                            </label>
-                                            <p className="pl-1">o arrastrar y soltar</p>
-                                        </div>
-                                        <p className="text-xs text-slate-500">PNG, JPG, PDF, MP4 hasta 10MB</p>
-                                        {unresolvedData.adjuntos.length > 0 && (
-                                            <p className="text-xs font-bold text-red-600 mt-2">
-                                                {unresolvedData.adjuntos.length} archivos seleccionados
-                                            </p>
-                                        )}
-                                        {validationErrors['adjuntos.0'] && (
-                                            <p className="mt-1 text-[10px] font-bold text-red-600">{validationErrors['adjuntos.0'][0]}</p>
-                                        )}
-                                    </div>
-                                </div>
                             </div>
                         </div>
 
@@ -892,7 +744,7 @@ export default function AgentDashboard() {
                                 className="flex-1 rounded-xl bg-white border border-slate-200 py-3 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-50"
                                 onClick={() => {
                                     setShowUnresolvedModal(false);
-                                    setUnresolvedData({ avances: '', justificacion: '', adjuntos: [] });
+                                    setUnresolvedData({ internal_note: '' });
                                 }}
                                 disabled={isSubmitting}
                             >

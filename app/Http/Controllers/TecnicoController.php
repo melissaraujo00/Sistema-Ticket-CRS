@@ -16,7 +16,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Notifications\TicketUnresolvedNotification;
 use App\Models\TicketHistory;
-use App\Models\TicketIncident;
 use App\Enums\ActionTypeEnum;
 use App\Enums\TicketStatusEnum;
 
@@ -59,7 +58,6 @@ class TecnicoController extends Controller
         foreach ($statuses as $name => $status) {
             $nameLower = strtolower($name);
 
-            // Definir estados terminales (Cerrados, Resueltos, No Resueltos)
             if (
                 strpos($nameLower, 'cerrado') !== false ||
                 strpos($nameLower, 'finalizado') !== false ||
@@ -83,7 +81,7 @@ class TecnicoController extends Controller
             $statusPendienteRevision = Status::where('name', 'Pendiente Revisión')->first();
         }
 
-        $query = Ticket::with(['priority', 'department', 'status', 'requestingUser', 'ticketSolutions', 'incidents'])
+        $query = Ticket::with(['priority', 'department', 'status', 'requestingUser', 'ticketSolutions', 'histories', 'helpTopic'])
             ->where('assigned_user', $agent->id);
 
         if ($statusPendienteRevision) {
@@ -92,26 +90,31 @@ class TecnicoController extends Controller
 
         $tickets = $query->get();
 
-        // 1. Tickets Activos (Los que el técnico tiene pendientes de trabajar)
         $ticketsActivos = $tickets->whereIn('status_id', $activeStatuses);
 
-        // 2. Historial (Tickets que ya pasaron por un diagnóstico final o reporte de incidencia)
         $historialFinalizados = $tickets->whereIn('status_id', $terminalStatuses)
             ->sortByDesc('updated_at')
             ->values();
 
-        // Estadísticas precisas
         $totalAsignados = $tickets->count();
-        // Solo contamos como "Resueltos" los que NO son "No Resueltos"
         $totalResueltos = $tickets->filter(function ($t) {
             $name = strtolower($t->status->name);
             return (strpos($name, 'resuelto') !== false || strpos($name, 'cerrado') !== false)
                 && strpos($name, 'no resuelto') === false;
         })->count();
 
-        $totalEnProceso = $statusEnProceso ? $tickets->where('status_id', $statusEnProceso->id)->count() : 0;
+        $statusAsignado = $statuses['asignado'] ?? null;
+
+        $totalAsignadosCount = $statusAsignado ? $tickets->where('status_id', $statusAsignado->id)->count() : 0;
+        $totalEnProceso = $tickets->filter(function ($t) use ($statusEnProceso, $statusAsignado) {
+            $statusId = $t->status_id;
+            return ($statusEnProceso && $statusId == $statusEnProceso->id) || 
+                   ($statusAsignado && $statusId == $statusAsignado->id);
+        })->count();
+
         $totalEnCola = $ticketsActivos->count();
-        $tasaResolucion = $totalAsignados > 0 ? ($totalResueltos / $totalAsignados) * 100 : 0;
+        $totalTicketsTotal = $tickets->count();
+        $tasaResolucion = $totalTicketsTotal > 0 ? ($totalResueltos / $totalTicketsTotal) * 100 : 0;
 
         // Mapear tickets activos para la tabla principal
         $ticketsMapeados = $ticketsActivos->map(function ($ticket) {
@@ -123,18 +126,21 @@ class TecnicoController extends Controller
                 'prioridad' => $ticket->priority->name ?? 'N/A',
                 'creado_por' => $ticket->requestingUser->name ?? 'N/A',
                 'fecha_creacion' => $ticket->creation_date,
-                'tiene_diagnostico' => $ticket->ticketSolutions->count() > 0 || $ticket->incidents->count() > 0
+                'tiene_diagnostico' => $ticket->ticketSolutions->count() > 0 || ($ticket->status->name !== 'Asignado' && $ticket->status->name !== 'En Proceso' && $ticket->histories->where('action_type', ActionTypeEnum::NOTE_ADDED)->whereNotNull('internal_note')->count() > 0),
+                'help_topic_id' => $ticket->help_topic_id,
+                'help_topic_name' => $ticket->helpTopic->name_topic ?? 'N/A'
             ];
         })->values();
 
         return response()->json([
             'tickets_asignados' => $ticketsMapeados,
             'historial_finalizados' => $historialFinalizados,
+            'solution_types' => SolutionType::where('department_id', $agent->department_id)->where('is_active', true)->get(),
             'estadisticas' => [
                 'tasa_resolucion_porcentaje' => round($tasaResolucion, 2),
                 'total_tickets_cola' => $totalEnCola,
                 'total_tickets_proceso' => $totalEnProceso,
-                'total_tickets_asignados' => $totalAsignados,
+                'total_tickets_asignados' => $totalAsignadosCount,
                 'total_tickets_resueltos' => $totalResueltos
             ]
         ]);
@@ -159,12 +165,11 @@ class TecnicoController extends Controller
         $statusEnProceso = Status::where('name', 'like', '%proceso%')
             ->orWhere('name', 'like', '%Proceso%')
             ->orWhere('name', 'like', '%progreso%')
-            ->first();
+            ->orWhere('name', 'Asignado')
+            ->pluck('id');
 
         $total = Ticket::where('assigned_user', $agent->id)
-            ->when($statusEnProceso, function ($query) use ($statusEnProceso) {
-                return $query->where('status_id', $statusEnProceso->id);
-            })
+            ->whereIn('status_id', $statusEnProceso)
             ->count();
 
         return response()->json([
@@ -296,13 +301,12 @@ class TecnicoController extends Controller
         $statusEnProceso = Status::where('name', 'like', '%proceso%')
             ->orWhere('name', 'like', '%Proceso%')
             ->orWhere('name', 'like', '%progreso%')
-            ->first();
+            ->orWhere('name', 'Asignado')
+            ->pluck('id');
 
         $tickets = Ticket::with(['priority', 'department', 'status'])
             ->where('assigned_user', $agent->id)
-            ->when($statusEnProceso, function ($query) use ($statusEnProceso) {
-                return $query->where('status_id', $statusEnProceso->id);
-            })
+            ->whereIn('status_id', $statusEnProceso)
             ->orderBy('creation_date', 'desc')
             ->get();
 
@@ -357,9 +361,7 @@ class TecnicoController extends Controller
             'histories',
             'attachments',
             'ticketSolutions.attachments',
-            'ticketSolutions.solutionType',
-            'incidents.user',
-            'incidents.attachments'
+            'ticketSolutions.solutionType'
         ])
             ->where('id', $id)
             ->where('assigned_user', $agent->id)
@@ -388,6 +390,7 @@ class TecnicoController extends Controller
             'problema' => $ticket->subject,
             'detalles_del_problema' => $ticket->message,
             'adjuntos' => $ticket->attachments->map(fn($a) => [
+                'id' => $a->id,
                 'name' => $a->file_name,
                 'path' => $a->file_path,
                 'type' => $a->file_type
@@ -398,26 +401,19 @@ class TecnicoController extends Controller
                 'fecha' => $s->date,
                 'tipo' => $s->solutionType->name ?? 'N/A',
                 'adjuntos' => $s->attachments->map(fn($a) => [
+                    'id' => $a->id,
                     'name' => $a->file_name,
                     'path' => $a->file_path,
                     'type' => $a->file_type
                 ])
             ]),
-            'incidencias' => $ticket->incidents->map(function ($inc) {
+            'incidencias' => $ticket->histories->where('action_type', ActionTypeEnum::NOTE_ADDED)->map(function ($history) {
                 return [
-                    'avances' => $inc->advances,
-                    'justificacion' => $inc->justification,
-                    'fecha' => $inc->created_at,
-                    'tecnico' => $inc->user->name ?? 'N/A',
-                    'adjuntos' => $inc->attachments->map(function ($adj) {
-                        return [
-                            'name' => $adj->file_name,
-                            'path' => $adj->file_path,
-                            'type' => $adj->file_type
-                        ];
-                    })
+                    'internal_note' => $history->internal_note,
+                    'fecha' => $history->created_at,
+                    'tecnico' => $history->user->name ?? 'N/A'
                 ];
-            }),
+            })->values(),
             'area_del_agent' => $ticket->assignedUser->department->name ?? 'N/A',
             'historial' => $ticket->histories->map(function ($history) {
                 return [
@@ -537,9 +533,10 @@ class TecnicoController extends Controller
             ->orWhere('name', 'like', '%resuelto%')
             ->first();
 
-        $statusEnProceso = Status::where('name', 'like', '%proceso%')
+        $statusEnProcesoIds = Status::where('name', 'like', '%proceso%')
             ->orWhere('name', 'like', '%progreso%')
-            ->first();
+            ->orWhere('name', 'Asignado')
+            ->pluck('id');
 
         $totalAsignados = Ticket::where('assigned_user', $agent->id)->count();
 
@@ -547,9 +544,9 @@ class TecnicoController extends Controller
             ? Ticket::where('assigned_user', $agent->id)->where('status_id', $statusCerrado->id)->count()
             : 0;
 
-        $totalEnProceso = $statusEnProceso
-            ? Ticket::where('assigned_user', $agent->id)->where('status_id', $statusEnProceso->id)->count()
-            : 0;
+        $totalEnProceso = Ticket::where('assigned_user', $agent->id)
+            ->whereIn('status_id', $statusEnProcesoIds)
+            ->count();
 
         $totalEnCola = $statusCerrado
             ? Ticket::where('assigned_user', $agent->id)->where('status_id', '!=', $statusCerrado->id)->count()
@@ -587,26 +584,6 @@ class TecnicoController extends Controller
 
         DB::beginTransaction();
         try {
-            $incident = TicketIncident::create([
-                'ticket_id' => $ticket->id,
-                'user_id' => $agent->id,
-                'department_id' => $ticket->department_id,
-                'advances' => $request->avances,
-                'justification' => $request->justificacion,
-            ]);
-
-            if ($request->hasFile('adjuntos')) {
-                foreach ($request->file('adjuntos') as $file) {
-                    $path = $file->store('evidencias_incidencias', 'public');
-                    $incident->attachments()->create([
-                        'file_name' => $file->getClientOriginalName(),
-                        'file_path' => $path,
-                        'file_type' => $file->getMimeType(),
-                        'file_size' => $file->getSize(),
-                    ]);
-                }
-            }
-
             $statusName = TicketStatusEnum::UNRESOLVED->value;
             $estadoNoResuelto = Status::firstOrCreate(['name' => $statusName]);
 
@@ -616,8 +593,8 @@ class TecnicoController extends Controller
             TicketHistory::create([
                 'ticket_id' => $ticket->id,
                 'user_id' => $agent->id,
-                'action_type' => ActionTypeEnum::STATUS_CHANGED,
-                'internal_note' => $request->justificacion,
+                'action_type' => ActionTypeEnum::NOTE_ADDED,
+                'internal_note' => $request->internal_note,
                 'previous_department' => $ticket->department_id,
                 'assigned_user' => $ticket->assigned_user,
             ]);
@@ -626,9 +603,8 @@ class TecnicoController extends Controller
             if ($ticket->requestingUser) {
                 $ticket->requestingUser->notify(new TicketUnresolvedNotification(
                     $ticket,
-                    $request->justificacion,
-                    $agent,
-                    $request->avances
+                    $request->internal_note,
+                    $agent
                 ));
             }
 
@@ -649,5 +625,22 @@ class TecnicoController extends Controller
                 'message' => 'Ocurrió un error al procesar el reporte.'
             ], 500);
         }
+    }
+
+    /**
+     * Descargar un adjunto
+     */
+    public function descargarAdjunto($id)
+    {
+        $attachment = Attachment::findOrFail($id);
+        
+        $path = storage_path('app/public/' . $attachment->file_path);
+        
+        if (!file_exists($path)) {
+            Log::error("Archivo no encontrado en la ruta: " . $path);
+            abort(404, 'El archivo físico no existe en el servidor.');
+        }
+
+        return response()->download($path, $attachment->file_name);
     }
 }

@@ -187,6 +187,16 @@ const handleFileChange = (e) => {
                                         disabled
                                     />
                                 </div>
+                                <div className="grid grid-cols-3 items-center gap-4">
+                                    <Label className="text-zinc-700 dark:text-zinc-300">
+                                        Codigo Institucional:
+                                    </Label>
+                                    <Input
+                                        className="col-span-2 border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800"
+                                        value={auth.user.institution_code}
+                                        disabled
+                                    />
+                                </div>                                
 
                                 <div className="grid grid-cols-3 items-center gap-4">
                                     <Label className="text-zinc-700 dark:text-zinc-300">
@@ -411,7 +421,7 @@ const handleFileChange = (e) => {
                                             >
                                                 <div className="flex items-center gap-2">
                                                     <FileText className="h-4 w-4 text-zinc-500" />
-                                                    <span className="text-zinc-700 dark:text-zinc-300 truncate max-w-[200px]">
+                                                    <span className="text-zinc-700 dark:text-zinc-300 truncate max-w-50">
                                                         {file.name}
                                                     </span>
                                                     <span className="text-xs text-zinc-500">

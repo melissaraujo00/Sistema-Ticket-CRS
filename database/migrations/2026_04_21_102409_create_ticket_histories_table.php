@@ -19,11 +19,10 @@ return new class extends Migration
             $table->foreignIdFor(Ticket::class)->constrained();
             $table->foreignIdFor(User::class)->constrained();
             $table->string('action_type');
-            $table->foreignIdFor(User::class, 'assigned_user')->constrained()->nullable();
-            $table->text('internal_note');
-            $table->foreignIdFor(Department::class, 'previous_department')->constrained();
-            $table->foreignIdFor(Department::class, 'new_department')->nullable()->constrained();
-            $table->softDeletes();
+            $table->foreignIdFor(User::class, 'assigned_user')->nullable()->constrained('users');
+            $table->text('internal_note')->nullable();
+            $table->foreignIdFor(Department::class, 'previous_department')->nullable()->constrained('departments');
+            $table->foreignIdFor(Department::class, 'new_department')->nullable()->constrained('departments');
             $table->timestamps();
         });
     }

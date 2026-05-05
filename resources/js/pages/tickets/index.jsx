@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Plus, Search, Eye, CheckCircle, Star, X } from "lucide-react";
 import { GenericTable } from "@/components/GenericTable";
 import { route } from "ziggy-js";
+import { History as HistoryIcon } from "lucide-react";
 
 const breadcrumbs = [
     { title: "Dashboard", href: "/dashboard" },
@@ -141,6 +142,17 @@ export default function Index() {
                             <Eye className="h-4 w-4" />
                         </Link>
                     </Button>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        asChild
+                        className="h-8 w-8 hover:text-indigo-600"
+                        title="Ver historial de actividad"
+                    >
+                        <Link href={route("tickets.history.index", ticket.id)}>
+                            <HistoryIcon className="h-4 w-4" />
+                        </Link>
+                    </Button>
 
                     {ticket.status?.name === "Resuelto" && (
                         <Button
@@ -233,11 +245,10 @@ export default function Index() {
                                         key={star}
                                         type="button"
                                         onClick={() => setRating(star)}
-                                        className={`transition-all hover:scale-110 ${
-                                            rating >= star
+                                        className={`transition-all hover:scale-110 ${rating >= star
                                                 ? "text-yellow-400"
                                                 : "text-gray-200 dark:text-gray-600"
-                                        }`}
+                                            }`}
                                         disabled={isSubmitting}
                                     >
                                         <Star className="w-10 h-10 fill-current" />

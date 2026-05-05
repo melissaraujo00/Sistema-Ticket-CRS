@@ -16,17 +16,15 @@ class TicketUnresolvedNotification extends Notification implements ShouldQueue
     protected $ticket;
     protected $justification;
     protected $agent;
-    protected $advances;
 
     /**
      * Create a new notification instance.
      */
-    public function __construct(Ticket $ticket, string $justification, $agent = null, string $advances = '')
+    public function __construct(Ticket $ticket, string $justification, $agent = null)
     {
         $this->ticket = $ticket;
         $this->justification = $justification;
         $this->agent = $agent ?? auth()->user();
-        $this->advances = $advances;
     }
 
     /**
@@ -54,13 +52,8 @@ class TicketUnresolvedNotification extends Notification implements ShouldQueue
             ->line('• Asunto: ' . $this->ticket->subject)
             ->line('• Técnico: ' . $agentName)
             
-            ->line(new HtmlString('<div style="margin-top: 20px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">' .
-                '<div style="background-color: #f8fafc; padding: 10px 15px; border-bottom: 1px solid #e2e8f0; font-weight: bold;">Avances Realizados</div>' .
-                '<div style="padding: 15px; font-style: italic;">' . nl2br(e($this->advances)) . '</div>' .
-                '</div>'))
-
             ->line(new HtmlString('<div style="margin-top: 15px; border: 1px solid #fee2e2; border-radius: 8px; overflow: hidden;">' .
-                '<div style="background-color: #fef2f2; padding: 10px 15px; border-bottom: 1px solid #fee2e2; font-weight: bold; color: #991b1b;">Justificación Técnica</div>' .
+                '<div style="background-color: #fef2f2; padding: 10px 15px; border-bottom: 1px solid #fee2e2; font-weight: bold; color: #991b1b;">Nota de Incidencia</div>' .
                 '<div style="padding: 15px; font-style: italic;">' . nl2br(e($this->justification)) . '</div>' .
                 '</div>'))
 

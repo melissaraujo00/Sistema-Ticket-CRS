@@ -29,7 +29,8 @@ class RoleSeeder extends Seeder
             'ver dashboard',
             'ver tickets',
             'view_own_tickets',
-            'create_tickets'
+            'create_tickets',
+            'view_all_tickets'
         ];
 
         foreach ($permissions as $permissionName) {
