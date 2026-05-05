@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\KnowledgeController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PublicController;
 use Illuminate\Support\Facades\Route;
@@ -14,7 +16,6 @@ use App\Http\Controllers\TicketController;
 // 1. RUTAS PÚBLICAS
 // ==========================================
 Route::get('/', [PublicController::class, 'index'])->name('home');
-Route::get('/faqs', [PublicController::class, 'faqs'])->name('faqs.index');
 
 
 //-----prueva del json
@@ -35,7 +36,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
     Route::get('/notifications/fetch', [NotificationController::class, 'fetch'])->name('notifications.fetch');
 
-    
+
 
     Route::post('/tickets/{ticket}/asignar', [TicketController::class, 'assign'])->name('tickets.assign');
     // ==========================================
@@ -99,6 +100,15 @@ Route::middleware(['auth'])->group(function () {
     // --- F. GESTIÓN DE USUARIOS ---
     Route::middleware(['permission:manage_users'])->group(function () {
         Route::resource('users', UserController::class);
+    });
+
+    // Knowledge
+    Route::middleware(['role:superadmin'])->group(function () {
+        Route::resource('category', CategoryController::class);
+    });
+
+    Route::middleware(['role:superadmin'])->group(function () {
+        Route::resource('faq', KnowledgeController::class);
     });
 });
 
