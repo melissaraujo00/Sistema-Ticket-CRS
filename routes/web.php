@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\KnowledgeController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PublicController;
 use Illuminate\Support\Facades\Route;
@@ -22,7 +24,11 @@ use App\Http\Controllers\DashboardController;
 // 1. RUTAS PÚBLICAS
 // ==========================================
 Route::get('/', [PublicController::class, 'index'])->name('home');
-Route::get('/faqs', [PublicController::class, 'faqs'])->name('faqs.index');
+
+
+//-----prueva del json
+   Route::get('ratings-dashboard', [\App\Http\Controllers\TechnicalRatingsController::class, 'index'])
+      ->name('ratings.dashboard');
 
 // ==========================================
 // 2. RUTAS AUTENTICADAS
@@ -89,7 +95,18 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('users', UserController::class);
     });
 
+
     Route::post('/qualifications', [QualificationController::class, 'store']);
+
+    // Knowledge
+    Route::middleware(['role:superadmin'])->group(function () {
+        Route::resource('category', CategoryController::class);
+    });
+
+    Route::middleware(['role:superadmin'])->group(function () {
+        Route::resource('faq', KnowledgeController::class);
+    });
+
 });
 
 // ==========================================
