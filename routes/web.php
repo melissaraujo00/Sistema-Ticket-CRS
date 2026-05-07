@@ -88,6 +88,8 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['permission:manage_users'])->group(function () {
         Route::resource('users', UserController::class);
     });
+
+    Route::post('/qualifications', [QualificationController::class, 'store']);
 });
 
 // ==========================================

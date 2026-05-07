@@ -8,6 +8,7 @@ use App\Models\Department;
 use App\Models\Division;
 use App\Models\HelpTopic;
 use App\Models\Ticket;
+use App\Models\TicketSolution;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use App\Notifications\NewTicketNotification;
@@ -18,6 +19,7 @@ use App\Actions\GenerateTicketCodeAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreTicketRequest;
 use App\Models\Status;
+
 
 class TicketController extends Controller
 {
@@ -120,8 +122,17 @@ class TicketController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        $resolvedTickets = TicketSolution::with(['ticket','user','ticket.department'])
+                        ->whereHas('ticket', function($query) {
+                            $query->where('requesting_user', auth()->id());
+                        })
+                        ->whereDoesntHave('ticket.qualification')
+                        ->orderBy('created_at', 'desc')
+                        ->get();
+
         return Inertia::render('tickets/index', [
             'tickets' => $tickets,
+            'resolvedTickets'=>$resolvedTickets
         ]);
     }
 
