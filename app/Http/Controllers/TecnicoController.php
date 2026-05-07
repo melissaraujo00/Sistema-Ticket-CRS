@@ -42,10 +42,8 @@ class TecnicoController extends Controller
         }
         return $this->statusCache;
     }
-    /**
-     * Obtener datos del dashboard
-     */
-    public function dashboardData(): JsonResponse
+
+    public function dashboardData(Request $request): JsonResponse
     {
         $agent = Auth::user();
         $statuses = $this->getCachedStatuses();
@@ -81,45 +79,44 @@ class TecnicoController extends Controller
             $statusPendienteRevision = Status::where('name', 'Pendiente Revisión')->first();
         }
 
-        $query = Ticket::with(['priority', 'department', 'status', 'requestingUser', 'ticketSolutions', 'histories', 'helpTopic'])
-            ->where('assigned_user', $agent->id);
-
+        $queryBase = Ticket::where('assigned_user', $agent->id);
+        
         if ($statusPendienteRevision) {
-            $query->where('status_id', '!=', $statusPendienteRevision->id);
+            $queryBase->where('status_id', '!=', $statusPendienteRevision->id);
         }
 
-        $tickets = $query->get();
+        $search = $request->query('search');
+        $statusFilter = $request->query('status');
 
-        $ticketsActivos = $tickets->whereIn('status_id', $activeStatuses);
+        $activeQuery = clone $queryBase;
+        $activeQuery->with(['priority', 'department', 'status', 'requestingUser', 'ticketSolutions', 'histories', 'helpTopic'])
+            ->whereIn('status_id', $activeStatuses);
 
-        $historialFinalizados = $tickets->whereIn('status_id', $terminalStatuses)
-            ->sortByDesc('updated_at')
-            ->values();
+        if ($search) {
+            $activeQuery->where(function($q) use ($search) {
+                $q->where('subject', 'like', "%{$search}%")
+                  ->orWhere('code', 'like', "%{$search}%")
+                  ->orWhere('id', 'like', "%{$search}%");
+            });
+        }
 
-        $totalAsignados = $tickets->count();
-        $totalResueltos = $tickets->filter(function ($t) {
-            $name = strtolower($t->status->name);
-            return (strpos($name, 'resuelto') !== false || strpos($name, 'cerrado') !== false)
-                && strpos($name, 'no resuelto') === false;
-        })->count();
+        if ($statusFilter && $statusFilter !== 'Todos los estados') {
+            $activeQuery->whereHas('status', function($q) use ($statusFilter) {
+                $q->where('name', $statusFilter);
+            });
+        }
 
-        $statusAsignado = $statuses['asignado'] ?? null;
+        $ticketsPaginados = $activeQuery
+            ->join('priorities', 'tickets.priority_id', '=', 'priorities.id')
+            ->select('tickets.*')
+            ->orderBy('priorities.level', 'desc')
+            ->orderBy('tickets.creation_date', 'desc')
+            ->paginate(10);
 
-        $totalAsignadosCount = $statusAsignado ? $tickets->where('status_id', $statusAsignado->id)->count() : 0;
-        $totalEnProceso = $tickets->filter(function ($t) use ($statusEnProceso, $statusAsignado) {
-            $statusId = $t->status_id;
-            return ($statusEnProceso && $statusId == $statusEnProceso->id) || 
-                   ($statusAsignado && $statusId == $statusAsignado->id);
-        })->count();
-
-        $totalEnCola = $ticketsActivos->count();
-        $totalTicketsTotal = $tickets->count();
-        $tasaResolucion = $totalTicketsTotal > 0 ? ($totalResueltos / $totalTicketsTotal) * 100 : 0;
-
-        // Mapear tickets activos para la tabla principal
-        $ticketsMapeados = $ticketsActivos->map(function ($ticket) {
+        $ticketsPaginados->getCollection()->transform(function ($ticket) {
             return [
                 'id' => $ticket->id,
+                'code' => $ticket->code,
                 'asunto' => $ticket->subject,
                 'departamento' => $ticket->department->name ?? 'N/A',
                 'estado' => $ticket->status->name ?? 'N/A',
@@ -130,18 +127,67 @@ class TecnicoController extends Controller
                 'help_topic_id' => $ticket->help_topic_id,
                 'help_topic_name' => $ticket->helpTopic->name_topic ?? 'N/A'
             ];
-        })->values();
+        });
+
+        $historialFinalizados = (clone $queryBase)->whereIn('status_id', $terminalStatuses)
+            ->orderBy('updated_at', 'desc')
+            ->limit(20)
+            ->get();
+
+        $statsQuery = clone $queryBase;
+        
+        $countsByStatus = (clone $statsQuery)
+            ->select('status_id', DB::raw('count(*) as total'))
+            ->groupBy('status_id')
+            ->get()
+            ->keyBy('status_id');
+
+        $totalResueltos = 0;
+        $totalEnProceso = 0;
+        $totalAsignadosCount = 0;
+        $statusAsignado = $statuses['asignado'] ?? null;
+
+        foreach ($statuses as $name => $status) {
+            $count = $countsByStatus->get($status->id)->total ?? 0;
+            $nameLower = strtolower($name);
+
+            if ((strpos($nameLower, 'resuelto') !== false || strpos($nameLower, 'cerrado') !== false)
+                && strpos($nameLower, 'no resuelto') === false) {
+                $totalResueltos += $count;
+            }
+
+            if (strpos($nameLower, 'proceso') !== false || strpos($nameLower, 'progreso') !== false) {
+                $totalEnProceso += $count;
+            }
+            if ($statusAsignado && $status->id == $statusAsignado->id) {
+                $totalAsignadosCount = $count;
+                $totalEnProceso += $count;
+            }
+        }
+
+        $totalEnCola = (clone $statsQuery)->whereIn('status_id', $activeStatuses)->count();
+        $totalTicketsTotal = (clone $statsQuery)->count();
+        $tasaResolucion = $totalTicketsTotal > 0 ? ($totalResueltos / $totalTicketsTotal) * 100 : 0;
+
+        $priorityDistribution = (clone $statsQuery)
+            ->whereIn('status_id', $activeStatuses)
+            ->join('priorities', 'tickets.priority_id', '=', 'priorities.id')
+            ->select('priorities.name', DB::raw('count(*) as total'))
+            ->groupBy('priorities.name')
+            ->pluck('total', 'priorities.name');
 
         return response()->json([
-            'tickets_asignados' => $ticketsMapeados,
+            'tickets_asignados' => $ticketsPaginados,
             'historial_finalizados' => $historialFinalizados,
             'solution_types' => SolutionType::where('department_id', $agent->department_id)->where('is_active', true)->get(),
+            'statuses' => Status::whereIn('id', $activeStatuses)->pluck('name'),
             'estadisticas' => [
                 'tasa_resolucion_porcentaje' => round($tasaResolucion, 2),
                 'total_tickets_cola' => $totalEnCola,
                 'total_tickets_proceso' => $totalEnProceso,
                 'total_tickets_asignados' => $totalAsignadosCount,
-                'total_tickets_resueltos' => $totalResueltos
+                'total_tickets_resueltos' => $totalResueltos,
+                'prioridades' => $priorityDistribution
             ]
         ]);
     }
@@ -155,9 +201,6 @@ class TecnicoController extends Controller
         ]);
     }
 
-    /**
-     * Obtener el total de tickets en proceso del técnico
-     */
     public function totalTicketsEnProceso(): JsonResponse
     {
         $agent = Auth::user();
