@@ -1,19 +1,24 @@
 import { Link } from '@inertiajs/react';
 import axios from 'axios';
-import { Activity, AlertCircle, CheckCircle2, Clock, Computer, Globe, Monitor, Search } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Activity, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, Clock, Computer, Globe, Monitor, Search } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
 import { toast, Toaster } from 'sonner';
 
 
 export default function AgentDashboard() {
-    const [ticketsAsignados, setTicketsAsignados] = useState([]);
+    const [ticketsPaginados, setTicketsPaginados] = useState({ data: [], links: [], current_page: 1, last_page: 1 });
     const [historialFinalizados, setHistorialFinalizados] = useState([]);
     const [estadisticas, setEstadisticas] = useState(null);
     const [solutionTypes, setSolutionTypes] = useState([]);
+    const [availableStatuses, setAvailableStatuses] = useState([]);
+    const [availablePriorities, setAvailablePriorities] = useState([]);
 
     const [activeView, setActiveView] = useState('main');
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('Todos los estados');
+    const [priorityFilter, setPriorityFilter] = useState('Todas las prioridades');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [isLoading, setIsLoading] = useState(false);
 
     const [selectedTicketId, setSelectedTicketId] = useState(null);
     const [showDiagnosticPanel, setShowDiagnosticPanel] = useState(false);
@@ -30,22 +35,52 @@ export default function AgentDashboard() {
     });
     const [validationErrors, setValidationErrors] = useState({});
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const response = await axios.get('/agent/dashboard-data');
+    const fetchData = useCallback(async (page = 1, search = '', status = 'Todos los estados', priority = 'Todas las prioridades') => {
+        setIsLoading(true);
+        try {
+            const response = await axios.get('/agent/dashboard-data', {
+                params: {
+                    page,
+                    search,
+                    status,
+                    priority
+                }
+            });
 
-                setTicketsAsignados(response.data.tickets_asignados || []);
-                setHistorialFinalizados(response.data.historial_finalizados || []);
-                setEstadisticas(response.data.estadisticas || null);
-                setSolutionTypes(response.data.solution_types || []);
-            } catch (error) {
-                console.error('Error al obtener datos del dashboard:', error);
-            }
-        };
-
-        fetchData();
+            setTicketsPaginados(response.data.tickets_asignados || { data: [], links: [], current_page: 1, last_page: 1 });
+            setHistorialFinalizados(response.data.historial_finalizados || []);
+            setEstadisticas(response.data.estadisticas || null);
+            setSolutionTypes(response.data.solution_types || []);
+            setAvailableStatuses(response.data.statuses || []);
+            setAvailablePriorities(response.data.available_priorities || []);
+        } catch (error) {
+            console.error('Error al obtener datos del dashboard:', error);
+            toast.error('Error al cargar los tickets');
+        } finally {
+            setIsLoading(false);
+        }
     }, []);
+
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(() => {
+            fetchData(currentPage, searchTerm, statusFilter, priorityFilter);
+        }, 300);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [currentPage, searchTerm, statusFilter, priorityFilter, fetchData]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, statusFilter, priorityFilter]);
+
+    useEffect(() => {
+        if (currentPage > 1 || (ticketsPaginados.total > 0)) {
+            const tableElement = document.getElementById('tickets-table-container');
+            if (tableElement) {
+                tableElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+    }, [currentPage, ticketsPaginados.total]);
 
     const historialData = historialFinalizados.map(ticket => ({
         id: ticket.id,
@@ -63,17 +98,12 @@ export default function AgentDashboard() {
         total_tickets_resueltos: 0,
     };
 
+    const ticketsAsignados = ticketsPaginados.data;
     const finalTickets = ticketsAsignados;
 
-    const uniqueStatuses = Array.from(new Set(finalTickets.map(t => t.estado || t.status?.name || 'N/A')));
+    const uniqueStatuses = availableStatuses;
 
-    const displayedTickets = finalTickets.filter(ticket => {
-        const matchesSearch = (ticket.asunto || ticket.subject || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                              String(ticket.id).toLowerCase().includes(searchTerm.toLowerCase());
-        const ticketStatus = ticket.estado || ticket.status?.name || 'N/A';
-        const matchesStatus = statusFilter === 'Todos los estados' || ticketStatus === statusFilter;
-        return matchesSearch && matchesStatus;
-    });
+    const displayedTickets = finalTickets;
 
     const submitDiagnostic = async () => {
         try {
@@ -100,7 +130,6 @@ export default function AgentDashboard() {
             formData.append('tipo_diagnostico', diagnosticType);
             formData.append('observacion', observacionDiagnostico);
 
-            // Adjuntar múltiples archivos
             adjuntosDiagnostico.forEach(file => {
                 formData.append('adjuntos[]', file);
             });
@@ -117,11 +146,8 @@ export default function AgentDashboard() {
             setSelectedTicketId(null);
             setShowDiagnosticPanel(false);
 
-            const response = await axios.get('/agent/dashboard-data');
-            setTicketsAsignados(response.data.tickets_asignados || []);
-            setHistorialFinalizados(response.data.historial_finalizados || []);
-            setEstadisticas(response.data.estadisticas || null);
-            setSolutionTypes(response.data.solution_types || []);
+            fetchData(currentPage, searchTerm, statusFilter);
+
 
             setTimeout(() => setDiagnosticStatus(null), 3000);
         } catch (error) {
@@ -134,7 +160,7 @@ export default function AgentDashboard() {
         setValidationErrors({});
         try {
             if (!selectedTicketId) return;
-            
+
             setIsSubmitting(true);
             const formData = new FormData();
             formData.append('internal_note', unresolvedData.internal_note);
@@ -149,18 +175,14 @@ export default function AgentDashboard() {
             setSelectedTicketId(null);
             setShowDiagnosticPanel(false);
 
-            const response = await axios.get('/agent/dashboard-data');
-            setTicketsAsignados(response.data.tickets_asignados || []);
-            setHistorialFinalizados(response.data.historial_finalizados || []);
-            setEstadisticas(response.data.estadisticas || null);
-            setSolutionTypes(response.data.solution_types || []);
+            fetchData(currentPage, searchTerm, statusFilter);
+
 
         } catch (error) {
             if (error.response && error.response.status === 422) {
                 const errors = error.response.data.errors;
                 setValidationErrors(errors);
-                
-                // Mostrar primer error general
+
                 const firstError = Object.values(errors)[0][0];
                 toast.error(firstError);
             } else {
@@ -217,6 +239,18 @@ export default function AgentDashboard() {
                         <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
                     </div>
                     <select
+                        value={priorityFilter}
+                        onChange={(e) => setPriorityFilter(e.target.value)}
+                        className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm focus:outline-none"
+                    >
+                        <option value="Todas las prioridades">Todas las prioridades</option>
+                        {availablePriorities.map((priority) => (
+                            <option key={priority} value={priority}>
+                                {priority}
+                            </option>
+                        ))}
+                    </select>
+                    <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
                         className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm focus:outline-none"
@@ -232,17 +266,15 @@ export default function AgentDashboard() {
                 <div className="mt-3 flex gap-2 border-t border-gray-100 pt-3">
                     <button
                         onClick={() => setActiveView(activeView === 'historial' ? 'main' : 'historial')}
-                        className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                            activeView === 'historial' ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
+                        className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${activeView === 'historial' ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
                     >
                         <Clock className="h-4 w-4" /> Historial
                     </button>
                     <button
                         onClick={() => setActiveView(activeView === 'estadisticas' ? 'main' : 'estadisticas')}
-                        className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                            activeView === 'estadisticas' ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
+                        className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${activeView === 'estadisticas' ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
                     >
                         <Activity className="h-4 w-4" /> Mis Estadisticas
                     </button>
@@ -286,7 +318,7 @@ export default function AgentDashboard() {
                         <h3 className="font-bold text-gray-800">Mis Estadisticas</h3>
                     </div>
 
-                    <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
                         <div className="flex flex-col justify-center rounded-lg border border-gray-100 bg-gray-50 p-4">
                             <div className="mb-1 text-xs font-semibold text-gray-500">Tasa de Resolucion</div>
                             <div className="text-xl font-bold">{stats.tasa_resolucion_porcentaje}%</div>
@@ -296,22 +328,22 @@ export default function AgentDashboard() {
                             <div className="text-xl font-bold">{stats.total_tickets_cola}</div>
                         </div>
                         <div className="flex flex-col justify-center rounded-lg border border-gray-100 bg-gray-50 p-4">
-                            <div className="mb-1 text-xs font-semibold text-gray-500">Total Procesados</div>
+                            <div className="mb-1 text-xs font-semibold text-gray-500">Total Resueltos</div>
                             <div className="text-xl font-bold">{stats.total_tickets_resueltos}</div>
+                        </div>
+                        <div className="flex flex-col justify-center rounded-lg border border-red-100 bg-red-50 p-4">
+                            <div className="mb-1 text-xs font-semibold text-red-700 uppercase">Críticos</div>
+                            <div className="text-xl font-bold text-red-800">{stats.total_tickets_criticos || 0}</div>
                         </div>
                     </div>
 
-                    <div className="mt-2 mb-3 text-sm font-semibold text-gray-700">Distribucion por Prioridad</div>
+                    <div className="mt-2 mb-3 text-sm font-semibold text-gray-700">Distribucion por Prioridad (Tickets Activos)</div>
                     <div className="space-y-3 px-2">
                         {(() => {
-                            const priorityData = ticketsAsignados.reduce((acc, ticket) => {
-                                const priority = ticket.prioridad || 'N/A';
-                                acc[priority] = (acc[priority] || 0) + 1;
-                                return acc;
-                            }, {});
-
-                            const totalTickets = ticketsAsignados.length;
+                            const priorityData = stats.prioridades || {};
+                            const totalTickets = stats.total_tickets_cola || 0;
                             const priorities = [
+                                { name: 'Crítica', color: 'bg-red-700', count: priorityData['Crítica'] || 0 },
                                 { name: 'Alta', color: 'bg-red-500', count: priorityData['Alta'] || 0 },
                                 { name: 'Media', color: 'bg-yellow-400', count: priorityData['Media'] || 0 },
                                 { name: 'Baja', color: 'bg-blue-500', count: priorityData['Baja'] || 0 },
@@ -337,16 +369,31 @@ export default function AgentDashboard() {
             {/* Tickets Asignados (Tabla Principal) */}
             {(activeView === 'main' || activeView === 'historial' || activeView === 'estadisticas') && (
                 <>
-                    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-                        <div className="flex items-center gap-2 border-b border-gray-100 p-4">
-                            <AlertCircle className="h-5 w-5 text-red-500" />
-                            <h3 className="font-bold text-gray-800">Tickets Asignados</h3>
+                    <div id="tickets-table-container" className="scroll-mt-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                        <div className="flex items-center justify-between border-b border-gray-100 p-4">
+                            <div className="flex items-center gap-2">
+                                <AlertCircle className="h-5 w-5 text-red-500" />
+                                <h3 className="font-bold text-gray-800">Tickets Asignados</h3>
+                            </div>
+                            {isLoading && (
+                                <div className="flex items-center gap-2 text-xs font-medium text-gray-400 animate-pulse">
+                                    <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                                    Actualizando datos...
+                                </div>
+                            )}
                         </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left text-sm whitespace-nowrap md:whitespace-normal">
+                        <div className="relative overflow-x-auto">
+                            {/* Loading Overlay */}
+                            {isLoading && (
+                                <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/40 backdrop-blur-[1px] transition-all">
+                                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent"></div>
+                                </div>
+                            )}
+
+                            <table className={`w-full text-left text-sm whitespace-nowrap md:whitespace-normal transition-opacity duration-200 ${isLoading ? 'opacity-50' : 'opacity-100'}`}>
                                 <thead className="bg-gray-50/50 text-xs font-bold tracking-wider text-red-600 uppercase">
                                     <tr>
-                                        <th className="px-4 py-4">ID</th>
+                                        <th className="px-4 py-4">Código</th>
                                         <th className="px-4 py-4">Asunto</th>
                                         <th className="px-4 py-4">Departamento</th>
                                         <th className="px-4 py-4">Estado</th>
@@ -356,175 +403,245 @@ export default function AgentDashboard() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 text-gray-700">
-                                    {displayedTickets.map((row, i) => (
-                                        <tr key={i} className="transition-colors hover:bg-blue-50/30">
-                                            <td className="px-4 py-4 text-xs font-semibold">{row.id}</td>
-                                            <td className="min-w-[200px] px-4 py-4 text-xs leading-tight font-medium">{row.asunto || row.subject}</td>
-                                            <td className="px-4 py-4 text-xs font-bold uppercase">{row.departamento || row.department?.name}</td>
-                                            <td className="px-4 py-4 text-xs">
-                                                {(() => {
-                                                    const status = row.estado || row.status?.name || 'N/A';
-                                                    const statusLower = status.toLowerCase();
+                                    {displayedTickets.length > 0 ? (
+                                        displayedTickets.map((row, i) => (
+                                            <tr key={i} className="transition-colors hover:bg-blue-50/30">
+                                                <td className="px-4 py-4 text-xs font-semibold">{row.code || row.id}</td>
+                                                <td className="min-w-[200px] px-4 py-4 text-xs leading-tight font-medium">{row.asunto || row.subject}</td>
+                                                <td className="px-4 py-4 text-xs font-bold uppercase">{row.departamento || row.department?.name}</td>
+                                                <td className="px-4 py-4 text-xs">
+                                                    {(() => {
+                                                        const status = row.estado || row.status?.name || 'N/A';
+                                                        const statusLower = status.toLowerCase();
 
-                                                    if (statusLower === 'abierto' || statusLower === 'nuevo') {
-                                                        return (
-                                                            <span className="inline-flex items-center rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-xs font-bold text-green-800">
-                                                                <span className="mr-1.5 h-2 w-2 animate-pulse rounded-full bg-green-500"></span>
-                                                                {status}
-                                                            </span>
-                                                        );
-                                                    } else if (
-                                                        statusLower === 'en proceso' ||
-                                                        statusLower === 'proceso' ||
-                                                        statusLower === 'progreso' ||
-                                                        statusLower === 'en progreso'
-                                                    ) {
-                                                        return (
-                                                            <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-100 px-2.5 py-1 text-xs font-bold text-blue-800">
-                                                                <span className="mr-1.5 h-2 w-2 rounded-full bg-blue-500"></span>
-                                                                {status}
-                                                            </span>
-                                                        );
-                                                    } else if (
-                                                        statusLower === 'cerrado' ||
-                                                        statusLower === 'resuelto' ||
-                                                        statusLower === 'finalizado'
-                                                    ) {
-                                                        return (
-                                                            <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-800">
-                                                                <span className="mr-1.5 h-2 w-2 rounded-full bg-gray-500"></span>
-                                                                {status}
-                                                            </span>
-                                                        );
-                                                    } else if (statusLower === 'pendiente' || statusLower === 'esperando') {
-                                                        return (
-                                                            <span className="inline-flex items-center rounded-full border border-orange-200 bg-orange-100 px-2.5 py-1 text-xs font-bold text-orange-800">
-                                                                <span className="mr-1.5 h-2 w-2 animate-pulse rounded-full bg-orange-500"></span>
-                                                                {status}
-                                                            </span>
-                                                        );
-                                                    } else if (statusLower === 'no resuelto') {
-                                                        return (
-                                                            <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800">
-                                                                <span className="mr-1.5 h-2 w-2 rounded-full bg-amber-500"></span>
-                                                                {status}
-                                                            </span>
-                                                        );
-                                                    } else if (statusLower === 'cancelado') {
-                                                        return (
-                                                            <span className="inline-flex items-center rounded-full border border-red-200 bg-red-100 px-2.5 py-1 text-xs font-bold text-red-800">
-                                                                <span className="mr-1.5 h-2 w-2 rounded-full bg-red-500"></span>
-                                                                {status}
-                                                            </span>
-                                                        );
-                                                    } else {
-                                                        return (
-                                                            <span className="inline-flex items-center rounded-full border border-purple-200 bg-purple-100 px-2.5 py-1 text-xs font-bold text-purple-800">
-                                                                <span className="mr-1.5 h-2 w-2 rounded-full bg-purple-500"></span>
-                                                                {status}
-                                                            </span>
-                                                        );
-                                                    }
-                                                })()}
-                                            </td>
-                                            <td className="px-4 py-4 text-xs">
-                                                {(() => {
-                                                    const priority = row.prioridad || row.priority?.name || 'N/A';
-                                                    const priorityLower = priority.toLowerCase();
+                                                        if (statusLower === 'abierto' || statusLower === 'nuevo') {
+                                                            return (
+                                                                <span className="inline-flex items-center rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-xs font-bold text-green-800">
+                                                                    <span className="mr-1.5 h-2 w-2 animate-pulse rounded-full bg-green-500"></span>
+                                                                    {status}
+                                                                </span>
+                                                            );
+                                                        } else if (
+                                                            statusLower === 'en proceso' ||
+                                                            statusLower === 'proceso' ||
+                                                            statusLower === 'progreso' ||
+                                                            statusLower === 'en progreso'
+                                                        ) {
+                                                            return (
+                                                                <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-100 px-2.5 py-1 text-xs font-bold text-blue-800">
+                                                                    <span className="mr-1.5 h-2 w-2 rounded-full bg-blue-500"></span>
+                                                                    {status}
+                                                                </span>
+                                                            );
+                                                        } else if (
+                                                            statusLower === 'cerrado' ||
+                                                            statusLower === 'resuelto' ||
+                                                            statusLower === 'finalizado'
+                                                        ) {
+                                                            return (
+                                                                <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-800">
+                                                                    <span className="mr-1.5 h-2 w-2 rounded-full bg-gray-500"></span>
+                                                                    {status}
+                                                                </span>
+                                                            );
+                                                        } else if (statusLower === 'pendiente' || statusLower === 'esperando') {
+                                                            return (
+                                                                <span className="inline-flex items-center rounded-full border border-orange-200 bg-orange-100 px-2.5 py-1 text-xs font-bold text-orange-800">
+                                                                    <span className="mr-1.5 h-2 w-2 animate-pulse rounded-full bg-orange-500"></span>
+                                                                    {status}
+                                                                </span>
+                                                            );
+                                                        } else if (statusLower === 'no resuelto') {
+                                                            return (
+                                                                <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800">
+                                                                    <span className="mr-1.5 h-2 w-2 rounded-full bg-amber-500"></span>
+                                                                    {status}
+                                                                </span>
+                                                            );
+                                                        } else if (statusLower === 'cancelado') {
+                                                            return (
+                                                                <span className="inline-flex items-center rounded-full border border-red-200 bg-red-100 px-2.5 py-1 text-xs font-bold text-red-800">
+                                                                    <span className="mr-1.5 h-2 w-2 rounded-full bg-red-500"></span>
+                                                                    {status}
+                                                                </span>
+                                                            );
+                                                        } else {
+                                                            return (
+                                                                <span className="inline-flex items-center rounded-full border border-purple-200 bg-purple-100 px-2.5 py-1 text-xs font-bold text-purple-800">
+                                                                    <span className="mr-1.5 h-2 w-2 rounded-full bg-purple-500"></span>
+                                                                    {status}
+                                                                </span>
+                                                            );
+                                                        }
+                                                    })()}
+                                                </td>
+                                                <td className="px-4 py-4 text-xs">
+                                                    {(() => {
+                                                        const priority = row.prioridad || row.priority?.name || 'N/A';
+                                                        const priorityLower = priority.toLowerCase();
 
-                                                    if (priorityLower === 'alta') {
-                                                        return (
-                                                            <span className="inline-flex items-center rounded-full border border-red-200 bg-red-100 px-2.5 py-1 text-xs font-bold text-red-800">
-                                                                <span className="mr-1.5 h-2 w-2 animate-pulse rounded-full bg-red-500"></span>
-                                                                {priority}
-                                                            </span>
-                                                        );
-                                                    } else if (priorityLower === 'media' || priorityLower === 'normal') {
-                                                        return (
-                                                            <span className="inline-flex items-center rounded-full border border-yellow-200 bg-yellow-100 px-2.5 py-1 text-xs font-bold text-yellow-800">
-                                                                <span className="mr-1.5 h-2 w-2 rounded-full bg-yellow-500"></span>
-                                                                {priority}
-                                                            </span>
-                                                        );
-                                                    } else if (priorityLower === 'baja') {
-                                                        return (
-                                                            <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-100 px-2.5 py-1 text-xs font-bold text-blue-800">
-                                                                <span className="mr-1.5 h-2 w-2 rounded-full bg-blue-500"></span>
-                                                                {priority}
-                                                            </span>
-                                                        );
-                                                    } else {
-                                                        return (
-                                                            <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-800">
-                                                                <span className="mr-1.5 h-2 w-2 rounded-full bg-gray-500"></span>
-                                                                {priority}
-                                                            </span>
-                                                        );
-                                                    }
-                                                })()}
-                                            </td>
-                                            <td className="px-4 py-4 text-xs leading-tight text-gray-500">
-                                                <div dangerouslySetInnerHTML={{ __html: (row.creado_por || '').replace('\n', '<br/>') }} />
-                                            </td>
-                                            <td className="flex min-w-[160px] flex-col items-center gap-3 px-4 py-4">
-                                                <Link
-                                                    href={`/agent/ticket/${row.id}`}
-                                                    className="w-full rounded bg-blue-500 px-4 py-3 text-center text-xs font-bold text-white shadow-sm transition-colors hover:bg-blue-600"
-                                                >
-                                                    Ver Detalles
-                                                </Link>
-                                                {(() => {
-                                                    const status = row.estado || row.status?.name || '';
-                                                    const statusLower = status.toLowerCase();
-                                                    const isTerminal =
-                                                        statusLower === 'cerrado' || 
-                                                        statusLower === 'resuelto' || 
-                                                        statusLower === 'finalizado' ||
-                                                        statusLower === 'no resuelto';
-                                                    
-                                                    const tieneDiagnostico = row.tiene_diagnostico;
+                                                        if (priorityLower === 'alta') {
+                                                            return (
+                                                                <span className="inline-flex items-center rounded-full border border-red-200 bg-red-100 px-2.5 py-1 text-xs font-bold text-red-800">
+                                                                    <span className="mr-1.5 h-2 w-2 animate-pulse rounded-full bg-red-500"></span>
+                                                                    {priority}
+                                                                </span>
+                                                            );
+                                                        } else if (priorityLower === 'media' || priorityLower === 'normal') {
+                                                            return (
+                                                                <span className="inline-flex items-center rounded-full border border-yellow-200 bg-yellow-100 px-2.5 py-1 text-xs font-bold text-yellow-800">
+                                                                    <span className="mr-1.5 h-2 w-2 rounded-full bg-yellow-500"></span>
+                                                                    {priority}
+                                                                </span>
+                                                            );
+                                                        } else if (priorityLower === 'baja') {
+                                                            return (
+                                                                <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-100 px-2.5 py-1 text-xs font-bold text-blue-800">
+                                                                    <span className="mr-1.5 h-2 w-2 rounded-full bg-blue-500"></span>
+                                                                    {priority}
+                                                                </span>
+                                                            );
+                                                        } else {
+                                                            return (
+                                                                <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-800">
+                                                                    <span className="mr-1.5 h-2 w-2 rounded-full bg-gray-500"></span>
+                                                                    {priority}
+                                                                </span>
+                                                            );
+                                                        }
+                                                    })()}
+                                                </td>
+                                                <td className="px-4 py-4 text-xs leading-tight text-gray-500">
+                                                    <div dangerouslySetInnerHTML={{ __html: (row.creado_por || '').replace('\n', '<br/>') }} />
+                                                </td>
+                                                <td className="flex min-w-[160px] flex-col items-center gap-3 px-4 py-4">
+                                                    <Link
+                                                        href={`/agent/ticket/${row.id}`}
+                                                        className="w-full rounded bg-blue-500 px-4 py-3 text-center text-xs font-bold text-white shadow-sm transition-colors hover:bg-blue-600"
+                                                    >
+                                                        Ver Detalles
+                                                    </Link>
+                                                    {(() => {
+                                                        const status = row.estado || row.status?.name || '';
+                                                        const statusLower = status.toLowerCase();
+                                                        const isTerminal =
+                                                            statusLower === 'cerrado' ||
+                                                            statusLower === 'resuelto' ||
+                                                            statusLower === 'finalizado' ||
+                                                            statusLower === 'no resuelto';
 
-                                                    if (isTerminal) {
-                                                        const label = statusLower === 'no resuelto' ? 'Incidencia Reportada' : 'Diagnóstico Realizado';
-                                                        return (
-                                                            <div className={`w-full px-4 py-3 text-center text-xs font-medium ${statusLower === 'no resuelto' ? 'text-amber-600' : 'text-green-600'}`}>
-                                                                {label}
-                                                            </div>
-                                                        );
-                                                    } else if (tieneDiagnostico) {
-                                                        return (
-                                                            <div className="w-full px-4 py-3 text-center text-xs font-medium text-green-600">
-                                                                Diagnóstico Realizado
-                                                            </div>
-                                                        );
-                                                    } else {
-                                                        return (
-                                                            <button
-                                                                onClick={() => {
-                                                                    setSelectedTicketId(row.id);
-                                                                    setShowDiagnosticPanel(true);
-                                                                    setTimeout(() => {
-                                                                        document
-                                                                            .getElementById('diagnostico-section')
-                                                                            ?.scrollIntoView({ behavior: 'smooth' });
-                                                                    }, 100);
-                                                                }}
-                                                                className="w-full rounded bg-red-500 px-4 py-3 text-xs font-bold text-white shadow-sm transition-colors hover:bg-red-600"
-                                                            >
-                                                                Realizar Diagnostico
-                                                            </button>
-                                                        );
-                                                    }
-                                                })()}
+                                                        const tieneDiagnostico = row.tiene_diagnostico;
+
+                                                        if (isTerminal) {
+                                                            const label = statusLower === 'no resuelto' ? 'Incidencia Reportada' : 'Diagnóstico Realizado';
+                                                            return (
+                                                                <div className={`w-full px-4 py-3 text-center text-xs font-medium ${statusLower === 'no resuelto' ? 'text-amber-600' : 'text-green-600'}`}>
+                                                                    {label}
+                                                                </div>
+                                                            );
+                                                        } else if (tieneDiagnostico) {
+                                                            return (
+                                                                <div className="w-full px-4 py-3 text-center text-xs font-medium text-green-600">
+                                                                    Diagnóstico Realizado
+                                                                </div>
+                                                            );
+                                                        } else {
+                                                            return (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setSelectedTicketId(row.id);
+                                                                        setShowDiagnosticPanel(true);
+                                                                        setTimeout(() => {
+                                                                            document
+                                                                                .getElementById('diagnostico-section')
+                                                                                ?.scrollIntoView({ behavior: 'smooth' });
+                                                                        }, 100);
+                                                                    }}
+                                                                    className="w-full rounded bg-red-500 px-4 py-3 text-xs font-bold text-white shadow-sm transition-colors hover:bg-red-600"
+                                                                >
+                                                                    Realizar Diagnostico
+                                                                </button>
+                                                            );
+                                                        }
+                                                    })()}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={7} className="px-4 py-12 text-center text-gray-500">
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <Search className="h-8 w-8 text-gray-300" />
+                                                    <p className="font-medium">No se encontraron tickets con los filtros actuales</p>
+                                                    <p className="text-xs">Intenta ajustar tu búsqueda o filtros de estado</p>
+                                                </div>
                                             </td>
                                         </tr>
-                                    ))}
+                                    )}
                                 </tbody>
                             </table>
+                        </div>
+
+                        {/* Pagination Controls */}
+                        <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/50 px-4 py-3 sm:px-6">
+                            <div className="flex flex-1 justify-between sm:hidden">
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1 || isLoading}
+                                    className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                                >
+                                    Anterior
+                                </button>
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, ticketsPaginados.last_page))}
+                                    disabled={currentPage === ticketsPaginados.last_page || isLoading}
+                                    className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                                >
+                                    Siguiente
+                                </button>
+                            </div>
+                            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                                <div className="flex items-center gap-4">
+                                    <p className="text-sm text-gray-700">
+                                        Mostrando <span className="font-medium">{ticketsPaginados.from || 0}</span> a <span className="font-medium">{ticketsPaginados.to || 0}</span> de{' '}
+                                        <span className="font-medium">{ticketsPaginados.total || 0}</span> resultados
+                                    </p>
+                                    <div className="h-4 w-px bg-gray-200"></div>
+                                    <p className="text-xs font-medium text-gray-500">
+                                        Página <span className="text-gray-900">{currentPage}</span> de <span className="text-gray-900">{ticketsPaginados.last_page || 1}</span>
+                                    </p>
+                                </div>
+                                <div>
+                                    <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                            disabled={currentPage === 1 || isLoading}
+                                            className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+                                        >
+                                            <span className="sr-only">Anterior</span>
+                                            <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                                        </button>
+
+                                        <span className="relative inline-flex items-center px-4 py-2 text-sm font-semibold z-10 bg-red-600 text-white ring-1 ring-inset ring-red-600">
+                                            {currentPage}
+                                        </span>
+
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, ticketsPaginados.last_page))}
+                                            disabled={currentPage === ticketsPaginados.last_page || isLoading}
+                                            className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+                                        >
+                                            <span className="sr-only">Siguiente</span>
+                                            <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                                        </button>
+                                    </nav>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </>
             )}
+
 
             {/* Panel de Diagnóstico */}
             {showDiagnosticPanel && (
@@ -571,11 +688,10 @@ export default function AgentDashboard() {
                                             setTipoDiagnostico(diag.name);
                                             setShowCustomDiagnostic(false);
                                         }}
-                                        className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${
-                                            tipoDiagnostico === diag.name
+                                        className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${tipoDiagnostico === diag.name
                                                 ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
                                                 : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                                        }`}
+                                            }`}
                                     >
                                         <span className="mb-1 text-sm font-bold text-gray-800 text-center">{diag.name}</span>
                                         <span className="mb-3 text-center text-[10px] leading-tight text-gray-500">{diag.description || 'Diagnóstico del sistema'}</span>
@@ -591,11 +707,10 @@ export default function AgentDashboard() {
                                     setTipoDiagnostico('');
                                     setShowCustomDiagnostic(true);
                                 }}
-                                className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${
-                                    showCustomDiagnostic
+                                className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${showCustomDiagnostic
                                         ? 'border-gray-600 bg-gray-50 ring-2 ring-gray-200'
                                         : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
-                                }`}
+                                    }`}
                             >
                                 <span className="mb-1 text-sm font-bold text-gray-800">Otro Tipo</span>
                                 <span className="mb-3 text-center text-[10px] leading-tight text-gray-500">Especificar diagnóstico</span>
@@ -647,24 +762,24 @@ export default function AgentDashboard() {
                                         const filesArray = Array.from(e.target.files);
                                         // Validar tipos de archivo
                                         const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-ms-wmv'];
-                                        
+
                                         const maxSize = 10 * 1024 * 1024; // 10MB por archivo
                                         const validFiles = [];
-                                        
+
                                         for (const file of filesArray) {
                                             if (!allowedTypes.includes(file.type) && !file.name.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx|jpg|jpeg|png|gif|mp4|mov|avi|wmv)$/i)) {
                                                 alert(`El archivo "${file.name}" no es un tipo permitido.`);
                                                 continue;
                                             }
-                                            
+
                                             if (file.size > maxSize) {
                                                 alert(`El archivo "${file.name}" excede el tamaño máximo de 10MB.`);
                                                 continue;
                                             }
-                                            
+
                                             validFiles.push(file);
                                         }
-                                        
+
                                         // Maximo 4 archivos para no romper limite de DB
                                         if (validFiles.length > 4) {
                                             alert('Se permite un máximo de 4 archivos.');
@@ -723,7 +838,7 @@ export default function AgentDashboard() {
                             </h3>
                             <p className="text-xs text-slate-500 mt-1">Documente el proceso y la justificación de la no resolución.</p>
                         </div>
-                        
+
                         <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Nota Interna (Justificación / Avances)</label>
@@ -731,7 +846,7 @@ export default function AgentDashboard() {
                                     className={`w-full h-32 rounded-xl border text-sm p-4 focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all ${validationErrors.internal_note ? 'border-red-500 bg-red-50' : 'border-slate-200'}`}
                                     placeholder="Describa los avances realizados y la justificación de por qué no se pudo resolver el ticket..."
                                     value={unresolvedData.internal_note}
-                                    onChange={(e) => setUnresolvedData({...unresolvedData, internal_note: e.target.value})}
+                                    onChange={(e) => setUnresolvedData({ ...unresolvedData, internal_note: e.target.value })}
                                 ></textarea>
                                 {validationErrors.internal_note && (
                                     <p className="mt-1 text-[10px] font-bold text-red-600">{validationErrors.internal_note[0]}</p>
