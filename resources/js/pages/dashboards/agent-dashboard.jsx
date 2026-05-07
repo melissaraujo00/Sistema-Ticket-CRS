@@ -11,10 +11,12 @@ export default function AgentDashboard() {
     const [estadisticas, setEstadisticas] = useState(null);
     const [solutionTypes, setSolutionTypes] = useState([]);
     const [availableStatuses, setAvailableStatuses] = useState([]);
+    const [availablePriorities, setAvailablePriorities] = useState([]);
 
     const [activeView, setActiveView] = useState('main');
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('Todos los estados');
+    const [priorityFilter, setPriorityFilter] = useState('Todas las prioridades');
     const [currentPage, setCurrentPage] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -33,14 +35,15 @@ export default function AgentDashboard() {
     });
     const [validationErrors, setValidationErrors] = useState({});
 
-    const fetchData = useCallback(async (page = 1, search = '', status = 'Todos los estados') => {
+    const fetchData = useCallback(async (page = 1, search = '', status = 'Todos los estados', priority = 'Todas las prioridades') => {
         setIsLoading(true);
         try {
             const response = await axios.get('/agent/dashboard-data', {
                 params: {
                     page,
                     search,
-                    status
+                    status,
+                    priority
                 }
             });
 
@@ -49,6 +52,7 @@ export default function AgentDashboard() {
             setEstadisticas(response.data.estadisticas || null);
             setSolutionTypes(response.data.solution_types || []);
             setAvailableStatuses(response.data.statuses || []);
+            setAvailablePriorities(response.data.available_priorities || []);
         } catch (error) {
             console.error('Error al obtener datos del dashboard:', error);
             toast.error('Error al cargar los tickets');
@@ -59,15 +63,15 @@ export default function AgentDashboard() {
 
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
-            fetchData(currentPage, searchTerm, statusFilter);
+            fetchData(currentPage, searchTerm, statusFilter, priorityFilter);
         }, 300);
 
         return () => clearTimeout(delayDebounceFn);
-    }, [currentPage, searchTerm, statusFilter, fetchData]);
+    }, [currentPage, searchTerm, statusFilter, priorityFilter, fetchData]);
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, statusFilter]);
+    }, [searchTerm, statusFilter, priorityFilter]);
 
     useEffect(() => {
         if (currentPage > 1 || (ticketsPaginados.total > 0)) {
@@ -235,6 +239,18 @@ export default function AgentDashboard() {
                         <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
                     </div>
                     <select
+                        value={priorityFilter}
+                        onChange={(e) => setPriorityFilter(e.target.value)}
+                        className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm focus:outline-none"
+                    >
+                        <option value="Todas las prioridades">Todas las prioridades</option>
+                        {availablePriorities.map((priority) => (
+                            <option key={priority} value={priority}>
+                                {priority}
+                            </option>
+                        ))}
+                    </select>
+                    <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
                         className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm focus:outline-none"
@@ -302,7 +318,7 @@ export default function AgentDashboard() {
                         <h3 className="font-bold text-gray-800">Mis Estadisticas</h3>
                     </div>
 
-                    <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
                         <div className="flex flex-col justify-center rounded-lg border border-gray-100 bg-gray-50 p-4">
                             <div className="mb-1 text-xs font-semibold text-gray-500">Tasa de Resolucion</div>
                             <div className="text-xl font-bold">{stats.tasa_resolucion_porcentaje}%</div>
@@ -312,8 +328,12 @@ export default function AgentDashboard() {
                             <div className="text-xl font-bold">{stats.total_tickets_cola}</div>
                         </div>
                         <div className="flex flex-col justify-center rounded-lg border border-gray-100 bg-gray-50 p-4">
-                            <div className="mb-1 text-xs font-semibold text-gray-500">Total Procesados</div>
+                            <div className="mb-1 text-xs font-semibold text-gray-500">Total Resueltos</div>
                             <div className="text-xl font-bold">{stats.total_tickets_resueltos}</div>
+                        </div>
+                        <div className="flex flex-col justify-center rounded-lg border border-red-100 bg-red-50 p-4">
+                            <div className="mb-1 text-xs font-semibold text-red-700 uppercase">Críticos</div>
+                            <div className="text-xl font-bold text-red-800">{stats.total_tickets_criticos || 0}</div>
                         </div>
                     </div>
 
@@ -323,6 +343,7 @@ export default function AgentDashboard() {
                             const priorityData = stats.prioridades || {};
                             const totalTickets = stats.total_tickets_cola || 0;
                             const priorities = [
+                                { name: 'Crítica', color: 'bg-red-700', count: priorityData['Crítica'] || 0 },
                                 { name: 'Alta', color: 'bg-red-500', count: priorityData['Alta'] || 0 },
                                 { name: 'Media', color: 'bg-yellow-400', count: priorityData['Media'] || 0 },
                                 { name: 'Baja', color: 'bg-blue-500', count: priorityData['Baja'] || 0 },

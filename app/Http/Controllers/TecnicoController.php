@@ -87,6 +87,7 @@ class TecnicoController extends Controller
 
         $search = $request->query('search');
         $statusFilter = $request->query('status');
+        $priorityFilter = $request->query('priority');
 
         $activeQuery = clone $queryBase;
         $activeQuery->with(['priority', 'department', 'status', 'requestingUser', 'ticketSolutions', 'histories', 'helpTopic'])
@@ -103,6 +104,12 @@ class TecnicoController extends Controller
         if ($statusFilter && $statusFilter !== 'Todos los estados') {
             $activeQuery->whereHas('status', function ($q) use ($statusFilter) {
                 $q->where('name', $statusFilter);
+            });
+        }
+
+        if ($priorityFilter && $priorityFilter !== 'Todas las prioridades') {
+            $activeQuery->whereHas('priority', function ($q) use ($priorityFilter) {
+                $q->where('name', $priorityFilter);
             });
         }
 
@@ -183,13 +190,21 @@ class TecnicoController extends Controller
             'tickets_asignados' => $ticketsPaginados,
             'historial_finalizados' => $historialFinalizados,
             'solution_types' => SolutionType::where('department_id', $agent->department_id)->where('is_active', true)->get(),
-            'statuses' => Status::whereIn('id', $activeStatuses)->pluck('name'),
+            'statuses' => Status::whereIn('name', [
+                \App\Enums\TicketStatusEnum::ASSIGNED->value,
+                \App\Enums\TicketStatusEnum::IN_PROGRESS->value
+            ])->pluck('name'),
+            'available_priorities' => \App\Models\Priority::orderBy('level', 'desc')->pluck('name'),
             'estadisticas' => [
                 'tasa_resolucion_porcentaje' => round($tasaResolucion, 2),
                 'total_tickets_cola' => $totalEnCola,
                 'total_tickets_proceso' => $totalEnProceso,
                 'total_tickets_asignados' => $totalAsignadosCount,
                 'total_tickets_resueltos' => $totalResueltos,
+                'total_tickets_criticos' => Ticket::where('assigned_user', $agent->id)
+                    ->whereIn('status_id', $activeStatuses)
+                    ->whereHas('priority', fn($q) => $q->where('name', 'like', '%Crític%'))
+                    ->count(),
                 'prioridades' => $priorityDistribution
             ]
         ]);
@@ -624,7 +639,11 @@ class TecnicoController extends Controller
                 'total_tickets_cola' => $totalEnCola,
                 'total_tickets_proceso' => $totalEnProceso,
                 'total_tickets_asignados' => $totalAsignados,
-                'total_tickets_resueltos' => $totalResueltos
+                'total_tickets_resueltos' => $totalResueltos,
+                'total_tickets_criticos' => Ticket::where('assigned_user', $agent->id)
+                    ->whereIn('status_id', $statusEnProcesoIds)
+                    ->whereHas('priority', fn($q) => $q->where('name', 'like', '%Crític%'))
+                    ->count(),
             ]
         ]);
     }
