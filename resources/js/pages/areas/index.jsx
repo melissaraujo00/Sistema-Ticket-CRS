@@ -4,7 +4,7 @@ import { GenericTable } from '@/components/GenericTable';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { Plus } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Toaster, toast } from 'sonner';
 
@@ -59,12 +59,24 @@ export default function Areas({ areas = [] }) {
                         <p className="text-sm text-zinc-500">Lista de áreas registradas en el sistema.</p>
                     </div>
 
-                    <Button asChild className="bg-zinc-900 dark:bg-zinc-50 dark:text-zinc-900">
-                        <Link href={route('areas.create')}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Nuevo
-                        </Link>
-                    </Button>
+                    {/* Contenedor de botones */}
+                    <div className="flex items-center gap-2">
+                        {/* Botón Nuevo */}
+                        <Button asChild className="bg-zinc-900 dark:bg-zinc-50 dark:text-zinc-900">
+                            <Link href={route('areas.create')}>
+                                <Plus className="mr-2 h-4 w-4" />
+                                Nuevo
+                            </Link>
+                        </Button>
+
+                        {/* Botón de Papelera / Restaurar */}
+                        <Button variant="outline" asChild className="border-zinc-200 dark:border-zinc-800">
+                            <Link href={route('areas.trashed')}>
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Ver Borrados
+                            </Link>
+                        </Button>
+                    </div>
                 </div>
 
                 {/* La tabla ahora vuelve a ocupar el espacio principal sin el buscador arriba */}

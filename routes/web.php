@@ -99,6 +99,8 @@ Route::middleware(['auth'])->group(function () {
 
     // --- G. ESTRUCTURA ORGANIZACIONAL ---
     Route::middleware(['permission:manage_areas'])->group(function () {
+        Route::get('/areas/trashed', [AreaController::class, 'trashed'])->name('areas.trashed');
+        Route::put('/areas/{id}/restore', [AreaController::class, 'restore'])->name('areas.restore');
         Route::resource('areas', AreaController::class);
     });
 });

@@ -3,7 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule; // No olvides importar esta clase
+use App\Models\Area; // <-- Asegúrate de importar el modelo
 
 class SaveAreaRequest extends FormRequest
 {
@@ -21,7 +21,22 @@ class SaveAreaRequest extends FormRequest
                 'required',
                 'string',
                 'max:75',
-                Rule::unique('areas', 'name')->ignore($areaId)->whereNull('deleted_at'),
+                // Validación personalizada
+                function ($attribute, $value, $fail) use ($areaId) {
+                    $area = Area::withTrashed()
+                        ->where('name', $value)
+                        ->where('id', '!=', $areaId)
+                        ->first();
+
+                    if ($area) {
+                        // Si existe, verificamos en qué estado está
+                        if ($area->trashed()) {
+                            $fail('Esta área fue eliminada. Ve a la Papelera para restaurarla.');
+                        } else {
+                            $fail('Ya existe un área activa con este nombre en la lista.');
+                        }
+                    }
+                },
                 'regex:/^(?=.*[\pL])[\pL\s0-9\-]+$/u'
             ],
             'description' => [
@@ -37,7 +52,6 @@ class SaveAreaRequest extends FormRequest
             'name.required' => 'El nombre del área es obligatorio.',
             'name.string'   => 'El formato del nombre no es válido.',
             'name.max'      => 'El nombre no puede superar los 75 caracteres.',
-            'name.unique'   => 'Ya existe un área activa con este nombre registrada en el sistema.',
             'name.regex'    => 'El nombre debe contener al menos una letra y no permite símbolos especiales.',
         ];
     }

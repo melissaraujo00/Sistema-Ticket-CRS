@@ -7,6 +7,7 @@ use App\Http\Requests\SaveAreaRequest;
 use App\Services\AreaService;
 use Inertia\Inertia;
 use Exception;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class AreaController extends Controller
 {
@@ -26,7 +27,6 @@ class AreaController extends Controller
 
     public function create()
     {
-        // Buena práctica: usar nombres en minúsculas para evitar errores 404 en servidores Linux
         return Inertia::render('areas/create');
     }
 
@@ -45,7 +45,6 @@ class AreaController extends Controller
 
     public function show(Area $area)
     {
-        // Estructura lista por si en el futuro se necesita ver el detalle de un área
         return Inertia::render('areas/show', [
             'area' => $area
         ]);
@@ -71,7 +70,7 @@ class AreaController extends Controller
         }
     }
 
-    public function destroy(Area $area)
+    public function destroy(Area $area): RedirectResponse
     {
         try {
             $this->areaService->deleteArea($area);
@@ -82,6 +81,35 @@ class AreaController extends Controller
         } catch (Exception $e) {
             return redirect()->route('areas.index')
                 ->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Muestra la lista de áreas en la papelera (Soft Deleted).
+     */
+    public function trashed()
+    {
+        // El servicio debe devolver Area::onlyTrashed()
+        $areas = $this->areaService->getTrashedAreas();
+
+        return Inertia::render('areas/trashed', [
+            'areas' => $areas,
+        ]);
+    }
+
+    /**
+     * Restaura un área eliminada.
+     */
+    public function restore($id): RedirectResponse
+    {
+        try {
+            $this->areaService->restoreArea($id);
+
+            return redirect()->route('areas.trashed')
+                ->with('success', 'Área restaurada exitosamente.');
+        } catch (Exception $e) {
+            return redirect()->route('areas.trashed')
+                ->with('error', 'Error al restaurar el área: ' . $e->getMessage());
         }
     }
 }

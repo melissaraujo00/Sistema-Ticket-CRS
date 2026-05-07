@@ -20,21 +20,12 @@ class AreaService
      */
     public function createArea(array $data): Area
     {
-        // Buscamos si el área existe, incluso entre las eliminadas (Soft Deletes)
-        $area = Area::withTrashed()->where('name', $data['name'])->first();
-
-        if ($area) {
-            // Si el área existe y está eliminada, la revivimos
-            if ($area->trashed()) {
-                $area->restore();
-            }
-
-            $area->update($data);
-
-            return $area;
-        }
-
         return Area::create($data);
+    }
+
+    public function getTrashedAreas()
+    {
+        return Area::onlyTrashed()->latest()->get();
     }
 
     /**
@@ -43,6 +34,15 @@ class AreaService
     public function updateArea(Area $area, array $data): bool
     {
         return $area->update($data);
+    }
+
+    /**
+     * Restaura un área específica.
+     */
+    public function restoreArea($id): bool
+    {
+        $area = Area::onlyTrashed()->findOrFail($id);
+        return $area->restore();
     }
 
     /**

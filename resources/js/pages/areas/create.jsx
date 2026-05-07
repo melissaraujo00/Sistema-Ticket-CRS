@@ -4,13 +4,23 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAreaActions } from '@/hooks/use-area-actions';
 import AppLayout from '@/layouts/app-layout';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import { Toaster } from 'sonner';
+import { Toaster, toast } from 'sonner';
+import { useEffect } from 'react';
 
 export default function Create() {
     const { form, store } = useAreaActions();
     const { data, setData, processing, errors } = form;
+
+    // Extraemos los mensajes flash del backend
+    const { flash } = usePage().props;
+
+    useEffect(() => {
+        if (flash?.error) {
+            toast.error(flash.error);
+        }
+    }, [flash]);
 
     const submit = (e) => {
         store(e);
