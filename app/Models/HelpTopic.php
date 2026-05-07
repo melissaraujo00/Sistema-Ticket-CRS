@@ -40,5 +40,9 @@ class HelpTopic extends Model
         return $this->hasMany(Ticket::class);
     }
 
+    public function division(): BelongsTo
+    {
+        return $this->belongsTo(Division::class, 'division_id');
+    }
 
 }

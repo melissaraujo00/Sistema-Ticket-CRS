@@ -58,11 +58,9 @@ export default function Dashboard() {
                 );
         }
     };
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
-
             <div className="p-4 md:p-6 lg:p-8 w-full flex flex-col h-full">
                 {renderContent()}
             </div>
