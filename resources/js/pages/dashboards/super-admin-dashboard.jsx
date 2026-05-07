@@ -7,8 +7,8 @@ import {
 } from 'recharts';
 
 import { DashCard, KpiCard } from '@/components/componts-dashadmin/dash-components';
-import ExportModal            from '@/components/componts-dashadmin/ExportModal';
-import TicketPreview          from '@/components/componts-dashadmin/TicketPreview';
+import ExportModal            from '@/components/componts-dashadmin/Exportmodal';
+import TicketPreview          from '@/components/componts-dashadmin/Ticketpreview';
 import TicketsTable           from '@/components/componts-dashadmin/TicketsTable';
 
 export default function SuperAdminDashboard() {
