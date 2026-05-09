@@ -87,7 +87,7 @@ export default function AgentDashboard() {
         asunto: ticket.subject || ticket.asunto,
         departamento: ticket.department?.name || 'N/A',
         fecha_asignacion: ticket.creation_date ? new Date(ticket.creation_date).toLocaleDateString('es-ES') : 'N/A',
-        fecha_finalizacion: ticket.closing_date ? new Date(ticket.closing_date).toLocaleDateString('es-ES') : 'N/A',
+        fecha_finalizacion: (ticket.closing_date || ticket.updated_at) ? new Date(ticket.closing_date || ticket.updated_at).toLocaleDateString('es-ES') : 'N/A',
     }));
 
     const stats = estadisticas || {

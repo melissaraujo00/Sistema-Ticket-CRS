@@ -79,27 +79,31 @@ class TecnicoController extends Controller
             $statusPendienteRevision = Status::where('name', 'Pendiente Revisión')->first();
         }
 
-        $queryBase = Ticket::where('assigned_user', $agent->id);
+        $queryBase = Ticket::where('tickets.assigned_user', $agent->id);
 
         if ($statusPendienteRevision) {
-            $queryBase->where('status_id', '!=', $statusPendienteRevision->id);
+            $queryBase->where('tickets.status_id', '!=', $statusPendienteRevision->id);
         }
 
         $search = $request->query('search');
         $statusFilter = $request->query('status');
         $priorityFilter = $request->query('priority');
 
-        $activeQuery = clone $queryBase;
-        $activeQuery->with(['priority', 'department', 'status', 'requestingUser', 'ticketSolutions', 'histories', 'helpTopic'])
-            ->whereIn('status_id', $activeStatuses);
-
+        // Busqueda de Tickets
         if ($search) {
-            $activeQuery->where(function ($q) use ($search) {
-                $q->where('subject', 'like', "%{$search}%")
-                    ->orWhere('code', 'like', "%{$search}%")
-                    ->orWhere('id', 'like', "%{$search}%");
+            $queryBase->where(function ($q) use ($search) {
+                $q->where('tickets.subject', 'like', "%{$search}%")
+                    ->orWhere('tickets.code', 'like', "%{$search}%")
+                    ->orWhere('tickets.id', 'like', "%{$search}%")
+                    ->orWhereHas('requestingUser', function ($qu) use ($search) {
+                        $qu->where('name', 'like', "%{$search}%");
+                    });
             });
         }
+
+        $activeQuery = clone $queryBase;
+        $activeQuery->with(['priority', 'department', 'status', 'requestingUser', 'ticketSolutions', 'histories', 'helpTopic'])
+            ->whereIn('tickets.status_id', $activeStatuses);
 
         if ($statusFilter && $statusFilter !== 'Todos los estados') {
             $activeQuery->whereHas('status', function ($q) use ($statusFilter) {
@@ -114,7 +118,7 @@ class TecnicoController extends Controller
         }
 
         $ticketsPaginados = $activeQuery
-            ->join('priorities', 'tickets.priority_id', '=', 'priorities.id')
+            ->leftJoin('priorities', 'tickets.priority_id', '=', 'priorities.id')
             ->select('tickets.*')
             ->orderBy('priorities.level', 'desc')
             ->orderBy('tickets.creation_date', 'desc')
@@ -130,15 +134,15 @@ class TecnicoController extends Controller
                 'prioridad' => $ticket->priority->name ?? 'N/A',
                 'creado_por' => $ticket->requestingUser->name ?? 'N/A',
                 'fecha_creacion' => $ticket->creation_date,
-                'tiene_diagnostico' => $ticket->ticketSolutions->count() > 0 || ($ticket->status->name !== 'Asignado' && $ticket->status->name !== 'En Proceso' && $ticket->histories->where('action_type', ActionTypeEnum::NOTE_ADDED)->whereNotNull('internal_note')->count() > 0),
+                'tiene_diagnostico' => $ticket->ticketSolutions->count() > 0 || ($ticket->status->name !== 'Asignado' && $ticket->status->name !== 'En Proceso' && $ticket->histories->where('action_type', \App\Enums\ActionTypeEnum::NOTE_ADDED)->whereNotNull('internal_note')->count() > 0),
                 'help_topic_id' => $ticket->help_topic_id,
                 'help_topic_name' => $ticket->helpTopic->name_topic ?? 'N/A'
             ];
         });
 
-        $historialFinalizados = (clone $queryBase)->with(['department'])
-            ->whereIn('status_id', $terminalStatuses)
-            ->orderBy('updated_at', 'desc')
+        $historialFinalizados = (clone $queryBase)->with(['department', 'status'])
+            ->whereIn('tickets.status_id', $terminalStatuses)
+            ->orderBy('tickets.updated_at', 'desc')
             ->limit(20)
             ->get();
 
@@ -270,18 +274,19 @@ class TecnicoController extends Controller
     {
         $agent = Auth::user();
 
-        $statusCerrado = Status::where('name', 'like', '%cerrado%')
-            ->orWhere('name', 'like', '%Cerrado%')
-            ->orWhere('name', 'like', '%finalizado%')
-            ->orWhere('name', 'like', '%resuelto%')
-            ->first();
+        // Obtener todos los IDs de estados terminales (cerrado, resuelto, no resuelto, etc.)
+        $terminalStatuses = Status::where(function ($query) {
+            $query->where('name', 'like', '%cerrado%')
+                ->orWhere('name', 'like', '%finalizado%')
+                ->orWhere('name', 'like', '%resuelto%')
+                ->orWhere('name', 'like', '%no resuelto%');
+        })->pluck('id');
 
         $tickets = Ticket::with(['priority', 'department', 'status'])
             ->where('assigned_user', $agent->id)
-            ->when($statusCerrado, function ($query) use ($statusCerrado) {
-                return $query->where('status_id', $statusCerrado->id);
-            })
+            ->whereIn('status_id', $terminalStatuses)
             ->orderBy('closing_date', 'desc')
+            ->orderBy('updated_at', 'desc')
             ->get();
 
         return response()->json([
@@ -592,6 +597,7 @@ class TecnicoController extends Controller
         }
 
         $ticket->status_id = $estadoResuelto->id;
+        $ticket->closing_date = now(); // Se establece la fecha de finalización
         $ticket->save();
 
         return response()->json([
@@ -671,6 +677,7 @@ class TecnicoController extends Controller
             $estadoNoResuelto = Status::firstOrCreate(['name' => $statusName]);
 
             $ticket->status_id = $estadoNoResuelto->id;
+            $ticket->closing_date = now(); // Se establece la fecha de finalización
             $ticket->save();
 
             TicketHistory::create([
