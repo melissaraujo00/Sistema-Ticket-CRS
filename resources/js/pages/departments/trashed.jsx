@@ -21,7 +21,7 @@ export default function Trashed({ departments = [] }) {
     const columns = [
         {
             header: 'Departamento',
-            className: 'w-1/3',
+            className: 'w-1/4',
             render: (dept) => <span className="font-semibold text-zinc-900 dark:text-zinc-50">{dept.name}</span>,
         },
         {
@@ -31,6 +31,11 @@ export default function Trashed({ departments = [] }) {
                     {dept.area?.name || 'No asignada'}
                 </span>
             ),
+        },
+        {
+            header: 'Correo',
+            // Usamos email_department tal como está definido en el modelo y validaciones
+            render: (dept) => <span className="text-sm text-zinc-600 dark:text-zinc-400">{dept.email_department}</span>,
         },
         {
             header: 'Acciones',

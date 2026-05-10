@@ -7,20 +7,14 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class SaveDepartmentRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     */
     public function rules(): array
     {
-        // Obtenemos el ID del departamento si estamos en la ruta de "actualizar"
+        // Obtenemos el ID del departamento actual si es una actualización
         $departmentId = $this->route('department') ? $this->route('department')->id : null;
 
         return [
@@ -40,23 +34,53 @@ class SaveDepartmentRequest extends FormRequest
                             : $fail('Ya existe un departamento activo con este nombre.');
                     }
                 },
-                'regex:/^(?=.*[\pL])[\pL\s0-9\-]+$/u' // Permite letras, números, espacios y guiones
+                'regex:/^(?=.*[\pL])[\pL\s0-9\-]+$/u'
             ],
-            'description'      => ['required', 'string'],
-            'email_department' => ['required', 'email', 'max:100'],
-            'area_id'          => ['required', 'exists:areas,id'],
+            'email_department' => [
+                'required',
+                'email',
+                'max:100',
+                // Validación de unicidad incluyendo registros eliminados
+                function ($attribute, $value, $fail) use ($departmentId) {
+                    $exists = Department::withTrashed()
+                        ->where('email_department', $value)
+                        ->where('id', '!=', $departmentId)
+                        ->first();
+
+                    if ($exists) {
+                        if ($exists->trashed()) {
+                            $fail('Este correo pertenece a un departamento en la papelera.');
+                        } else {
+                            $fail('Este correo electrónico ya está registrado en otro departamento activo.');
+                        }
+                    }
+                }
+            ],
+            'description' => ['required', 'string'],
+            'area_id'     => ['required', 'exists:areas,id'],
         ];
     }
 
-    /**
-     * Get the error messages for the defined validation rules.
-     */
     public function messages(): array
     {
         return [
-            'name.regex'       => 'El nombre del departamento solo puede contener letras, números, espacios y guiones.',
-            'area_id.required' => 'Debes seleccionar un área a la que pertenezca este departamento.',
-            'area_id.exists'   => 'El área seleccionada no es válida en nuestro sistema.',
+            // Mensajes para el Nombre
+            'name.required'             => 'El nombre del departamento es obligatorio.',
+            'name.string'               => 'El nombre debe ser una cadena de texto válida.',
+            'name.max'                  => 'El nombre no puede superar los 75 caracteres.',
+            'name.regex'                => 'El nombre solo puede contener letras, números, espacios y guiones.',
+
+            // Mensajes para el Correo
+            'email_department.required' => 'El correo electrónico del departamento es obligatorio.',
+            'email_department.email'    => 'Debes ingresar una dirección de correo válida.',
+            'email_department.max'      => 'El correo no puede exceder los 100 caracteres.',
+
+            // Mensajes para la Descripción
+            'description.required'      => 'Debes proporcionar una descripción para el departamento.',
+
+            // Mensajes para el Área
+            'area_id.required'          => 'Debes seleccionar un área a la que pertenezca este departamento.',
+            'area_id.exists'            => 'El área seleccionada no es válida.',
         ];
     }
 }
