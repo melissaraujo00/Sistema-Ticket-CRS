@@ -122,6 +122,8 @@ export default function AgentDashboard() {
                 return;
             }
 
+            setIsSubmitting(true);
+
             const diagnosticType = showCustomDiagnostic && customDiagnosticType.trim()
                 ? customDiagnosticType.trim()
                 : (tipoDiagnostico || 'General');
@@ -153,8 +155,11 @@ export default function AgentDashboard() {
         } catch (error) {
             console.error('Error al guardar diagnóstico:', error);
             setDiagnosticStatus({ type: 'error', msg: 'Ocurrió un error al guardar el diagnóstico.' });
+        } finally {
+            setIsSubmitting(false);
         }
     };
+
 
     const submitUnresolved = async () => {
         setValidationErrors({});

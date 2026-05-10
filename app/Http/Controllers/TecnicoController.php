@@ -537,75 +537,89 @@ class TecnicoController extends Controller
             ], 404);
         }
 
-        $solutionType = SolutionType::firstOrCreate(
-            ['name' => $request->tipo_diagnostico],
-            ['description' => 'Creado desde diagnóstico técnico']
-        );
-
-        $solution = TicketSolution::create([
-            'ticket_id' => $ticket->id,
-            'user_id' => $agent->id,
-            'message' => $request->observacion,
-            'date' => now(),
-            'solution_type_id' => $solutionType->id,
-        ]);
-
-        $filesProcessed = 0;
-
-        // Manejar adjuntos
-        $inputNames = ['adjuntos', 'adjuntos_'];
-        foreach ($inputNames as $inputName) {
-            if ($request->hasFile($inputName)) {
-                foreach ($request->file($inputName) as $file) {
-                    if ($file->getSize() > 10240 * 1024) {
-                        return response()->json([
-                            'message' => 'El archivo ' . $file->getClientOriginalName() . ' excede el tamaño máximo de 10MB.'
-                        ], 422);
-                    }
-
-                    $path = $file->store('diagnosticos', 'public');
-
-                    $solution->attachments()->create([
-                        'file_name' => $file->getClientOriginalName(),
-                        'file_path' => $path,
-                        'file_type' => $file->getMimeType(),
-                        'file_size' => $file->getSize(),
-                    ]);
-
-                    $filesProcessed++;
-                }
-            }
-        }
-
-        if ($filesProcessed === 0) {
+        if ($ticket->ticketSolutions()->exists()) {
             return response()->json([
-                'message' => 'Debe adjuntar al menos un archivo como evidencia del diagnóstico.'
+                'message' => 'Este ticket ya cuenta con un diagnóstico registrado.'
             ], 422);
         }
 
-        Log::info('Diagnóstico guardado:', [
-            'ticket_id' => $ticket->id,
-            'solution_id' => $solution->id,
-            'files_count' => $filesProcessed
-        ]);
+        DB::beginTransaction();
 
-        $estadoResuelto = Status::where('name', 'like', '%Resuelto%')
-            ->orWhere('name', 'like', '%resuelto%')
-            ->first();
+        try {
+            $solutionType = SolutionType::firstOrCreate(
+                ['name' => $request->tipo_diagnostico],
+                ['description' => 'Creado desde diagnóstico técnico']
+            );
 
-        if (!$estadoResuelto) {
-            $estadoResuelto = Status::firstOrCreate(['name' => 'Resuelto']);
+            $solution = TicketSolution::create([
+                'ticket_id' => $ticket->id,
+                'user_id' => $agent->id,
+                'message' => $request->observacion,
+                'date' => now(),
+                'solution_type_id' => $solutionType->id,
+            ]);
+
+            $filesProcessed = 0;
+
+            $inputNames = ['adjuntos', 'adjuntos_'];
+            foreach ($inputNames as $inputName) {
+                if ($request->hasFile($inputName)) {
+                    foreach ($request->file($inputName) as $file) {
+                        if ($file->getSize() > 10240 * 1024) {
+                            throw new \Exception('El archivo ' . $file->getClientOriginalName() . ' excede el tamaño máximo de 10MB.');
+                        }
+
+                        $path = $file->store('diagnosticos', 'public');
+
+                        $solution->attachments()->create([
+                            'file_name' => $file->getClientOriginalName(),
+                            'file_path' => $path,
+                            'file_type' => $file->getMimeType(),
+                            'file_size' => $file->getSize(),
+                        ]);
+
+                        $filesProcessed++;
+                    }
+                }
+            }
+
+            if ($filesProcessed === 0) {
+                throw new \Exception('Debe adjuntar al menos un archivo como evidencia del diagnóstico.');
+            }
+
+            Log::info('Diagnóstico guardado:', [
+                'ticket_id' => $ticket->id,
+                'solution_id' => $solution->id,
+                'files_count' => $filesProcessed
+            ]);
+
+            $estadoResuelto = Status::where('name', 'like', '%Resuelto%')
+                ->orWhere('name', 'like', '%resuelto%')
+                ->first();
+
+            if (!$estadoResuelto) {
+                $estadoResuelto = Status::firstOrCreate(['name' => 'Resuelto']);
+            }
+
+            $ticket->status_id = $estadoResuelto->id;
+            $ticket->closing_date = now();
+            $ticket->save();
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Diagnóstico guardado exitosamente.',
+                'status_id' => $ticket->status_id
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => $e->getMessage()
+            ], 422);
         }
-
-        $ticket->status_id = $estadoResuelto->id;
-        $ticket->closing_date = now(); // Se establece la fecha de finalización
-        $ticket->save();
-
-        return response()->json([
-            'message' => 'Diagnóstico guardado exitosamente.',
-            'status_id' => $ticket->status_id
-        ]);
     }
+
 
     /**
      * Obtener estadísticas generales del técnico
