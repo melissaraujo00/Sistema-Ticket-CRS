@@ -1,14 +1,14 @@
 import { GenericTable } from '@/components/GenericTable';
 import { Button } from '@/components/ui/button';
-import { useAreaActions } from '@/hooks/use-area-actions';
+import { useDepartmentActions } from '@/hooks/use-department-actions'; // Asumiendo que existe el hook
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { ArrowLeft, RotateCcw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Toaster, toast } from 'sonner';
 
-export default function Trashed({ areas = [] }) {
-    const { restore, isProcessingAction } = useAreaActions();
+export default function Trashed({ departments = [] }) {
+    const { restore, isProcessingAction } = useDepartmentActions();
     const [confirmId, setConfirmId] = useState(null);
 
     const { flash } = usePage().props;
@@ -20,29 +20,33 @@ export default function Trashed({ areas = [] }) {
 
     const columns = [
         {
-            header: 'Nombre',
+            header: 'Departamento',
             className: 'w-1/3',
-            render: (area) => <span className="font-semibold text-zinc-900 dark:text-zinc-50">{area.name}</span>,
+            render: (dept) => <span className="font-semibold text-zinc-900 dark:text-zinc-50">{dept.name}</span>,
         },
         {
-            header: 'Descripción',
-            render: (area) => <span className="text-sm text-zinc-500">{area.description || 'Sin descripción'}</span>,
+            header: 'Área',
+            render: (dept) => (
+                <span className="rounded-md bg-zinc-100 px-2 py-1 text-[10px] font-bold text-zinc-500 uppercase dark:bg-zinc-800">
+                    {dept.area?.name || 'No asignada'}
+                </span>
+            ),
         },
         {
             header: 'Acciones',
             className: 'text-right',
-            render: (area) => (
+            render: (dept) => (
                 <div className="flex justify-end gap-2">
-                    {confirmId === area.id ? (
+                    {confirmId === dept.id ? (
                         <div className="animate-in fade-in slide-in-from-right-2 flex items-center gap-2">
                             <span className="text-sm font-medium text-zinc-500">¿Restaurar?</span>
                             <button
                                 type="button"
-                                onClick={() => restore(area.id, () => setConfirmId(null))}
-                                disabled={isProcessingAction === area.id}
+                                onClick={() => restore(dept.id, () => setConfirmId(null))}
+                                disabled={isProcessingAction === dept.id}
                                 className="rounded-lg bg-green-600 px-3 py-1 text-xs font-bold text-white transition-colors hover:bg-green-700 disabled:opacity-50"
                             >
-                                {isProcessingAction === area.id ? '...' : 'Sí'}
+                                {isProcessingAction === dept.id ? '...' : 'Sí'}
                             </button>
                             <button
                                 type="button"
@@ -56,7 +60,7 @@ export default function Trashed({ areas = [] }) {
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setConfirmId(area.id)}
+                            onClick={() => setConfirmId(dept.id)}
                             className="h-8 border-zinc-200 hover:bg-green-50 hover:text-green-600 dark:border-zinc-800"
                         >
                             <RotateCcw className="mr-2 h-3.5 w-3.5" />
@@ -70,23 +74,23 @@ export default function Trashed({ areas = [] }) {
 
     return (
         <AppLayout>
-            <Head title="Papelera de Áreas" />
+            <Head title="Papelera de Departamentos" />
             <Toaster position="top-right" richColors />
 
             <div className="space-y-6 p-4 md:p-8">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Papelera de Áreas</h1>
-                        <p className="text-sm text-zinc-500">Consulta y recupera las áreas eliminadas del sistema.</p>
+                        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Papelera de Departamentos</h1>
+                        <p className="text-sm text-zinc-500">Consulta y recupera los departamentos eliminados.</p>
                     </div>
                     <Button asChild className="bg-zinc-900 dark:bg-zinc-50 dark:text-zinc-900">
-                        <Link href={route('areas.index')}>
-                            <ArrowLeft className="mr-2 h-4 w-4" /> Volver a Áreas
+                        <Link href={route('departments.index')}>
+                            <ArrowLeft className="mr-2 h-4 w-4" /> Volver a Departamentos
                         </Link>
                     </Button>
                 </div>
 
-                <GenericTable data={areas} columns={columns} />
+                <GenericTable data={departments} columns={columns} />
             </div>
         </AppLayout>
     );

@@ -88,6 +88,9 @@ Route::middleware(['auth'])->group(function () {
 
     // --- H. GESTIÓN DE USUARIOS ---
     Route::middleware(['permission:manage_users'])->group(function () {
+        Route::get('/users/trashed', [UserController::class, 'trashed'])->name('users.trashed');
+        Route::put('/users/{id}/restore', [UserController::class, 'restore'])->name('users.restore');
+
         Route::resource('users', UserController::class);
     });
 

@@ -16,9 +16,9 @@ class UserController extends Controller
     {
         $this->userService = $userService;
 
-        // Middleware: solo usuarios con permiso 'manage_users' pueden modificar datos
+        // Protegemos las rutas con el permiso manage_users
         $this->middleware('permission:manage_users')->only([
-            'create', 'store', 'edit', 'update', 'destroy'
+            'create', 'store', 'edit', 'update', 'destroy', 'trashed', 'restore'
         ]);
     }
 
@@ -33,6 +33,7 @@ class UserController extends Controller
 
     public function create()
     {
+        // Este método es Vital para cargar los datos en el formulario de creación
         return Inertia::render('users/create', [
             'departments' => $this->userService->getDepartmentsList(),
             'roles'       => $this->userService->getRolesList(),
@@ -44,7 +45,7 @@ class UserController extends Controller
         $this->userService->createUser($request->validated());
 
         return redirect()->route('users.index')
-            ->with('success', 'Usuario creado correctamente');
+            ->with('success', 'Usuario creado correctamente.');
     }
 
     public function show(User $user)
@@ -68,19 +69,36 @@ class UserController extends Controller
         $this->userService->updateUser($user, $request->validated());
 
         return redirect()->route('users.index')
-            ->with('success', 'Usuario actualizado correctamente');
+            ->with('success', 'Usuario actualizado correctamente.');
     }
 
     public function destroy(User $user)
     {
         try {
             $this->userService->deleteUser($user);
-
             return redirect()->route('users.index')
-                ->with('success', 'Usuario eliminado correctamente');
+                ->with('success', 'Usuario enviado a la papelera.');
         } catch (\Exception $e) {
-            return redirect()->route('users.index')
-                ->with('error', $e->getMessage());
+            return redirect()->route('users.index')->with('error', $e->getMessage());
+        }
+    }
+
+    public function trashed()
+    {
+        return Inertia::render('users/trashed', [
+            'users' => $this->userService->getTrashedUsers(),
+        ]);
+    }
+
+    public function restore($id)
+    {
+        try {
+            $this->userService->restoreUser($id);
+            return redirect()->route('users.trashed')
+                ->with('success', 'Usuario restaurado exitosamente.');
+        } catch (\Exception $e) {
+            return redirect()->route('users.trashed')
+                ->with('error', 'Error al restaurar: ' . $e->getMessage());
         }
     }
 }

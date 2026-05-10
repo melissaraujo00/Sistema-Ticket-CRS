@@ -96,4 +96,14 @@ class UserService
     {
         return $user->load('department', 'roles');
     }
+
+    public function getTrashedUsers()
+    {
+        return User::onlyTrashed()->with('department', 'roles')->latest()->get();
+    }
+
+    public function restoreUser($id): bool
+    {
+        return User::onlyTrashed()->findOrFail($id)->restore();
+    }
 }

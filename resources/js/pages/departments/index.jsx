@@ -21,38 +21,27 @@ export default function Departments({ departments = [] }) {
     const columns = [
         {
             header: 'ID',
-            className: '!text-left w-16',
-            render: (dept) => (
-                <div className="w-full text-left">
-                    <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{dept.id}</span>
-                </div>
-            ),
+            className: 'w-16',
+            render: (dept) => <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{dept.id}</span>,
         },
         {
             header: 'Departamento',
-            className: '!text-left w-1/4', // Le damos un buen ancho
-            render: (dept) => (
-                <div className="w-full text-left">
-                    <span className="font-semibold text-zinc-900 dark:text-zinc-50">{dept.name}</span>
-                </div>
-            ),
+            className: 'w-1/4',
+            render: (dept) => <span className="font-semibold text-zinc-900 dark:text-zinc-50">{dept.name}</span>,
         },
         {
             header: 'Área',
-            className: '!text-left',
             render: (dept) => (
-                <div className="w-full text-left">
-                    <span className="text-xs font-bold tracking-wider text-zinc-500 uppercase bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-md">
-                        {dept.area?.name || 'No asignada'}
-                    </span>
-                </div>
+                <span className="rounded-md bg-zinc-100 px-2 py-1 text-[10px] font-bold tracking-wider text-zinc-500 uppercase dark:bg-zinc-800">
+                    {dept.area?.name || 'No asignada'}
+                </span>
             ),
         },
         {
-            header: 'Responsables (Heads)',
-            className: '!text-left w-1/4',
+            header: 'Responsables',
+            className: 'w-1/3',
             render: (dept) => (
-                <div className="flex w-full flex-wrap justify-start gap-1">
+                <div className="flex flex-wrap gap-1">
                     {dept.heads?.length > 0 ? (
                         dept.heads.map((head) => (
                             <span
@@ -63,33 +52,26 @@ export default function Departments({ departments = [] }) {
                             </span>
                         ))
                     ) : (
-                        <span className="text-sm italic text-zinc-400">Sin asignar</span>
+                        <span className="text-sm text-zinc-400 italic">Sin asignar</span>
                     )}
                 </div>
             ),
         },
         {
             header: 'Correo',
-            className: '!text-left',
-            render: (dept) => (
-                <div className="w-full text-left">
-                    <span className="text-sm text-zinc-600 dark:text-zinc-400">{dept.email_department}</span>
-                </div>
-            ),
+            render: (dept) => <span className="text-sm text-zinc-600 dark:text-zinc-400">{dept.email_department}</span>,
         },
         {
             header: 'Acciones',
-            className: '!text-right w-24',
+            className: 'text-right w-24',
             render: (dept) => (
-                <div className="flex w-full justify-end">
-                    <DepartmentTableActions
-                        department={dept}
-                        onDelete={(d) => {
-                            setSelectedDepartment(d);
-                            setIsDeleteOpen(true);
-                        }}
-                    />
-                </div>
+                <DepartmentTableActions
+                    department={dept}
+                    onDelete={(d) => {
+                        setSelectedDepartment(d);
+                        setIsDeleteOpen(true);
+                    }}
+                />
             ),
         },
     ];
@@ -109,15 +91,13 @@ export default function Departments({ departments = [] }) {
                     <div className="flex items-center gap-2">
                         <Button asChild className="bg-zinc-900 dark:bg-zinc-50 dark:text-zinc-900">
                             <Link href={route('departments.create')}>
-                                <Plus className="mr-2 h-4 w-4" />
-                                Nuevo
+                                <Plus className="mr-2 h-4 w-4" /> Nuevo
                             </Link>
                         </Button>
 
                         <Button variant="outline" asChild className="border-zinc-200 dark:border-zinc-800">
                             <Link href={route('departments.trashed')}>
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Ver Borrados
+                                <Trash2 className="mr-2 h-4 w-4" /> Ver Borrados
                             </Link>
                         </Button>
                     </div>

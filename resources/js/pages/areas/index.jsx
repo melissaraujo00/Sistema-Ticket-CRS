@@ -13,7 +13,6 @@ export default function Areas({ areas = [] }) {
     const [selectedArea, setSelectedArea] = useState(null);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
-    // Mantenemos solo el efecto de las notificaciones
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
         if (flash?.error) toast.error(flash.error);
@@ -22,10 +21,12 @@ export default function Areas({ areas = [] }) {
     const columns = [
         {
             header: 'ID',
+            className: 'w-16',
             render: (area) => <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{area.id}</span>,
         },
         {
             header: 'Nombre',
+            className: 'w-1/3',
             render: (area) => <span className="font-semibold text-zinc-900 dark:text-zinc-50">{area.name}</span>,
         },
         {
@@ -34,7 +35,7 @@ export default function Areas({ areas = [] }) {
         },
         {
             header: 'Acciones',
-            className: 'text-right',
+            className: 'text-right w-24',
             render: (area) => (
                 <AreaTableActions
                     area={area}
@@ -59,27 +60,21 @@ export default function Areas({ areas = [] }) {
                         <p className="text-sm text-zinc-500">Lista de áreas registradas en el sistema.</p>
                     </div>
 
-                    {/* Contenedor de botones */}
                     <div className="flex items-center gap-2">
-                        {/* Botón Nuevo */}
                         <Button asChild className="bg-zinc-900 dark:bg-zinc-50 dark:text-zinc-900">
                             <Link href={route('areas.create')}>
-                                <Plus className="mr-2 h-4 w-4" />
-                                Nuevo
+                                <Plus className="mr-2 h-4 w-4" /> Nuevo
                             </Link>
                         </Button>
 
-                        {/* Botón de Papelera / Restaurar */}
                         <Button variant="outline" asChild className="border-zinc-200 dark:border-zinc-800">
                             <Link href={route('areas.trashed')}>
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Ver Borrados
+                                <Trash2 className="mr-2 h-4 w-4" /> Ver Borrados
                             </Link>
                         </Button>
                     </div>
                 </div>
 
-                {/* La tabla ahora vuelve a ocupar el espacio principal sin el buscador arriba */}
                 <GenericTable data={areas} columns={columns} />
             </div>
 

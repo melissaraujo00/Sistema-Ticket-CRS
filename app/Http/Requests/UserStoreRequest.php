@@ -3,8 +3,9 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-
+use App\Models\User;
 class UserStoreRequest extends FormRequest
+
 {
     public function authorize(): bool
     {
@@ -14,9 +15,36 @@ class UserStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'          => 'required|string|max:255',
-            'institution_code' => 'nullable|string|max:50|unique:users,institution_code',
-            'email'         => 'required|email|unique:users,email',
+            'name' => 'required|string|max:255',
+            'institution_code' => [
+                'nullable',
+                'string',
+                'max:50',
+                function ($attribute, $value, $fail) {
+                    $exists = User::withTrashed()->where('institution_code', $value)->first();
+                    if ($exists) {
+                        if ($exists->trashed()) {
+                            $fail('Este código pertenece a un usuario en la papelera. Restáuralo primero.');
+                        } else {
+                            $fail('Este código institucional ya está asignado a otro usuario.');
+                        }
+                    }
+                }
+            ],
+            'email' => [
+                'required',
+                'email',
+                function ($attribute, $value, $fail) {
+                    $exists = User::withTrashed()->where('email', $value)->first();
+                    if ($exists) {
+                        if ($exists->trashed()) {
+                            $fail('Este correo pertenece a un usuario en la papelera. Restáuralo primero.');
+                        } else {
+                            $fail('Este correo electrónico ya está registrado en el sistema.');
+                        }
+                    }
+                }
+            ],
             'password'      => 'required|min:8',
             'phone_number'  => 'required|digits:8',
             'birthdate'     => 'required|date',
@@ -32,40 +60,36 @@ class UserStoreRequest extends FormRequest
     public function messages(): array
     {
         return [
-            // Errores para 'name'
-            'name.required' => 'El nombre completo es obligatorio.',
-            'name.max'      => 'El nombre no puede exceder los 255 caracteres.',
+            // Nombre
+            'name.required'         => 'El nombre completo es obligatorio.',
+            'name.max'              => 'El nombre no puede exceder los 255 caracteres.',
 
-            // Errores para 'email'
-            'email.required' => 'El correo electrónico es obligatorio.',
-            'email.email'    => 'Debes ingresar una dirección de correo válida.',
-            'email.unique'   => 'Este correo electrónico ya está registrado en el sistema.',
+            // Correo (La validación de "único" y "papelera" está en el Closure de rules)
+            'email.required'        => 'El correo electrónico es obligatorio.',
+            'email.email'           => 'Debes ingresar una dirección de correo válida.',
 
-            // Errores para 'password'
-            'password.required' => 'La contraseña es obligatoria para nuevos usuarios.',
-            'password.min'      => 'La contraseña debe tener al menos 8 caracteres.',
+            // Código Institucional (La validación de "único" y "papelera" está en el Closure de rules)
+            'institution_code.max'  => 'El código institucional no puede tener más de 50 caracteres.',
 
-            // Errores para 'phone_number'
+            // Contraseña
+            'password.required'     => 'La contraseña es obligatoria para nuevos usuarios.',
+            'password.min'          => 'La contraseña debe tener al menos 8 caracteres.',
+
+            // Teléfono y Extensión
             'phone_number.required' => 'El número de teléfono es obligatorio.',
             'phone_number.digits'   => 'El teléfono debe tener exactamente 8 dígitos.',
+            'ext.max'               => 'La extensión no puede tener más de 10 caracteres.',
 
-            // Errores para 'birthdate'
-            'birthdate.required' => 'La fecha de nacimiento es obligatoria.',
-            'birthdate.date'     => 'Ingresa una fecha válida.',
+            // Otros datos
+            'birthdate.required'    => 'La fecha de nacimiento es obligatoria.',
+            'birthdate.date'        => 'Ingresa una fecha de nacimiento válida.',
 
-            // Errores para 'department_id'
-            'department_id.required' => 'Debes seleccionar un departamento.',
+            // Relaciones
+            'department_id.required'=> 'Debes seleccionar un departamento para el usuario.',
             'department_id.exists'   => 'El departamento seleccionado no es válido.',
 
-            // Errores para 'role'
-            'role.required' => 'Es necesario asignar un rol al usuario.',
-            'role.exists'   => 'El rol seleccionado no es válido.',
-
-            // Errores para 'ext'
-            'ext.max' => 'La extensión no puede tener más de 10 caracteres.',
-
-            'institution_code.unique' => 'Este código institucional ya está asignado a otro usuario.',
-            'institution_code.max'    => 'El código no puede tener más de 50 caracteres.',
+            'role.required'         => 'Es necesario asignar un rol al usuario.',
+            'role.exists'           => 'El rol seleccionado no es válido en nuestro sistema.',
         ];
     }
 }

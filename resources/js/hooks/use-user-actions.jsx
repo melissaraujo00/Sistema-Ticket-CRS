@@ -64,5 +64,19 @@ export function useUserActions(user = null) {
         });
     };
 
-    return { form, store, update, destroy, isDeleting };
+    const restore = (userId, onSuccess) => {
+        router.put(
+            route('users.restore', userId),
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    if (onSuccess) onSuccess();
+                },
+                onError: () => toast.error('Error al intentar restaurar el usuario'),
+            },
+        );
+    };
+
+    return { form, store, update, destroy, restore, isDeleting };
 }
