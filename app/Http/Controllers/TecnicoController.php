@@ -79,31 +79,27 @@ class TecnicoController extends Controller
             $statusPendienteRevision = Status::where('name', 'Pendiente Revisión')->first();
         }
 
-        $queryBase = Ticket::where('tickets.assigned_user', $agent->id);
+        $queryBase = Ticket::where('assigned_user', $agent->id);
 
         if ($statusPendienteRevision) {
-            $queryBase->where('tickets.status_id', '!=', $statusPendienteRevision->id);
+            $queryBase->where('status_id', '!=', $statusPendienteRevision->id);
         }
 
         $search = $request->query('search');
         $statusFilter = $request->query('status');
         $priorityFilter = $request->query('priority');
 
-        // Busqueda de Tickets
-        if ($search) {
-            $queryBase->where(function ($q) use ($search) {
-                $q->where('tickets.subject', 'like', "%{$search}%")
-                    ->orWhere('tickets.code', 'like', "%{$search}%")
-                    ->orWhere('tickets.id', 'like', "%{$search}%")
-                    ->orWhereHas('requestingUser', function ($qu) use ($search) {
-                        $qu->where('name', 'like', "%{$search}%");
-                    });
-            });
-        }
-
         $activeQuery = clone $queryBase;
         $activeQuery->with(['priority', 'department', 'status', 'requestingUser', 'ticketSolutions', 'histories', 'helpTopic'])
-            ->whereIn('tickets.status_id', $activeStatuses);
+            ->whereIn('status_id', $activeStatuses);
+
+        if ($search) {
+            $activeQuery->where(function ($q) use ($search) {
+                $q->where('subject', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%")
+                    ->orWhere('id', 'like', "%{$search}%");
+            });
+        }
 
         if ($statusFilter && $statusFilter !== 'Todos los estados') {
             $activeQuery->whereHas('status', function ($q) use ($statusFilter) {
@@ -118,7 +114,7 @@ class TecnicoController extends Controller
         }
 
         $ticketsPaginados = $activeQuery
-            ->leftJoin('priorities', 'tickets.priority_id', '=', 'priorities.id')
+            ->join('priorities', 'tickets.priority_id', '=', 'priorities.id')
             ->select('tickets.*')
             ->orderBy('priorities.level', 'desc')
             ->orderBy('tickets.creation_date', 'desc')
@@ -134,15 +130,15 @@ class TecnicoController extends Controller
                 'prioridad' => $ticket->priority->name ?? 'N/A',
                 'creado_por' => $ticket->requestingUser->name ?? 'N/A',
                 'fecha_creacion' => $ticket->creation_date,
-                'tiene_diagnostico' => $ticket->ticketSolutions->count() > 0 || ($ticket->status->name !== 'Asignado' && $ticket->status->name !== 'En Proceso' && $ticket->histories->where('action_type', \App\Enums\ActionTypeEnum::NOTE_ADDED)->whereNotNull('internal_note')->count() > 0),
+                'tiene_diagnostico' => $ticket->ticketSolutions->count() > 0 || ($ticket->status->name !== 'Asignado' && $ticket->status->name !== 'En Proceso' && $ticket->histories->where('action_type', ActionTypeEnum::NOTE_ADDED)->whereNotNull('internal_note')->count() > 0),
                 'help_topic_id' => $ticket->help_topic_id,
                 'help_topic_name' => $ticket->helpTopic->name_topic ?? 'N/A'
             ];
         });
 
-        $historialFinalizados = (clone $queryBase)->with(['department', 'status'])
-            ->whereIn('tickets.status_id', $terminalStatuses)
-            ->orderBy('tickets.updated_at', 'desc')
+        $historialFinalizados = (clone $queryBase)->with(['department'])
+            ->whereIn('status_id', $terminalStatuses)
+            ->orderBy('updated_at', 'desc')
             ->limit(20)
             ->get();
 
@@ -274,19 +270,18 @@ class TecnicoController extends Controller
     {
         $agent = Auth::user();
 
-        // Obtener todos los IDs de estados terminales (cerrado, resuelto, no resuelto, etc.)
-        $terminalStatuses = Status::where(function ($query) {
-            $query->where('name', 'like', '%cerrado%')
-                ->orWhere('name', 'like', '%finalizado%')
-                ->orWhere('name', 'like', '%resuelto%')
-                ->orWhere('name', 'like', '%no resuelto%');
-        })->pluck('id');
+        $statusCerrado = Status::where('name', 'like', '%cerrado%')
+            ->orWhere('name', 'like', '%Cerrado%')
+            ->orWhere('name', 'like', '%finalizado%')
+            ->orWhere('name', 'like', '%resuelto%')
+            ->first();
 
         $tickets = Ticket::with(['priority', 'department', 'status'])
             ->where('assigned_user', $agent->id)
-            ->whereIn('status_id', $terminalStatuses)
+            ->when($statusCerrado, function ($query) use ($statusCerrado) {
+                return $query->where('status_id', $statusCerrado->id);
+            })
             ->orderBy('closing_date', 'desc')
-            ->orderBy('updated_at', 'desc')
             ->get();
 
         return response()->json([
@@ -421,8 +416,8 @@ class TecnicoController extends Controller
             'priority',
             'slaPlan',
             'requestingUser',
-            'assignedUser.department',
-            'helpTopic.division',
+            'assignedUser',
+            'helpTopic',
             'department',
             'histories',
             'attachments',
@@ -470,7 +465,6 @@ class TecnicoController extends Controller
             'telefono' => $ticket->requestingUser->phone_number ?? 'N/A',
             'temas_de_ayuda' => $ticket->helpTopic->name_topic ?? 'N/A',
             'departamento_solicitante' => $ticket->department->name ?? 'N/A',
-            'division_solicitante' => $ticket->helpTopic->division->name ?? 'N/A',
             'solicitante' => $ticket->requestingUser->name ?? 'N/A',
             'problema' => $ticket->subject,
             'detalles_del_problema' => $ticket->message,
@@ -537,89 +531,74 @@ class TecnicoController extends Controller
             ], 404);
         }
 
-        if ($ticket->ticketSolutions()->exists()) {
-            return response()->json([
-                'message' => 'Este ticket ya cuenta con un diagnóstico registrado.'
-            ], 422);
-        }
+        $solutionType = SolutionType::firstOrCreate(
+            ['name' => $request->tipo_diagnostico],
+            ['description' => 'Creado desde diagnóstico técnico']
+        );
 
-        DB::beginTransaction();
+        $solution = TicketSolution::create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $agent->id,
+            'message' => $request->observacion,
+            'date' => now(),
+            'solution_type_id' => $solutionType->id,
+        ]);
 
-        try {
-            $solutionType = SolutionType::firstOrCreate(
-                ['name' => $request->tipo_diagnostico],
-                ['description' => 'Creado desde diagnóstico técnico']
-            );
+        $filesProcessed = 0;
 
-            $solution = TicketSolution::create([
-                'ticket_id' => $ticket->id,
-                'user_id' => $agent->id,
-                'message' => $request->observacion,
-                'date' => now(),
-                'solution_type_id' => $solutionType->id,
-            ]);
-
-            $filesProcessed = 0;
-
-            $inputNames = ['adjuntos', 'adjuntos_'];
-            foreach ($inputNames as $inputName) {
-                if ($request->hasFile($inputName)) {
-                    foreach ($request->file($inputName) as $file) {
-                        if ($file->getSize() > 10240 * 1024) {
-                            throw new \Exception('El archivo ' . $file->getClientOriginalName() . ' excede el tamaño máximo de 10MB.');
-                        }
-
-                        $path = $file->store('diagnosticos', 'public');
-
-                        $solution->attachments()->create([
-                            'file_name' => $file->getClientOriginalName(),
-                            'file_path' => $path,
-                            'file_type' => $file->getMimeType(),
-                            'file_size' => $file->getSize(),
-                        ]);
-
-                        $filesProcessed++;
+        // Manejar adjuntos
+        $inputNames = ['adjuntos', 'adjuntos_'];
+        foreach ($inputNames as $inputName) {
+            if ($request->hasFile($inputName)) {
+                foreach ($request->file($inputName) as $file) {
+                    if ($file->getSize() > 10240 * 1024) {
+                        return response()->json([
+                            'message' => 'El archivo ' . $file->getClientOriginalName() . ' excede el tamaño máximo de 10MB.'
+                        ], 422);
                     }
+
+                    $path = $file->store('diagnosticos', 'public');
+
+                    $solution->attachments()->create([
+                        'file_name' => $file->getClientOriginalName(),
+                        'file_path' => $path,
+                        'file_type' => $file->getMimeType(),
+                        'file_size' => $file->getSize(),
+                    ]);
+
+                    $filesProcessed++;
                 }
             }
+        }
 
-            if ($filesProcessed === 0) {
-                throw new \Exception('Debe adjuntar al menos un archivo como evidencia del diagnóstico.');
-            }
-
-            Log::info('Diagnóstico guardado:', [
-                'ticket_id' => $ticket->id,
-                'solution_id' => $solution->id,
-                'files_count' => $filesProcessed
-            ]);
-
-            $estadoResuelto = Status::where('name', 'like', '%Resuelto%')
-                ->orWhere('name', 'like', '%resuelto%')
-                ->first();
-
-            if (!$estadoResuelto) {
-                $estadoResuelto = Status::firstOrCreate(['name' => 'Resuelto']);
-            }
-
-            $ticket->status_id = $estadoResuelto->id;
-            $ticket->closing_date = now();
-            $ticket->save();
-
-            DB::commit();
-
+        if ($filesProcessed === 0) {
             return response()->json([
-                'message' => 'Diagnóstico guardado exitosamente.',
-                'status_id' => $ticket->status_id
-            ]);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'message' => $e->getMessage()
+                'message' => 'Debe adjuntar al menos un archivo como evidencia del diagnóstico.'
             ], 422);
         }
-    }
 
+        Log::info('Diagnóstico guardado:', [
+            'ticket_id' => $ticket->id,
+            'solution_id' => $solution->id,
+            'files_count' => $filesProcessed
+        ]);
+
+        $estadoResuelto = Status::where('name', 'like', '%Resuelto%')
+            ->orWhere('name', 'like', '%resuelto%')
+            ->first();
+
+        if (!$estadoResuelto) {
+            $estadoResuelto = Status::firstOrCreate(['name' => 'Resuelto']);
+        }
+
+        $ticket->status_id = $estadoResuelto->id;
+        $ticket->save();
+
+        return response()->json([
+            'message' => 'Diagnóstico guardado exitosamente.',
+            'status_id' => $ticket->status_id
+        ]);
+    }
 
     /**
      * Obtener estadísticas generales del técnico
@@ -692,7 +671,6 @@ class TecnicoController extends Controller
             $estadoNoResuelto = Status::firstOrCreate(['name' => $statusName]);
 
             $ticket->status_id = $estadoNoResuelto->id;
-            $ticket->closing_date = now(); // Se establece la fecha de finalización
             $ticket->save();
 
             TicketHistory::create([

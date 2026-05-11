@@ -123,7 +123,7 @@ class TecnicoDataSeeder extends Seeder
                 'closing_date' => Carbon::now()->addMonth(),
             ],
             [
-                'code' => 'TK-0004',
+                'code' => 'TK-004',
                 'subject' => 'Monitor parpadea',
                 'message' => 'El monitor de mi escritorio comienza a parpadear intermitentemente, causando dolor de cabeza.',
                 'email' => 'ana.martinez@empresa.com',
