@@ -4,8 +4,8 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use App\Models\User;
-class UserStoreRequest extends FormRequest
 
+class UserStoreRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -51,45 +51,38 @@ class UserStoreRequest extends FormRequest
             'department_id' => 'required|exists:departments,id',
             'role'          => 'required|exists:roles,name',
             'ext'           => 'nullable|string|max:10',
+            'is_head'       => 'nullable|boolean',
         ];
     }
 
-    /**
-     * Mensajes de error personalizados en español.
-     */
     public function messages(): array
     {
         return [
-            // Nombre
             'name.required'         => 'El nombre completo es obligatorio.',
             'name.max'              => 'El nombre no puede exceder los 255 caracteres.',
 
-            // Correo (La validación de "único" y "papelera" está en el Closure de rules)
             'email.required'        => 'El correo electrónico es obligatorio.',
             'email.email'           => 'Debes ingresar una dirección de correo válida.',
 
-            // Código Institucional (La validación de "único" y "papelera" está en el Closure de rules)
             'institution_code.max'  => 'El código institucional no puede tener más de 50 caracteres.',
 
-            // Contraseña
             'password.required'     => 'La contraseña es obligatoria para nuevos usuarios.',
             'password.min'          => 'La contraseña debe tener al menos 8 caracteres.',
 
-            // Teléfono y Extensión
             'phone_number.required' => 'El número de teléfono es obligatorio.',
             'phone_number.digits'   => 'El teléfono debe tener exactamente 8 dígitos.',
             'ext.max'               => 'La extensión no puede tener más de 10 caracteres.',
 
-            // Otros datos
             'birthdate.required'    => 'La fecha de nacimiento es obligatoria.',
             'birthdate.date'        => 'Ingresa una fecha de nacimiento válida.',
 
-            // Relaciones
             'department_id.required'=> 'Debes seleccionar un departamento para el usuario.',
-            'department_id.exists'   => 'El departamento seleccionado no es válido.',
+            'department_id.exists'  => 'El departamento seleccionado no es válido.',
 
             'role.required'         => 'Es necesario asignar un rol al usuario.',
             'role.exists'           => 'El rol seleccionado no es válido en nuestro sistema.',
+
+            'is_head.boolean'       => 'El formato del identificador de jefatura es inválido.',
         ];
     }
 }

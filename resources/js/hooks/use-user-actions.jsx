@@ -1,10 +1,12 @@
-// resources/js/hooks/use-user-actions.jsx
 import { router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
 export function useUserActions(user = null) {
     const [isDeleting, setIsDeleting] = useState(false);
+
+    // Validamos si el usuario en edición es jefe de su departamento actual
+    const isHead = user?.headed_departments?.some(dept => dept.id === user.department_id) ?? false;
 
     const form = useForm({
         name: user?.name ?? '',
@@ -14,8 +16,10 @@ export function useUserActions(user = null) {
         phone_number: user?.phone_number ?? '',
         ext: user?.ext ?? '',
         birthdate: user?.birthdate ?? '',
+        area_id: user?.department?.area_id ?? '',
         department_id: user?.department_id ?? '',
         role: user?.roles?.[0]?.name ?? '',
+        is_head: isHead,
     });
 
     const store = (e, onSuccess) => {
@@ -41,7 +45,7 @@ export function useUserActions(user = null) {
         form.patch(route('users.update', userId), {
             preserveScroll: true,
             onSuccess: () => {
-                form.reset();
+                form.reset('password');
                 if (onSuccess) onSuccess();
             },
             onError: () => {

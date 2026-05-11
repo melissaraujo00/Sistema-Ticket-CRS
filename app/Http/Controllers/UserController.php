@@ -16,7 +16,6 @@ class UserController extends Controller
     {
         $this->userService = $userService;
 
-        // Protegemos las rutas con el permiso manage_users
         $this->middleware('permission:manage_users')->only([
             'create', 'store', 'edit', 'update', 'destroy', 'trashed', 'restore'
         ]);
@@ -26,6 +25,7 @@ class UserController extends Controller
     {
         return Inertia::render('users/index', [
             'users'       => $this->userService->getAllUsers(),
+            'areas'       => $this->userService->getAreasList(),
             'departments' => $this->userService->getDepartmentsList(),
             'roles'       => $this->userService->getRolesList(),
         ]);
@@ -33,8 +33,8 @@ class UserController extends Controller
 
     public function create()
     {
-        // Este método es Vital para cargar los datos en el formulario de creación
         return Inertia::render('users/create', [
+            'areas'       => $this->userService->getAreasList(),
             'departments' => $this->userService->getDepartmentsList(),
             'roles'       => $this->userService->getRolesList(),
         ]);
@@ -59,6 +59,7 @@ class UserController extends Controller
     {
         return Inertia::render('users/edit', [
             'user'        => $this->userService->getUserWithRelations($user),
+            'areas'       => $this->userService->getAreasList(),
             'departments' => $this->userService->getDepartmentsList(),
             'roles'       => $this->userService->getRolesList(),
         ]);

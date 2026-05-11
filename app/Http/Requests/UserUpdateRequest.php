@@ -60,12 +60,10 @@ class UserUpdateRequest extends FormRequest
             'role'          => 'required|exists:roles,name',
             'password'      => 'nullable|min:8',
             'ext'           => 'nullable|string|max:10',
+            'is_head'       => 'nullable|boolean',
         ];
     }
 
-    /**
-     * Mensajes de error personalizados en español.
-     */
     public function messages(): array
     {
         return [
@@ -87,10 +85,12 @@ class UserUpdateRequest extends FormRequest
             'birthdate.date'        => 'Formato de fecha de nacimiento no válido.',
 
             'department_id.required'=> 'Debes asignar un departamento al usuario.',
-            'department_id.exists'   => 'El departamento seleccionado no existe.',
+            'department_id.exists'  => 'El departamento seleccionado no existe.',
 
             'role.required'         => 'El usuario debe tener un rol asignado.',
             'role.exists'           => 'El rol seleccionado no es válido.',
+
+            'is_head.boolean'       => 'El formato del identificador de jefatura es inválido.',
         ];
     }
 }
