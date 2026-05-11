@@ -117,7 +117,11 @@ class HandleInertiaRequests extends Middleware
                             'url'   => route('areas.index'),
                             'icon'  => 'Layers'
                         ],
-                        // PROXIMO:Departamentos y Divisiones
+                        [
+                            'title' => 'Departamentos',
+                            'url'   => route('departments.index'),
+                            'icon'  => 'Building'
+                        ],
                     ]
                 ];
             }

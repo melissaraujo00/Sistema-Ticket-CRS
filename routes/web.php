@@ -10,6 +10,7 @@ use App\Http\Controllers\PriorityController;
 use App\Http\Controllers\TecnicoController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\AreaController;
+use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\QualificationController;
 use App\Http\Controllers\SolutionTypeController;
 use App\Http\Controllers\DashboardController;
@@ -87,6 +88,9 @@ Route::middleware(['auth'])->group(function () {
 
     // --- H. GESTIÓN DE USUARIOS ---
     Route::middleware(['permission:manage_users'])->group(function () {
+        Route::get('/users/trashed', [UserController::class, 'trashed'])->name('users.trashed');
+        Route::put('/users/{id}/restore', [UserController::class, 'restore'])->name('users.restore');
+
         Route::resource('users', UserController::class);
     });
 
@@ -98,6 +102,13 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/areas/{id}/restore', [AreaController::class, 'restore'])->name('areas.restore');
         Route::resource('areas', AreaController::class);
     });
+
+    Route::middleware(['permission:manage_departments'])->group(function () {
+        Route::get('/departments/trashed', [DepartmentController::class, 'trashed'])->name('departments.trashed');
+        Route::put('/departments/{id}/restore', [DepartmentController::class, 'restore'])->name('departments.restore');
+        Route::resource('departments', DepartmentController::class);
+    });
+
 });
 
 // ==========================================
