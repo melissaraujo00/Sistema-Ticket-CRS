@@ -165,7 +165,7 @@ export default function TicketDetails({ id }) {
                                 </div>
                                 <div className="grid grid-cols-[100px_1fr] gap-2">
                                     <span className="font-bold text-xs text-gray-900">Area</span>
-                                    <span>{data.area_del_agent}</span>
+                                     <span>{data.division_solicitante}</span>
                                 </div>
                             </div>
 
