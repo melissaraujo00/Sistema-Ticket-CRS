@@ -9,6 +9,8 @@ import {
 import { DashCard, KpiCard } from '@/components/componts-dashadmin/dash-components';
 import ExportModal            from '@/components/componts-dashadmin/Exportmodal';
 import TicketPreview          from '@/components/componts-dashadmin/Ticketpreview';
+import ExportModal            from '@/components/componts-dashadmin/Exportmodal.jsx';
+import TicketPreview          from '@/components/componts-dashadmin/Ticketpreview.jsx';
 import TicketsTable           from '@/components/componts-dashadmin/TicketsTable';
 
 export default function SuperAdminDashboard() {

@@ -28,10 +28,6 @@ use App\Http\Controllers\DashboardController;
 Route::get('/', [PublicController::class, 'index'])->name('home');
 
 
-//-----prueva del json
-   Route::get('ratings-dashboard', [\App\Http\Controllers\TechnicalRatingsController::class, 'index'])
-      ->name('ratings.dashboard');
-
 // ==========================================
 // 2. RUTAS AUTENTICADAS
 // ==========================================
@@ -42,6 +38,11 @@ Route::middleware(['auth'])->group(function () {
     // Route::get('dashboard', function () {
     //     return Inertia::render('dashboard');
     // })->name('dashboard');
+
+    Route::middleware(['role:superadmin'])->group(function () {
+        Route::get('ratings-dashboard', [\App\Http\Controllers\TechnicalRatingsController::class, 'index'])
+            ->name('ratings.dashboard');
+    });
 
     // --- B. NOTIFICACIONES ---
     Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
@@ -110,7 +111,9 @@ Route::middleware(['auth'])->group(function () {
 
     Route::middleware(['role:superadmin'])->group(function () {
         Route::resource('faq', KnowledgeController::class);
-=======
+
+    Route::post('/qualifications', [QualificationController::class, 'store']);
+
     // --- G. ESTRUCTURA ORGANIZACIONAL ---
     Route::middleware(['permission:manage_areas'])->group(function () {
         Route::get('/areas/trashed', [AreaController::class, 'trashed'])->name('areas.trashed');
@@ -124,6 +127,15 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('departments', DepartmentController::class);
     });
 
+
+    // Knowledge
+    Route::middleware(['role:superadmin'])->group(function () {
+        Route::resource('category', CategoryController::class);
+    });
+
+    Route::middleware(['role:superadmin'])->group(function () {
+        Route::resource('faq', KnowledgeController::class);
+    });
 });
 
 // ==========================================

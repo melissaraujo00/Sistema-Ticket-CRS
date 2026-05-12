@@ -3,7 +3,7 @@ import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { usePage, Link } from '@inertiajs/react';
-import { BookOpen, Clock, Folder, LayoutGrid, ListChecks, Users, Ticket, HelpCircle, History } from 'lucide-react'; // Agregados Ticket y HelpCircle
+import { BookOpen, Clock, Folder, LayoutGrid, ListChecks, Users, Ticket, HelpCircle, History, Star } from 'lucide-react'; // Agregados Ticket y HelpCircle
 
 import AppLogo from './app-logo';
 
@@ -12,6 +12,12 @@ const mainNavItems = [
         title: 'Dashboard',
         url: '/dashboard',
         icon: LayoutGrid,
+    },
+    {
+        title: 'Rating Técnicos',
+        url: '/ratings-dashboard',
+        icon: Star,
+        role: 'superadmin'
     },
     {
         title: 'Mis Tickets',
@@ -50,12 +56,16 @@ const mainNavItems = [
     },
 ];
 
-function filterNavItems(items, hasPermission) {
+function filterNavItems(items, hasPermission, userRoles) {
     return items
-        .filter(item => !item.permission || hasPermission(item.permission))
+        .filter(item => {
+            const permissionMatch = !item.permission || hasPermission(item.permission);
+            const roleMatch = !item.role || userRoles.includes(item.role);
+            return permissionMatch && roleMatch;
+        })
         .map(item =>
             item.children
-                ? { ...item, children: filterNavItems(item.children, hasPermission) }
+                ? { ...item, children: filterNavItems(item.children, hasPermission, userRoles) }
                 : item
         )
         .filter(item => !item.children || item.children.length > 0);
@@ -64,8 +74,9 @@ function filterNavItems(items, hasPermission) {
 export function AppSidebar() {
     const { auth } = usePage().props;
     const userPermissions = auth?.user?.permissions || [];
+    const userRoles = auth?.user?.roles || [];
     const hasPermission = (perm) => userPermissions.includes(perm);
-    const filteredNavItems = filterNavItems(mainNavItems, hasPermission);
+    const filteredNavItems = filterNavItems(mainNavItems, hasPermission, userRoles);
 
     return (
         <Sidebar collapsible="icon" variant="inset">

@@ -54,12 +54,16 @@ class UpdateTechnicalStatsRating extends Command
                     ->whereColumn('assigned_user', 'users.id')
                     ->whereNotNull('closing_date')
             ])
-            ->withAvg(['ticketsAssigned as rating' => function ($query) {
-                $query->join('qualifications', 'tickets.id', '=', 'qualifications.ticket_id');
-            }], 'qualifications.score')
-            ->withCount(['ticketsAssigned as tickets_resolved' => function ($query) {
-                $query->whereHas('status', fn($q) => $q->whereIn('name', ['Resuelto', 'Cerrado']));
-            }])
+            ->withAvg([
+                'ticketsAssigned as rating' => function ($query) {
+                    $query->join('qualifications', 'tickets.id', '=', 'qualifications.ticket_id');
+                }
+            ], 'qualifications.score')
+            ->withCount([
+                'ticketsAssigned as tickets_resolved' => function ($query) {
+                    $query->whereHas('status', fn($q) => $q->whereIn('name', ['Resuelto', 'Cerrado']));
+                }
+            ])
             ->with('department:id,name')
             ->orderByDesc('rating')
             ->take(6)
@@ -85,12 +89,34 @@ class UpdateTechnicalStatsRating extends Command
             ->get()
             ->map(fn($q) => [
                 'month' => Carbon::create($q->year, $q->month)->translatedFormat('M'),
+                'month_number' => $q->month,
+                'year' => $q->year,
                 'rating' => round($q->rating, 2)
             ]);
 
-        // 4. GUARDAR RESULTADOS EN LA TABLA DE ACUMULADOS
-        DB::table('technicalrating_stats')->updateOrInsert(
-            ['id' => 1], // Mantenemos el registro principal siempre actualizado
+
+
+        $distribution = \App\Models\Qualification::selectRaw('score, count(*) as total')
+            ->groupBy('score')
+            ->orderByDesc('score')
+            ->get();
+
+        // 6. Desempeño por Departamento 
+        $departmentPerformance = \App\Models\Department::withCount(['tickets as total_tickets'])
+            ->get()
+            ->map(function ($dept) {
+                return [
+                    'name' => $dept->name,
+                    'total_tickets' => $dept->total_tickets,
+                    'average_rating' => \DB::table('qualifications')
+                        ->join('tickets', 'qualifications.ticket_id', '=', 'tickets.id')
+                        ->where('tickets.department_id', $dept->id)
+                        ->avg('score') ?? 0
+                ];
+            });
+
+        \DB::table('technicalrating_stats')->insert(
+            //['id' => 1],
             [
                 'rating_average' => round($ratingAverage, 2),
                 'tickets_resolved' => $ticketsResolved,
@@ -98,44 +124,13 @@ class UpdateTechnicalStatsRating extends Command
                 'active_technicians' => $activeTechnicians,
                 'technician_rankings' => json_encode($techniciRankings),
                 'monthly_trend' => json_encode($monthlyTrend),
+                'rating_distribution' => json_encode($distribution),
+                'department_performance' => json_encode($departmentPerformance),
+                'created_at' => now(),
                 'updated_at' => now()
             ]
         );
 
-        $distribution = \App\Models\Qualification::selectRaw('score, count(*) as total')
-        ->groupBy('score')
-        ->orderByDesc('score')
-        ->get();
-
-        // 6. Desempeño por Departamento 
-        $departmentPerformance = \App\Models\Department::withCount(['tickets as total_tickets'])
-        ->get()
-        ->map(function ($dept) {
-            return [
-                'name' => $dept->name,
-                'total_tickets' => $dept->total_tickets,
-                'average_rating' => \DB::table('qualifications')
-                    ->join('tickets', 'qualifications.ticket_id', '=', 'tickets.id')
-                    ->where('tickets.department_id', $dept->id)
-                    ->avg('score') ?? 0
-            ];
-        });
-
-        \DB::table('technicalrating_stats')->updateOrInsert(
-        ['id' => 1],
-        [
-            'rating_average' => round($ratingAverage, 2),
-            'tickets_resolved' => $ticketsResolved,
-            'average_time' => round($averageTime, 1),
-            'active_technicians' => $activeTechnicians,
-            'technician_rankings' => json_encode($techniciRankings),
-            'monthly_trend' => json_encode($monthlyTrend),
-            'rating_distribution' => json_encode($distribution),
-            'department_performance' => json_encode($departmentPerformance),
-            'updated_at' => now()
-        ]
-    );
-
-    $this->info('¡Métricas completas pre-calculadas con éxito!');
+        $this->info('¡Métricas completas pre-calculadas con éxito!');
     }
 }
