@@ -29,6 +29,7 @@ import {
     Network,
     Layers,
     Building,
+    Star,
 } from 'lucide-react';
 
 // ==========================================
@@ -52,6 +53,7 @@ const ICONS = {
     Network,
     Layers,
     Building,
+    Star,
 };
 
 // ==========================================

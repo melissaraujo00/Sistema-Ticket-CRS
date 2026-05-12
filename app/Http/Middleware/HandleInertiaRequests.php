@@ -45,7 +45,14 @@ class HandleInertiaRequests extends Middleware
             // 1. DASHBOARD SEGÚN ROL
             // ==========================================
             if ($user->hasRole('superadmin')) {
-                $nav[] = ['title' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'LayoutGrid'];
+                $nav[] = [
+                    'title' => 'Dashboards',
+                    'icon' => 'LayoutGrid',
+                    'items' => [
+                        ['title' => 'General', 'url' => route('dashboard'), 'icon' => 'LayoutGrid'],
+                        ['title' => 'Rating Técnicos', 'url' => route('ratings.dashboard'), 'icon' => 'Star'],
+                    ]
+                ];
             } elseif ($user->hasRole('admin')) {
                 $nav[] = ['title' => 'Panel de Área', 'url' => route('dashboard'), 'icon' => 'LayoutGrid'];
             } elseif ($user->hasRole('agent')) {

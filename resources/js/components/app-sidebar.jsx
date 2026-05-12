@@ -9,15 +9,21 @@ import AppLogo from './app-logo';
 
 const mainNavItems = [
     {
-        title: 'Dashboard',
-        url: '/dashboard',
+        title: 'Dashboards',
         icon: LayoutGrid,
-    },
-    {
-        title: 'Rating Técnicos',
-        url: '/ratings-dashboard',
-        icon: Star,
-        role: 'superadmin'
+        children: [
+            {
+                title: 'General',
+                url: '/dashboard',
+                icon: LayoutGrid,
+            },
+            {
+                title: 'Rating Técnicos',
+                url: '/ratings-dashboard',
+                icon: Star,
+                role: 'superadmin',
+            },
+        ],
     },
     {
         title: 'Mis Tickets',
