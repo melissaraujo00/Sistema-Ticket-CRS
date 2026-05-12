@@ -19,18 +19,6 @@ export default function Hero() {
                 <p className="mx-auto mb-10 max-w-2xl text-lg text-gray-400">
                     Accede a soluciones rápidas, guías de usuario y canales de soporte directo para la Cruz Roja Salvadoreña.
                 </p>
-
-                <div className="mx-auto max-w-xl relative">
-                    <div className="flex items-center bg-white rounded-xl p-2 shadow-2xl">
-                        <Search className="ml-3 h-5 w-5 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Busca un problema o pregunta..."
-                            className="w-full border-none bg-transparent px-4 py-2 text-gray-900 focus:ring-0"
-                        />
-                        <button className="rounded-lg bg-gray-900 px-6 py-2 text-sm font-bold">Buscar</button>
-                    </div>
-                </div>
             </div>
         </section>
     );

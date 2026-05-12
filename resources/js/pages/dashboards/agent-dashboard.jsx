@@ -87,7 +87,7 @@ export default function AgentDashboard() {
         asunto: ticket.subject || ticket.asunto,
         departamento: ticket.department?.name || 'N/A',
         fecha_asignacion: ticket.creation_date ? new Date(ticket.creation_date).toLocaleDateString('es-ES') : 'N/A',
-        fecha_finalizacion: ticket.closing_date ? new Date(ticket.closing_date).toLocaleDateString('es-ES') : 'N/A',
+        fecha_finalizacion: (ticket.closing_date || ticket.updated_at) ? new Date(ticket.closing_date || ticket.updated_at).toLocaleDateString('es-ES') : 'N/A',
     }));
 
     const stats = estadisticas || {
@@ -122,6 +122,8 @@ export default function AgentDashboard() {
                 return;
             }
 
+            setIsSubmitting(true);
+
             const diagnosticType = showCustomDiagnostic && customDiagnosticType.trim()
                 ? customDiagnosticType.trim()
                 : (tipoDiagnostico || 'General');
@@ -153,8 +155,11 @@ export default function AgentDashboard() {
         } catch (error) {
             console.error('Error al guardar diagnóstico:', error);
             setDiagnosticStatus({ type: 'error', msg: 'Ocurrió un error al guardar el diagnóstico.' });
+        } finally {
+            setIsSubmitting(false);
         }
     };
+
 
     const submitUnresolved = async () => {
         setValidationErrors({});
