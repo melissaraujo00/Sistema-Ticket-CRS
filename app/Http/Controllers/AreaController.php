@@ -7,6 +7,7 @@ use App\Http\Requests\SaveAreaRequest;
 use App\Services\AreaService;
 use Inertia\Inertia;
 use Exception;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class AreaController extends Controller
 {
@@ -24,30 +25,91 @@ class AreaController extends Controller
         ]);
     }
 
+    public function create()
+    {
+        return Inertia::render('areas/create');
+    }
+
     public function store(SaveAreaRequest $request)
     {
-        $this->areaService->createArea($request->validated());
+        try {
+            $this->areaService->createArea($request->validated());
 
-        return redirect()->back()->with('success', 'Área creada correctamente.');
+            return redirect()->route('areas.index')
+                ->with('success', 'Área creada correctamente.');
+        } catch (Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Error al crear el área: ' . $e->getMessage());
+        }
+    }
+
+    public function show(Area $area)
+    {
+        return Inertia::render('areas/show', [
+            'area' => $area
+        ]);
+    }
+
+    public function edit(Area $area)
+    {
+        return Inertia::render('areas/edit', [
+            'area' => $area
+        ]);
     }
 
     public function update(SaveAreaRequest $request, Area $area)
     {
-        $this->areaService->updateArea($area, $request->validated());
+        try {
+            $this->areaService->updateArea($area, $request->validated());
 
-        return redirect()->back()->with('success', 'Área actualizada correctamente.');
+            return redirect()->route('areas.index')
+                ->with('success', 'Área actualizada correctamente.');
+        } catch (Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Error al actualizar el área: ' . $e->getMessage());
+        }
     }
 
-    public function destroy(Area $area)
+    public function destroy(Area $area): RedirectResponse
     {
         try {
             $this->areaService->deleteArea($area);
 
-            return redirect()->back()->with('success', 'Área eliminada correctamente.');
+            return redirect()->route('areas.index')
+                ->with('success', 'Área eliminada correctamente.');
 
         } catch (Exception $e) {
-            // Intercepta la excepción del servicio y retorna el mensaje de error al frontend
-            return redirect()->back()->with('error', $e->getMessage());
+            return redirect()->route('areas.index')
+                ->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Muestra la lista de áreas en la papelera (Soft Deleted).
+     */
+    public function trashed()
+    {
+        // El servicio debe devolver Area::onlyTrashed()
+        $areas = $this->areaService->getTrashedAreas();
+
+        return Inertia::render('areas/trashed', [
+            'areas' => $areas,
+        ]);
+    }
+
+    /**
+     * Restaura un área eliminada.
+     */
+    public function restore($id): RedirectResponse
+    {
+        try {
+            $this->areaService->restoreArea($id);
+
+            return redirect()->route('areas.trashed')
+                ->with('success', 'Área restaurada exitosamente.');
+        } catch (Exception $e) {
+            return redirect()->route('areas.trashed')
+                ->with('error', 'Error al restaurar el área: ' . $e->getMessage());
         }
     }
 }

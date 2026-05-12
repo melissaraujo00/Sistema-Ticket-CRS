@@ -1,9 +1,9 @@
-import { useForm } from '@inertiajs/react';
+import { router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
 export function useAreaActions(area = null) {
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isProcessingAction, setIsProcessingAction] = useState(null);
 
     const form = useForm({
         name: area?.name ?? '',
@@ -12,54 +12,52 @@ export function useAreaActions(area = null) {
 
     // 1. LÓGICA PARA GUARDAR (POST)
     const store = (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
+
         form.post(route('areas.store'), {
-            onSuccess: () => {
-                closeModal();
-                toast.success('Área creada con éxito');
+            // Eliminamos onSuccess. Si el backend guarda bien, redireccionará al Index automáticamente.
+            onError: () => {
+                toast.error('Hubo un problema', {
+                    description: 'Por favor revisa los campos marcados en rojo.',
+                });
             },
-            onError: () => toast.error('Error al crear el área'),
         });
     };
 
     // 2. LÓGICA PARA ACTUALIZAR (PUT/PATCH)
     const update = (e, areaId) => {
-        e.preventDefault();
-        // Usamos PATCH para actualizaciones parciales
+        if (e) e.preventDefault();
+
         form.patch(route('areas.update', areaId), {
-            onSuccess: () => {
-                closeModal();
-                toast.success('Área actualizada con éxito');
+            onError: () => {
+                toast.error('Hubo un problema', {
+                    description: 'Por favor revisa los campos marcados en rojo.',
+                });
             },
-            onError: () => toast.error('Error al actualizar el área'),
         });
     };
 
     // 3. LÓGICA PARA ELIMINAR (DELETE)
     const destroy = (areaId) => {
-        form.delete(route('areas.destroy', areaId), {
-            onSuccess: () => toast.success('Área eliminada'),
-            onError: (err) => toast.error(err.message || 'Error al eliminar'),
-        });
+        form.delete(route('areas.destroy', areaId));
     };
 
-    // Funciones de control de UI
-    const openModal = (targetArea = null, setEditingArea) => {
-        setEditingArea(targetArea);
-        if (targetArea) {
-            form.setData({
-                name: targetArea.name,
-                description: targetArea.description ?? '',
-            });
-        } else {
-            form.reset();
-        }
-        setIsModalOpen(true);
-    };
-
-    const closeModal = () => {
-        setIsModalOpen(false);
-        form.reset();
+    // 4. LÓGICA PARA RESTAURAR (PUT)
+    const restore = (areaId, onSuccessCallback) => {
+        setIsProcessingAction(areaId);
+        router.put(
+            route('areas.restore', areaId),
+            {},
+            {
+                onSuccess: () => {
+                    if (onSuccessCallback) onSuccessCallback();
+                    setIsProcessingAction(null);
+                },
+                onError: () => {
+                    setIsProcessingAction(null);
+                },
+            },
+        );
     };
 
     return {
@@ -67,8 +65,7 @@ export function useAreaActions(area = null) {
         store,
         update,
         destroy,
-        isModalOpen,
-        openModal,
-        closeModal,
+        restore,
+        isProcessingAction,
     };
 }

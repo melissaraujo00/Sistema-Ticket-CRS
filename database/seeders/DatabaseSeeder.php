@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use Database\Seeders\AreaSeeder;
 use Database\Seeders\CategorySeeder;
 use Database\Seeders\DepartmentSeeder;
+use Database\Seeders\HelpTopicSeeder;
 use Database\Seeders\UserSeeder;
 
 
@@ -25,6 +26,8 @@ class DatabaseSeeder extends Seeder
             StatusesTableSeeder::class,
             PrioritiesTableSeeder::class,
             TecnicoDataSeeder::class,
+            HelpTopicSeeder::class,
+            SolutionTypeSeeder::class,
         ]);
 
     }

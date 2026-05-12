@@ -5,12 +5,11 @@ namespace App\Models;
 use App\Enums\ActionTypeEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TicketHistory extends Model
 {
-    use SoftDeletes;
-    
+
+
     protected $fillable = [
         'ticket_id',
         'user_id',
@@ -61,9 +60,36 @@ class TicketHistory extends Model
     /**
      * El departamento hacia el cual se transfirió el ticket.
      */
-    public function newDepartment():BelongsTo
+    public function newDepartment(): BelongsTo
     {
-        // Recuerda cambiar 'new_apartment' si lo corriges en la BD
-        return $this->belongsTo(Department::class, 'new_apartment');
+        return $this->belongsTo(Department::class, 'new_department');
+    }
+
+    /**
+     * Accessor para obtener el nombre legible de la acción.
+     */
+    public function getActionAttribute(): string
+    {
+        return $this->action_type ? $this->action_type->label() : 'Acción desconocida';
+    }
+
+    /**
+     * Accessor para obtener detalles de la acción.
+     */
+    public function getDetailsAttribute(): string
+    {
+        if ($this->internal_note) {
+            return $this->internal_note;
+        }
+
+        return match ($this->action_type) {
+            ActionTypeEnum::CREATED => 'Ticket ingresado al sistema.',
+            ActionTypeEnum::ASSIGNED => $this->assignedTo ? "Asignado a: {$this->assignedTo->name}" : 'Ticket asignado.',
+            ActionTypeEnum::DEPARTMENT_TRANSFERRED => ($this->previousDepartment && $this->newDepartment) 
+                ? "Transferido de {$this->previousDepartment->name} a {$this->newDepartment->name}" 
+                : 'Ticket transferido de departamento.',
+            ActionTypeEnum::STATUS_CHANGED => 'El estado del ticket ha sido actualizado.',
+            default => 'Sin detalles adicionales.',
+        };
     }
 }

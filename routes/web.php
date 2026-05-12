@@ -10,6 +10,15 @@ use App\Http\Controllers\PriorityController;
 use App\Http\Controllers\TecnicoController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\AreaController;
+use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\QualificationController;
+use App\Http\Controllers\SolutionTypeController;
+use App\Http\Controllers\DashboardController;
+
+
+// ❌ Quitar: use App\Http\Controllers\TicketController;
+// ❌ Quitar: use App\Http\Controllers\TicketHistoryController;
+// ✅ Los controladores de tickets se importan dentro de tickets.php
 
 // ==========================================
 // 1. RUTAS PÚBLICAS
@@ -23,54 +32,38 @@ Route::get('/faqs', [PublicController::class, 'faqs'])->name('faqs.index');
 Route::middleware(['auth'])->group(function () {
 
     // --- A. DASHBOARD PRINCIPAL ---
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    // Route::get('dashboard', function () {
+    //     return Inertia::render('dashboard');
+    // })->name('dashboard');
 
-   Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    // --- B. NOTIFICACIONES ---
+    Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
     Route::get('/notifications/fetch', [NotificationController::class, 'fetch'])->name('notifications.fetch');
 
+    // --- C. TICKETS (archivo separado) ---
+    // ✅ Hereda el middleware 'auth' automáticamente por estar dentro del grupo
+    require base_path('routes/tickets.php');
 
-
-    Route::post('/tickets/{ticket}/asignar', [TicketController::class, 'assign'])->name('tickets.assign');
-    // ==========================================
-    // NUEVO: RUTAS ESPECÍFICAS PARA TICKETS (antes del resource)
-    // ==========================================
-
-    // Mis Tickets (solo los del usuario actual)
-    // Permiso sugerido: 'view_own_tickets'
-    Route::get('/mis-tickets', [TicketController::class, 'myTickets'])->name('tickets.my');
-
-    // Tickets pendientes de asignación (ya existía)
-    Route::middleware(['permission:assign_tickets'])->group(function () {
-        Route::get('/tickets/pendientes', [TicketController::class, 'unassigned'])->name('tickets.unassigned');
-        Route::post('/tickets/{ticket}/asignar', [TicketController::class, 'assign'])->name('tickets.assign');
-    });
-
-
-
-    // --- C. CRUD DE TICKETS con permisos granulares ---
-    // MODIFICADO: Se añaden middlewares de permiso a cada método del resource
-    // Para que no tengas que duplicar rutas, usamos ->middleware() en el resource
-    Route::resource('tickets', TicketController::class);
-
-    // Rutas de SLA Plans
+    // --- D. SLA PLANS ---
     Route::get('/sla-plans/trashed', [SlaPlanController::class, 'trashed'])->name('sla-plans.trashed');
     Route::put('/sla-plans/{id}/restore', [SlaPlanController::class, 'restore'])->name('sla-plans.restore');
-    Route::resource('/sla-plans',  SlaPlanController::class);
-    // Rutas de prioridades
+    Route::resource('/sla-plans', SlaPlanController::class);
+
+    // --- E. PRIORIDADES ---
     Route::resource('priorities', PriorityController::class);
-    // --- D. ÁREA TÉCNICA (técnicos y administradores) ---
-    Route::middleware(['role:agent|admin'])->prefix('agent')->group(function () {Route::get('/dashboard', function () {
-        return Inertia::render('dashboards/agent-dashboard');
+
+    // --- F. ÁREA TÉCNICA (agente | admin) ---
+    Route::middleware(['role:agent|admin'])->prefix('agent')->group(function () {
+        Route::get('/dashboard', function () {
+            return Inertia::render('dashboards/agent-dashboard');
         })->name('agent.dashboard');
 
         Route::get('/ticket/{id}', function ($id) {
             return Inertia::render('dashboards/detalleTicket', ['id' => $id]);
         })->name('agent.ticket');
 
-        // Rutas de estadísticas (sin cambios)
         Route::get('/total-asignados', [TecnicoController::class, 'totalTicketsAsignados']);
         Route::get('/total-en-proceso', [TecnicoController::class, 'totalTicketsEnProceso']);
         Route::get('/total-resueltos', [TecnicoController::class, 'totalTicketsResueltos']);
@@ -84,24 +77,38 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/ver-ticket/{id}', [TecnicoController::class, 'verTicket']);
         Route::post('/ticket/{id}/diagnostico', [TecnicoController::class, 'guardarDiagnostico']);
         Route::post('/ticket/{id}/no-resolver', [TecnicoController::class, 'noPuedeResolver']);
+        Route::get('/descargar-adjunto/{id}', [TecnicoController::class, 'descargarAdjunto'])->name('agent.descargar-adjunto');
     });
 
-    // --- E. CATÁLOGOS (solo usuarios con permiso) ---
+    // --- G. CATÁLOGOS ---
     Route::middleware(['permission:manage_catalogs'])->group(function () {
         Route::resource('sla-plans', SlaPlanController::class);
         Route::resource('priorities', PriorityController::class);
     });
 
-    // --- F. GESTIÓN DE USUARIOS ---
+    // --- H. GESTIÓN DE USUARIOS ---
     Route::middleware(['permission:manage_users'])->group(function () {
+        Route::get('/users/trashed', [UserController::class, 'trashed'])->name('users.trashed');
+        Route::put('/users/{id}/restore', [UserController::class, 'restore'])->name('users.restore');
+
         Route::resource('users', UserController::class);
     });
 
+    Route::post('/qualifications', [QualificationController::class, 'store']);
+
     // --- G. ESTRUCTURA ORGANIZACIONAL ---
     Route::middleware(['permission:manage_areas'])->group(function () {
-        // Exceptuamos create, show y edit porque usaremos modales en React
-        Route::resource('areas', AreaController::class)->except(['create', 'show', 'edit']);
+        Route::get('/areas/trashed', [AreaController::class, 'trashed'])->name('areas.trashed');
+        Route::put('/areas/{id}/restore', [AreaController::class, 'restore'])->name('areas.restore');
+        Route::resource('areas', AreaController::class);
     });
+
+    Route::middleware(['permission:manage_departments'])->group(function () {
+        Route::get('/departments/trashed', [DepartmentController::class, 'trashed'])->name('departments.trashed');
+        Route::put('/departments/{id}/restore', [DepartmentController::class, 'restore'])->name('departments.restore');
+        Route::resource('departments', DepartmentController::class);
+    });
+
 });
 
 // ==========================================
