@@ -17,7 +17,7 @@ return new class extends Migration
             $table->id();
             $table->foreignIdFor(Department::class)->constrained();
             $table->foreignIdFor(User::class)->constrained();
-            $table->string('role')->default('Admin');
+            $table->string('role')->default('head');
             $table->timestamps();
         });
     }

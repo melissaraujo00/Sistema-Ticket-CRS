@@ -6,7 +6,7 @@ import globals from 'globals';
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
-    js.configs.recommended, 
+    js.configs.recommended,
     {
         files: ['**/*.{js,jsx}'],
         ...react.configs.flat.recommended,
@@ -16,7 +16,8 @@ export default [
             sourceType: 'module',
             globals: {
                 ...globals.browser,
-                ...globals.node, 
+                ...globals.node,
+                route: 'readonly',
             },
             parserOptions: {
                 ecmaFeatures: {
@@ -26,9 +27,9 @@ export default [
         },
         rules: {
             'react/react-in-jsx-scope': 'off',
-            'react/prop-types': 'off', 
+            'react/prop-types': 'off',
             'react/no-unescaped-entities': 'off',
-            'no-unused-vars': 'warn', 
+            'no-unused-vars': 'warn',
         },
         settings: {
             react: {
@@ -47,14 +48,7 @@ export default [
         },
     },
     {
-        ignores: [
-            'vendor', 
-            'node_modules', 
-            'public', 
-            'bootstrap/ssr', 
-            'tailwind.config.js', 
-            'vite.config.js'
-        ],
+        ignores: ['vendor', 'node_modules', 'public', 'bootstrap/ssr', 'tailwind.config.js', 'vite.config.js'],
     },
     prettier,
-];   
+];

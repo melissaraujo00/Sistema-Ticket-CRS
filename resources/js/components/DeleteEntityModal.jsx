@@ -12,14 +12,14 @@ export default function DeleteEntityModal({ isOpen, closeModal, entity, entityTy
 
         router.delete(`${deleteEndpoint}/${entity.id}`, {
             onSuccess: () => {
-                toast.success(`${entityType} eliminado correctamente`);
+                // Solo cerramos el modal.
+                // Inertia se encarga de actualizar la tabla y
+                // tu página principal mostrará el mensaje de éxito del backend.
                 closeModal();
-                setTimeout(() => {
-                    window.location.reload();
-                }, 500);
             },
             onError: (errors) => {
                 console.error(`Error al eliminar ${entityType}`, errors);
+                // Si falla (ej. error 500), mostramos error
                 toast.error(`Error al eliminar ${entityType}`);
             }
         });
@@ -31,7 +31,7 @@ export default function DeleteEntityModal({ isOpen, closeModal, entity, entityTy
                 <h2 className="text-lg text-gray-950 font-semibold mb-4 dark:text-white">
                     Confirmar eliminación
                 </h2>
-                
+
                 <p className="mb-6 text-gray-700 dark:text-gray-300">
                     ¿Estás seguro que deseas eliminar de {entityType}, <span className="font-bold">{entity.name}</span>?
                     <br />

@@ -1,4 +1,3 @@
-/* global route */
 import { Button } from '@/components/ui/button.jsx';
 import { Link } from '@inertiajs/react';
 import { Pencil, Trash2 } from 'lucide-react';

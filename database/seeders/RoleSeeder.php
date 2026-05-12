@@ -28,9 +28,8 @@ class RoleSeeder extends Seeder
             'eliminar plan_sla',
             'ver dashboard',
             'ver tickets',
-            'view_own_tickets',
-            'create_tickets',
-            'view_all_tickets'
+            'view_all_tickets',
+            'manage_areas', 'manage_departments', 'manage_divisions',
         ];
 
         foreach ($permissions as $permissionName) {

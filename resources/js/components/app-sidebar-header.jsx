@@ -9,23 +9,26 @@ import { NotificationsDropdown } from '@/components/NotificationsDropdown';
 import { UserMenuContent } from '@/components/user-menu-content';
 import { useAppearance } from '@/hooks/use-appearance';
 import {
-    Moon, 
-    Sun, 
+    Moon,
+    Sun,
     Bell,
-    LayoutGrid, 
-    Folder, 
-    ClipboardList, 
-    BookOpen, 
-    Settings, 
-    FileText, 
-    AlertTriangle, 
-    Users, 
+    LayoutGrid,
+    Folder,
+    ClipboardList,
+    BookOpen,
+    Settings,
+    FileText,
+    AlertTriangle,
+    Users,
     History,
     ChevronDown,
     Ticket,
     PlusCircle,
     List,
     HelpCircle,
+    Network,
+    Layers,
+    Building,
 } from 'lucide-react';
 
 // ==========================================
@@ -46,6 +49,9 @@ const ICONS = {
     PlusCircle,
     List,
     HelpCircle,
+    Network,
+    Layers,
+    Building,
 };
 
 // ==========================================
