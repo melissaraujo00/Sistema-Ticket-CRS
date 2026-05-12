@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Department;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Inertia\Inertia;
 
 class TechnicalRatingsController extends Controller
 {
@@ -17,7 +18,9 @@ class TechnicalRatingsController extends Controller
         $stats = DB::table('technicalrating_stats')->orderByDesc('id')->first();
 
     if (!$stats) {
-        return response()->json(['error' => 'Estadísticas no generadas aún'], 404);
+        return Inertia::render('rating-dashboard/index', [
+            'error' => 'Estadísticas no generadas aún'
+        ]);
     }
 
     $monthlyTrend = collect(json_decode($stats->monthly_trend, true));
@@ -29,35 +32,37 @@ class TechnicalRatingsController extends Controller
 
     //Calculamos la ventana de tiempo dinámicamente
     $endDate = Carbon::create($targetYear, $targetMonth, 1)->endOfMonth();
-    
+
     // Si quiere 1 mes, restamos 0. Si quiere 7 meses, restamos 6.
-    $monthsToSubtract = $monthsCount - 1; 
+    $monthsToSubtract = $monthsCount - 1;
     $startDate = Carbon::create($targetYear, $targetMonth, 1)->subMonths($monthsToSubtract)->startOfMonth();
 
     // 5. Filtramos el historial
     $filteredTrend = $monthlyTrend->filter(function ($item) use ($startDate, $endDate) {
+        if (!isset($item['year']) || !isset($item['month_number'])) return true;
         $itemDate = Carbon::create($item['year'], $item['month_number'], 1);
         return $itemDate->between($startDate, $endDate);
     })
     ->sortBy(function ($item) {
+        if (!isset($item['year']) || !isset($item['month_number'])) return 0;
         return Carbon::create($item['year'], $item['month_number'], 1)->timestamp;
     })
     ->values()
     ->all();
 
-    return response()->json([
+    return Inertia::render('rating-dashboard/index', [
         'stats' => [
-            'ratingAverage' => $stats->rating_average,
-            'ticketsResolved' => $stats->tickets_resolved,
-            'averageTime' => $stats->average_time,
-            'activeTechnicians' => $stats->active_technicians,
+            'ratingAverage' => (float) $stats->rating_average,
+            'ticketsResolved' => (int) $stats->tickets_resolved,
+            'averageTime' => (float) $stats->average_time,
+            'activeTechnicians' => (int) $stats->active_technicians,
         ],
-        'techniciRankings' => json_decode($stats->technician_rankings),
+        'technicianRankings' => json_decode($stats->technician_rankings),
         'monthlyTrend' => $filteredTrend,
         'distribution' => json_decode($stats->rating_distribution),
         'departmentPerformance' => json_decode($stats->department_performance),
         'updated_at' => $stats->updated_at
     ]);
     }
-    
+
 }
