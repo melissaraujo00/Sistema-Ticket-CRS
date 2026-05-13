@@ -121,14 +121,22 @@ class TicketController extends Controller
             ->where('requesting_user', auth()->id())
             ->orderBy('created_at', 'desc')
             ->get();
+        
+        $resolvedTickets = Ticket::with(['requestingUser', 'department', 'status','assignedUser'])
+            ->where('requesting_user', auth()->id())
+            ->whereIn('status_id', [5, 7])
+            ->whereDoesntHave('qualification')
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-        $resolvedTickets = TicketSolution::with(['ticket','user','ticket.department'])
-                        ->whereHas('ticket', function($query) {
-                            $query->where('requesting_user', auth()->id());
-                        })
-                        ->whereDoesntHave('ticket.qualification')
-                        ->orderBy('created_at', 'desc')
-                        ->get();
+
+        // $resolvedTickets = TicketSolution::with(['ticket','user','ticket.department'])
+        //                 ->whereHas('ticket', function($query) {
+        //                     $query->where('requesting_user', auth()->id());
+        //                 })
+        //                 ->whereDoesntHave('ticket.qualification')
+        //                 ->orderBy('created_at', 'desc')
+        //                 ->get();
 
         return Inertia::render('tickets/index', [
             'tickets' => $tickets,
