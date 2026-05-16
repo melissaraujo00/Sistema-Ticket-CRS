@@ -87,13 +87,13 @@ class KnowledgeController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified resource from storage (Soft Delete).
      */
     public function destroy(knowledge $faq)
     {
         $faq->delete();
 
-        return back()->with('success', 'FAQ eliminada con éxito.');
+        return back()->with('success', 'FAQ desactivada con éxito.');
     }
 
     /**
@@ -104,5 +104,15 @@ class KnowledgeController extends Controller
         knowledge::withTrashed()->findOrFail($id)->restore();
 
         return back()->with('success', 'FAQ restaurada con éxito.');
+    }
+
+    /**
+     * Permanent remove the specified resource from storage.
+     */
+    public function forceDelete($id)
+    {
+        knowledge::withTrashed()->findOrFail($id)->forceDelete();
+
+        return back()->with('success', 'FAQ eliminada permanentemente.');
     }
 }
