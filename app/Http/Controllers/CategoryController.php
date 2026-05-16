@@ -70,22 +70,32 @@ class CategoryController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified resource from storage (Soft Delete).
      */
     public function destroy(Category $category)
     {
         $category->delete();
 
-        return back()->with('success', 'Categoría eliminada con éxito.');
+        return back()->with('success', 'Categoría desactivada con éxito.');
     }
 
     /**
-     * * Restore the specified resource from storage.
+     * Restore the specified resource from storage.
      */
     public function restore($id)
     {
          Category::withTrashed()->findOrFail($id)->restore();
 
          return back()->with('success', 'Categoría restaurada con éxito.');
+    }
+
+    /**
+     * Permanent remove the specified resource from storage.
+     */
+    public function forceDelete($id)
+    {
+        Category::withTrashed()->findOrFail($id)->forceDelete();
+
+        return back()->with('success', 'Categoría eliminada permanentemente.');
     }
 }
