@@ -1,6 +1,6 @@
 import { GenericTable } from '@/components/GenericTable';
 import { Button } from '@/components/ui/button';
-import { Pencil, Trash2, RotateCcw } from 'lucide-react';
+import { Pencil, Trash2, RotateCcw, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import DeleteEntityModal from '@/components/DeleteEntityModal';
 import { router } from '@inertiajs/react';
@@ -74,6 +74,7 @@ export default function KnowledgeTable({ knowledges, onEdit, isTrashed = false }
                                 size="icon" 
                                 onClick={() => onEdit(faq)}
                                 className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                title="Editar"
                             >
                                 <Pencil className="h-4 w-4" />
                             </Button>
@@ -82,8 +83,23 @@ export default function KnowledgeTable({ knowledges, onEdit, isTrashed = false }
                                 size="icon" 
                                 onClick={() => handleDeleteClick(faq)}
                                 className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                title="Desactivar"
                             >
                                 <Trash2 className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => {
+                                    if (window.confirm('¿Estás seguro de que deseas eliminar permanentemente esta FAQ?')) {
+                                        router.delete(route('faq.force-delete', faq.id));
+                                    }
+                                }}
+                                className="h-8 w-8 text-red-800 hover:text-red-900 hover:bg-red-100"
+                                title={faq.has_relations ? "No se puede eliminar porque tiene temas de ayuda asociados" : "Eliminación Permanente"}
+                                disabled={faq.has_relations}
+                            >
+                                <XCircle className="h-4 w-4" />
                             </Button>
                         </>
                     )}

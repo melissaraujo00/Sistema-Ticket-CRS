@@ -18,6 +18,13 @@ class knowledge extends Model
         'category_id'
     ];
 
+    protected $appends = ['has_relations'];
+
+    public function getHasRelationsAttribute(): bool
+    {
+        return $this->helpTopics()->exists();
+    }
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);

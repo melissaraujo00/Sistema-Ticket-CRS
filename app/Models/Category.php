@@ -16,6 +16,13 @@ class Category extends Model
         'description'
     ];
 
+    protected $appends = ['has_relations'];
+
+    public function getHasRelationsAttribute(): bool
+    {
+        return $this->knowledge()->exists();
+    }
+
     public function knowledge(): HasMany
     {
         return $this->hasMany(knowledge::class);
