@@ -15,6 +15,7 @@ use App\Models\Status;
 use App\Models\Ticket;
 use App\Models\TicketHistory;
 use App\Models\User;
+use Spatie\OpeningHours\OpeningHours;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -24,10 +25,10 @@ use Inertia\Inertia;
 
 class TicketAssignmentController extends Controller
 {
-   public function unassigned()
+    public function unassigned()
     {
         if (!auth()->user()->can('assign_tickets')) {
-        abort(403, 'No tienes permiso para ver tickets pendientes de asignación.');
+            abort(403, 'No tienes permiso para ver tickets pendientes de asignación.');
         }
 
         $user = auth()->user();
@@ -36,9 +37,9 @@ class TicketAssignmentController extends Controller
         // Consulta base: Cargamos la relación 'status'
         $query = Ticket::with(['department', 'helpTopic.division', 'priority', 'requestingUser', 'status', 'assignedUser'])
             ->orderBy('creation_date', 'asc')
-            ->whereHas('status', function($q) {
-            $q->where('name', '!=', 'Cerrado');
-        });
+            ->whereHas('status', function ($q) {
+                $q->where('name', '!=', 'Cerrado');
+            });
 
         if (!$user->hasRole('superadmin')) {
             $query->where('department_id', $departmentId);
@@ -116,7 +117,54 @@ class TicketAssignmentController extends Controller
         // Calcular fecha de expiración sumando las horas de gracia del SLA
         if (!empty($validated['sla_plan_id'])) {
             $slaPlan = SlaPlan::findOrFail($validated['sla_plan_id']);
-            $updateData['expiration_date'] = Carbon::parse($ticket->creation_date)->addHours($slaPlan->grace_time_hours);
+            $currentDate = Carbon::now();
+
+            if (!empty($validated['sla_plan_id'])) {
+                $slaPlan = SlaPlan::findOrFail($validated['sla_plan_id']);
+                $currentDate = Carbon::now();
+
+                if ($slaPlan->working_hours == 0) {
+                    $updateData['expiration_date'] = $currentDate->addHours($slaPlan->grace_time_hours);
+                } else {
+                    //recordar  hacer dinamico la hora de entrada al trabajo, con un env o dentro de configuraciones del sistema
+                    $workStartHour = '08:00';
+                    $workEndHour = Carbon::createFromFormat('H:i', $workStartHour)
+                        ->addHours($slaPlan->working_hours)
+                        ->format('H:i');
+
+                    $openingHours = OpeningHours::create([
+                        'monday'    => ["$workStartHour-$workEndHour"],
+                        'tuesday'   => ["$workStartHour-$workEndHour"],
+                        'wednesday' => ["$workStartHour-$workEndHour"],
+                        'thursday'  => ["$workStartHour-$workEndHour"],
+                        'friday'    => ["$workStartHour-$workEndHour"],
+                        'saturday'  => [],
+                        'sunday'    => [],
+                        // 'exceptions' => ['2026-12-25' => []] // Aquí podrías agregar feriados después
+                    ]);
+
+                    $minutesToAdd = $slaPlan->grace_time_hours * 60;
+
+                    while ($minutesToAdd > 0) {
+                        if ($openingHours->isOpenAt($currentDate)) {
+                            $nextClose = Carbon::instance($openingHours->nextClose($currentDate));
+                            $availableMinutes = $currentDate->diffInMinutes($nextClose);
+
+                            if ($minutesToAdd <= $availableMinutes) {
+                                $currentDate->addMinutes($minutesToAdd);
+                                $minutesToAdd = 0; // Terminamos
+                            } else {
+                                $minutesToAdd -= $availableMinutes;
+                                $currentDate = $nextClose; 
+                            }
+                        } else {
+                            $currentDate = Carbon::instance($openingHours->nextOpen($currentDate));
+                        }
+                    }
+
+                    $updateData['expiration_date'] = $currentDate;
+                }
+            }
         }
 
         $ticket->update($updateData);

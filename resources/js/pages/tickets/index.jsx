@@ -20,7 +20,7 @@ export default function Index() {
     const tickets = props.tickets || [];
     const auth = props.auth || { user: { permissions: [] } };
 
-    const resolvedTickets=props.resolvedTickets || [];
+    const resolvedTickets = props.resolvedTickets || [];
 
     const [searchTerm, setSearchTerm] = useState("");
     const [ratingModalOpen, setRatingModalOpen] = useState(false);
@@ -33,7 +33,7 @@ export default function Index() {
 
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 60000);
-        return () => clearInterval(timer); 
+        return () => clearInterval(timer);
     }, []);
 
 
@@ -49,7 +49,7 @@ export default function Index() {
 
         const expiration = new Date(expirationDate);
         const diffMs = expiration - current;
-        
+
         if (diffMs <= 0) return 'Expirado';
 
         const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
@@ -60,15 +60,28 @@ export default function Index() {
     };
 
     const getSlaColorClass = (expirationDate, current) => {
-        if (!expirationDate) return 'text-zinc-500 dark:text-zinc-400'; 
+        if (!expirationDate) return 'text-zinc-500 dark:text-zinc-400';
 
         const expiration = new Date(expirationDate);
-        const diffMs = expiration - current; 
+        const diffMs = expiration - current;
         const diffHrs = diffMs / (1000 * 60 * 60);
 
         if (diffMs <= 0) return 'text-red-600 font-bold dark:text-red-500';
         if (diffHrs <= 2) return 'text-yellow-600 font-bold dark:text-yellow-500';
-        return 'text-green-600 dark:text-green-500'; 
+        return 'text-green-600 dark:text-green-500';
+    };
+
+    const formatExpirationDate = (expirationDate) => {
+        if (!expirationDate) return 'Sin SLA';
+        const date = new Date(expirationDate);
+
+        return new Intl.DateTimeFormat('es-ES', {
+            weekday: 'short',
+            day: '2-digit',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit'
+        }).format(date);
     };
 
     useEffect(() => {
@@ -159,9 +172,9 @@ export default function Index() {
             header: "Fecha de creación",
             className: "hidden md:table-cell",
             render: (ticket) => {
-                const dateString = ticket.creation_date || ticket.created_at; 
-                
-                const formattedDate = dateString 
+                const dateString = ticket.creation_date || ticket.created_at;
+
+                const formattedDate = dateString
                     ? new Date(dateString.substring(0, 10) + 'T12:00:00').toLocaleDateString("es-ES")
                     : "Sin fecha";
 
@@ -173,12 +186,14 @@ export default function Index() {
             },
         },
         {
-            header: "Tiempo SLA",
+            header: "Vencimiento SLA",
             className: "hidden md:table-cell",
             render: (ticket) => (
-                <span className={`text-sm ${getSlaColorClass(ticket.expiration_date, currentTime)}`}>
-                    {getSlaRemainingTime(ticket.expiration_date, currentTime)}
-                </span>
+                <div title={getSlaRemainingTime(ticket.expiration_date, currentTime)} className={`inline-block cursor-pointer ${getSlaColorClass(ticket.expiration_date, currentTime)}`}>
+                    <span className="text-sm font-bold border-b border-dashed border-current pb-[1px]">
+                        {formatExpirationDate(ticket.expiration_date)}
+                    </span>
+                </div>
             ),
         },
         {
@@ -265,17 +280,17 @@ export default function Index() {
             </div>
 
             {/* Modal de calificación */}
-            
+
             <TicketRatingModal
                 isOpen={ratingModalOpen}
                 onClose={() => setRatingModalOpen(false)}
                 ticket={currentTicket}
                 onNext={() => {
                     if (currentIndex + 1 < resolvedTickets.length) {
-                    setCurrentIndex(currentIndex + 1);
-                } else {
-                    setRatingModalOpen(false); 
-                }
+                        setCurrentIndex(currentIndex + 1);
+                    } else {
+                        setRatingModalOpen(false);
+                    }
                 }}
             />
         </AppLayout>
