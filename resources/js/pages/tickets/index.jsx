@@ -28,13 +28,48 @@ export default function Index() {
     const [rating, setRating] = useState(0);
     const [comment, setComment] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
-     const [currentIndex, setCurrentIndex] = useState(0);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [currentTime, setCurrentTime] = useState(new Date());
+
+    useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+        return () => clearInterval(timer); 
+    }, []);
+
 
     // Filtrar tickets por código o asunto
     const filteredTickets = tickets.filter((ticket) =>
         `${ticket.code} ${ticket.subject}`.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    //conteo de sla 
+
+    const getSlaRemainingTime = (expirationDate, current) => {
+        if (!expirationDate) return 'Sin SLA asignado';
+
+        const expiration = new Date(expirationDate);
+        const diffMs = expiration - current;
+        
+        if (diffMs <= 0) return 'Expirado';
+
+        const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+        if (diffHrs > 0) return `${diffHrs}h ${diffMins}m restantes`;
+        return `${diffMins}m restantes`;
+    };
+
+    const getSlaColorClass = (expirationDate, current) => {
+        if (!expirationDate) return 'text-zinc-500 dark:text-zinc-400'; 
+
+        const expiration = new Date(expirationDate);
+        const diffMs = expiration - current; 
+        const diffHrs = diffMs / (1000 * 60 * 60);
+
+        if (diffMs <= 0) return 'text-red-600 font-bold dark:text-red-500';
+        if (diffHrs <= 2) return 'text-yellow-600 font-bold dark:text-yellow-500';
+        return 'text-green-600 dark:text-green-500'; 
+    };
 
     useEffect(() => {
         if (resolvedTickets.length > 0) {
@@ -123,9 +158,26 @@ export default function Index() {
         {
             header: "Fecha de creación",
             className: "hidden md:table-cell",
+            render: (ticket) => {
+                const dateString = ticket.creation_date || ticket.created_at; 
+                
+                const formattedDate = dateString 
+                    ? new Date(dateString.substring(0, 10) + 'T12:00:00').toLocaleDateString("es-ES")
+                    : "Sin fecha";
+
+                return (
+                    <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                        {formattedDate}
+                    </span>
+                );
+            },
+        },
+        {
+            header: "Tiempo SLA",
+            className: "hidden md:table-cell",
             render: (ticket) => (
-                <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                    {new Date(ticket.creation_date || ticket.created_at).toLocaleDateString("es-ES")}
+                <span className={`text-sm ${getSlaColorClass(ticket.expiration_date, currentTime)}`}>
+                    {getSlaRemainingTime(ticket.expiration_date, currentTime)}
                 </span>
             ),
         },

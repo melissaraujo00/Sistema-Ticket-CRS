@@ -20,11 +20,11 @@ return new class extends Migration
         Schema::create('tickets', function (Blueprint $table) {
             $table->id();
             $table->string('code',40);
-            $table->date('creation_date');
+            $table->dateTime('creation_date');
             $table->string('email', 100);
             $table->string('subject', 200);
             $table->text('message');
-            $table->date('expiration_date')->nullable();
+            $table->dateTime('expiration_date')->nullable();
             $table->date('closing_date')->nullable();
             $table->foreignIdFor(User::class, 'requesting_user')->constrained();
             $table->foreignIdFor(User::class, 'assigned_user')->nullable()->constrained();
