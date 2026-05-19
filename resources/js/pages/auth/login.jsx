@@ -3,7 +3,7 @@ import { LoaderCircle, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function Login({ status, canResetPassword }) {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -13,10 +13,38 @@ export default function Login({ status, canResetPassword }) {
     });
 
     const [showPassword, setShowPassword] = useState(false);
+    const [throttleSeconds, setThrottleSeconds] = useState(0);
+
+    // Detecta el error de throttle y extrae los segundos
+    useEffect(() => {
+        if (errors.email) {
+            const match = errors.email.match(/(\d+)\s*segundo/i);
+            if (match) {
+                setThrottleSeconds(parseInt(match[1]));
+            }
+        }
+    }, [errors.email]);
+
+    // Countdown regresivo
+    useEffect(() => {
+        if (throttleSeconds <= 0) return;
+        const timer = setInterval(() => {
+            setThrottleSeconds((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [throttleSeconds]);
+
+    const isThrottled = throttleSeconds > 0;
 
     const submit = (e) => {
         e.preventDefault();
-
+        if (isThrottled) return;
         post(route('login'), {
             onFinish: () => reset('password'),
         });
@@ -28,494 +56,157 @@ export default function Login({ status, canResetPassword }) {
 
             <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap');
-
-                * {
-                    box-sizing: border-box;
-                    margin: 0;
-                    padding: 0;
-                }
-
-                .login-root {
-                    min-height: 100vh;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    background: transparent;
-                    font-family: 'DM Sans', sans-serif;
-                    padding: 1rem;
-                }
-
-                .login-card {
-                    display: flex;
-                    width: 100%;
-                    max-width: 820px;
-                    min-height: 480px;
-                    border-radius: 22px;
-                    overflow: hidden;
-                    background: #fff;
-                    box-shadow:
-                        0 35px 80px rgba(0,0,0,0.55),
-                        0 0 0 1px rgba(255,255,255,0.04);
-                    animation: cardIn 0.6s cubic-bezier(0.22,1,0.36,1) both;
-                }
-
-                @keyframes cardIn {
-                    from {
-                        opacity: 0;
-                        transform: translateY(30px) scale(0.96);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0) scale(1);
-                    }
-                }
-
-                /* ───────── LEFT SIDE ───────── */
-
-                .login-left {
-                    flex: 1;
-                    background: #ffffff;
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: center;
-                    padding: 2.4rem 2.8rem;
-                    position: relative;
-                }
-
-                .login-left::before {
-                    content: '';
-                    position: absolute;
-                    left: 0;
-                    top: 0;
-                    width: 5px;
-                    height: 100%;
-                    background: #DA291C;
-                }
-
-                .login-heading {
-                    font-family: 'Bebas Neue', sans-serif;
-                    font-size: 2.2rem;
-                    color: #111;
-                    letter-spacing: 1px;
-                    margin-bottom: 0.2rem;
-                }
-
-                .login-sub {
-                    font-size: 0.78rem;
-                    color: #777;
-                    margin-bottom: 1.8rem;
-                }
-
-                .field-group {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 1rem;
-                    margin-bottom: 1rem;
-                }
-
-                .field-label {
-                    font-size: 0.68rem;
-                    font-weight: 700;
-                    text-transform: uppercase;
-                    letter-spacing: 1.2px;
-                    color: #444;
-                    margin-bottom: 0.35rem;
-                    display: block;
-                }
-
-                .field-wrapper {
-                    position: relative;
-                }
-
-                .field-icon {
-                    position: absolute;
-                    left: 13px;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    width: 15px;
-                    height: 15px;
-                    color: #999;
-                    pointer-events: none;
-                }
-
-                .field-input {
-                    width: 100%;
-                    padding: 0.72rem 0.9rem 0.72rem 2.5rem;
-                    border-radius: 10px;
-                    border: 1.5px solid #e5e5e5;
-                    background: #fafafa;
-                    font-size: 0.86rem;
-                    font-family: 'DM Sans', sans-serif;
-                    transition: all 0.2s ease;
-                    outline: none;
-                }
-
+                .font-bebas { font-family: 'Bebas Neue', sans-serif; }
+                .font-dm    { font-family: 'DM Sans', sans-serif; }
                 .field-input:focus {
-                    border-color: #DA291C;
-                    background: #fff;
-                    box-shadow: 0 0 0 4px rgba(218,41,28,0.08);
-                }
-
-                .field-input::placeholder {
-                    color: #c4c4c4;
-                }
-
-                .eye-btn {
-                    position: absolute;
-                    right: 12px;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    background: none;
-                    border: none;
-                    cursor: pointer;
-                    color: #999;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-
-                .eye-btn:hover {
-                    color: #DA291C;
-                }
-
-                .remember-row {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    margin: 0.3rem 0 1.3rem;
-                }
-
-                .remember-left {
-                    display: flex;
-                    align-items: center;
-                    gap: 0.45rem;
-                }
-
-                .remember-label {
-                    font-size: 0.78rem;
-                    color: #666;
-                }
-
-                .forgot-link {
-                    font-size: 0.76rem;
-                    color: #DA291C;
-                    text-decoration: none;
-                    font-weight: 600;
-                }
-
-                .forgot-link:hover {
-                    text-decoration: underline;
-                }
-
-                .submit-btn {
-                    width: 100%;
-                    padding: 0.82rem;
-                    border: none;
-                    border-radius: 12px;
-                    background: #DA291C;
-                    color: white;
-                    font-family: 'Bebas Neue', sans-serif;
-                    font-size: 1rem;
-                    letter-spacing: 2px;
-                    cursor: pointer;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 0.45rem;
-                    transition: all 0.2s ease;
-                    box-shadow: 0 10px 25px rgba(218,41,28,0.30);
-                }
-
-                .submit-btn:hover:not(:disabled) {
-                    background: #bc1d13;
-                    transform: translateY(-2px);
-                    box-shadow: 0 14px 28px rgba(218,41,28,0.40);
-                }
-
-                .submit-btn:disabled {
-                    opacity: 0.7;
-                    cursor: not-allowed;
-                }
-
-                .status-msg {
-                    margin-top: 1rem;
-                    text-align: center;
-                    font-size: 0.82rem;
-                    color: #16a34a;
-                    font-weight: 500;
-                }
-
-                /* ───────── RIGHT SIDE ───────── */
-
-                .login-right {
-                    width: 320px;
-                    background: linear-gradient(180deg, #DA291C 0%, #b6160d 100%);
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 2rem;
-                    position: relative;
-                    overflow: hidden;
-                }
-
-                .login-right::before {
-                    content: '';
-                    position: absolute;
-                    width: 260px;
-                    height: 260px;
-                    border-radius: 50%;
-                    background: rgba(255,255,255,0.06);
-                    top: -80px;
-                    right: -80px;
-                }
-
-                .login-right::after {
-                    content: '';
-                    position: absolute;
-                    width: 180px;
-                    height: 180px;
-                    border-radius: 50%;
-                    background: rgba(0,0,0,0.08);
-                    bottom: -50px;
-                    left: -50px;
-                }
-
-                .logo-card {
-                    background: #ffffff;
-                    border-radius: 18px;
-                    padding: 1rem;
-                    border: 4px solid #111;
-                    box-shadow:
-                        0 25px 50px rgba(0,0,0,0.28),
-                        0 0 0 1px rgba(255,255,255,0.1);
-                    position: relative;
-                    z-index: 2;
-                    animation: logoIn 0.7s ease;
-                }
-
-                @keyframes logoIn {
-                    from {
-                        opacity: 0;
-                        transform: scale(0.85);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: scale(1);
-                    }
-                }
-
-                .logo-img {
-                    width: 220px;
-                    height: auto;
-                    display: block;
-                    object-fit: contain;
-                    user-select: none;
-                }
-
-                .system-label {
-                    margin-top: 1.5rem;
-                    color: rgba(255,255,255,0.82);
-                    font-size: 0.72rem;
-                    text-transform: uppercase;
-                    letter-spacing: 2px;
-                    font-weight: 300;
-                    position: relative;
-                    z-index: 2;
-                }
-
-                @media (max-width: 768px) {
-                    .login-card {
-                        flex-direction: column;
-                        max-width: 420px;
-                    }
-
-                    .login-right {
-                        width: 100%;
-                        padding: 2rem 1.5rem;
-                    }
-
-                    .logo-img {
-                        width: 170px;
-                    }
-
-                    .login-left {
-                        padding: 2rem;
-                    }
-
-                    .login-heading {
-                        font-size: 1.9rem;
-                    }
+                    border-color: #DA291C !important;
+                    background: #fff !important;
+                    box-shadow: 0 0 0 4px rgba(218,41,28,0.08) !important;
+                    outline: none;
                 }
             `}</style>
 
-            <div className="login-root">
-                <div className="login-card">
+            <div className="font-dm min-h-screen flex items-center justify-center bg-transparent p-4">
 
-                    {/* ───────── FORMULARIO ───────── */}
-                    <div className="login-left">
+                <div className="flex w-full max-w-[820px] min-h-[480px] rounded-[22px] overflow-hidden bg-white"
+                    style={{ boxShadow: '0 35px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04)' }}>
 
-                        <h1 className="login-heading">
+                    {/* ───────── LEFT ───────── */}
+                    <div className="flex-1 bg-white flex flex-col justify-center px-11 py-10 relative">
+
+                        <div className="absolute left-0 top-0 w-[5px] h-full bg-[#DA291C]" />
+
+                        <h1 className="font-bebas text-[2.2rem] text-[#111] tracking-wide mb-1">
                             Iniciar Sesión
                         </h1>
 
-                        <p className="login-sub">
+                        <p className="text-[0.78rem] text-[#777] mb-7">
                             Ingresa tus credenciales para continuar
                         </p>
 
                         <form onSubmit={submit}>
 
-                            <div className="field-group">
+                            <div className="flex flex-col gap-4 mb-4">
 
                                 {/* EMAIL */}
                                 <div>
-                                    <label
-                                        htmlFor="email"
-                                        className="field-label"
-                                    >
+                                    <label htmlFor="email"
+                                        className="block text-[0.68rem] font-bold uppercase tracking-[1.2px] text-[#444] mb-[0.35rem]">
                                         Correo electrónico
                                     </label>
-
-                                    <div className="field-wrapper">
-                                        <Mail className="field-icon" />
-
+                                    <div className="relative">
+                                        <Mail className="absolute left-[13px] top-1/2 -translate-y-1/2 w-[15px] h-[15px] text-[#999] pointer-events-none" />
                                         <input
                                             id="email"
                                             type="email"
-                                            className="field-input"
+                                            maxLength={100}
+                                            className="field-input w-full py-[0.72rem] pr-[0.9rem] pl-10 rounded-[10px] border-[1.5px] border-[#e5e5e5] bg-[#fafafa] text-[0.86rem] font-dm placeholder-[#c4c4c4]"
                                             placeholder="correo@ejemplo.com"
                                             required
                                             autoFocus
                                             autoComplete="email"
                                             tabIndex={1}
                                             value={data.email}
-                                            onChange={(e) =>
-                                                setData('email', e.target.value)
-                                            }
+                                            onChange={(e) => setData('email', e.target.value.replace(/\s/g, ''))}
+                                            onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
+                                            onPaste={(e) => {
+                                                e.preventDefault();
+                                                const pasted = e.clipboardData.getData('text').replace(/\s/g, '');
+                                                setData('email', pasted);
+                                            }}
                                         />
                                     </div>
-
                                     <InputError message={errors.email} />
                                 </div>
 
                                 {/* PASSWORD */}
                                 <div>
-                                    <label
-                                        htmlFor="password"
-                                        className="field-label"
-                                    >
+                                    <label htmlFor="password"
+                                        className="block text-[0.68rem] font-bold uppercase tracking-[1.2px] text-[#444] mb-[0.35rem]">
                                         Contraseña
                                     </label>
-
-                                    <div className="field-wrapper">
-                                        <Lock className="field-icon" />
-
+                                    <div className="relative">
+                                        <Lock className="absolute left-[13px] top-1/2 -translate-y-1/2 w-[15px] h-[15px] text-[#999] pointer-events-none" />
                                         <input
                                             id="password"
                                             type={showPassword ? 'text' : 'password'}
-                                            className="field-input"
+                                            className="field-input w-full py-[0.72rem] pr-10 pl-10 rounded-[10px] border-[1.5px] border-[#e5e5e5] bg-[#fafafa] text-[0.86rem] font-dm placeholder-[#c4c4c4]"
                                             placeholder="••••••••"
                                             required
                                             autoComplete="current-password"
                                             tabIndex={2}
                                             value={data.password}
-                                            onChange={(e) =>
-                                                setData('password', e.target.value)
-                                            }
+                                            onChange={(e) => setData('password', e.target.value)}
                                         />
-
                                         <button
                                             type="button"
-                                            className="eye-btn"
-                                            onClick={() =>
-                                                setShowPassword(!showPassword)
-                                            }
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-[#999] flex items-center justify-center"
+                                            onClick={() => setShowPassword(!showPassword)}
                                         >
-                                            {showPassword
-                                                ? <EyeOff size={16} />
-                                                : <Eye size={16} />
-                                            }
+                                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                         </button>
                                     </div>
-
                                     <InputError message={errors.password} />
                                 </div>
                             </div>
 
                             {/* RECORDAR */}
-                            <div className="remember-row">
-
-                                <div className="remember-left">
+                            <div className="flex items-center justify-between my-3 mb-[1.3rem]">
+                                <div className="flex items-center gap-[0.45rem]">
                                     <Checkbox
                                         id="remember"
                                         checked={data.remember}
-                                        onCheckedChange={(checked) =>
-                                            setData('remember', checked)
-                                        }
+                                        onCheckedChange={(checked) => setData('remember', checked)}
                                     />
-
-                                    <label
-                                        htmlFor="remember"
-                                        className="remember-label"
-                                    >
+                                    <label htmlFor="remember" className="text-[0.78rem] text-[#666]">
                                         Recordarme
                                     </label>
                                 </div>
-
-                                {/* {canResetPassword && (
-                                    <TextLink
-                                        href={route('password.request')}
-                                        className="forgot-link"
-                                    >
-                                        ¿Olvidaste tu contraseña?
-                                    </TextLink>
-                                )} */}
                             </div>
 
                             {/* BOTÓN */}
                             <button
                                 type="submit"
-                                className="submit-btn"
-                                disabled={processing}
+                                disabled={processing || isThrottled}
+                                className="font-bebas w-full py-[0.82rem] border-none rounded-xl bg-[#DA291C] text-white text-[1rem] tracking-[2px] cursor-pointer flex items-center justify-center gap-[0.45rem] disabled:opacity-70 disabled:cursor-not-allowed"
+                                style={{ boxShadow: '0 10px 25px rgba(218,41,28,0.30)' }}
                             >
-                                {processing && (
-                                    <LoaderCircle
-                                        size={18}
-                                        style={{
-                                            animation:
-                                                'spin 1s linear infinite',
-                                        }}
-                                    />
-                                )}
-
-                                Iniciar sesión
+                                {processing && <LoaderCircle size={18} />}
+                                {isThrottled ? `Espera ${throttleSeconds}s` : 'Iniciar sesión'}
                             </button>
 
                         </form>
 
                         {status && (
-                            <div className="status-msg">
+                            <div className="mt-4 text-center text-[0.82rem] text-green-600 font-medium">
                                 {status}
                             </div>
                         )}
                     </div>
 
-                    {/* ───────── LOGO ───────── */}
-                    <div className="login-right">
+                    {/* ───────── RIGHT ───────── */}
+                    <div className="w-80 flex flex-col items-center justify-center p-8 relative overflow-hidden"
+                        style={{ background: 'linear-gradient(180deg, #DA291C 0%, #b6160d 100%)' }}>
 
-                        <div className="logo-card">
+                        <div className="absolute w-[260px] h-[260px] rounded-full -top-20 -right-20"
+                            style={{ background: 'rgba(255,255,255,0.06)' }} />
+                        <div className="absolute w-[180px] h-[180px] rounded-full -bottom-12 -left-12"
+                            style={{ background: 'rgba(0,0,0,0.08)' }} />
+
+                        {/* logo card */}
+                        <div className="relative z-10 bg-white rounded-[18px] p-4 border-4 border-[#111]"
+                            style={{ boxShadow: '0 25px 50px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.1)' }}>
                             <img
                                 src="/img_cruzroja.jpeg"
                                 alt="Cruz Roja Salvadoreña"
-                                className="logo-img"
+                                className="w-[220px] h-auto block object-contain select-none pointer-events-none"
                                 draggable={false}
-                            />  
+                            />
                         </div>
 
-                        <p className="system-label">
+                        <p className="relative z-10 mt-6 text-white/80 text-[0.72rem] uppercase tracking-[2px] font-light">
                             Sistema de Gestión
                         </p>
-
                     </div>
 
                 </div>
