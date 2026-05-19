@@ -257,11 +257,11 @@ export default function TicketRatingModal({ isOpen, onClose, ticket, onNext }) {
                 </p>
 
                 <p>
-                  Se requiere adquirir un componente nuevo para completar la reparación.
+                  Su inconveniente requiere acciones externas al área técnica para poder ser resuelto.
                 </p>
 
                 <p>
-                  Cuando el componente esté disponible deberás abrir un nuevo ticket.
+                 Sin embargo, el técnico ya realizó el diagnóstico correspondiente y notificó al departamento encargado para su seguimiento.
                 </p>
 
               </div>
