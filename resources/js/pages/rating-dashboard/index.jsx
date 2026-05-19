@@ -85,8 +85,7 @@ export default function RatingDashboard({
                     <AlertCircle className="w-16 h-16 text-red-500 mb-2" />
                     <h2 className="text-xl font-semibold">{error}</h2>
                     <p className="text-muted-foreground text-center">
-                        Las estadísticas se generan periódicamente.<br />
-                        Prueba ejecutar: <code className="bg-muted px-2 py-1 rounded text-xs">php artisan app:update-technical-stats-rating</code>
+                        Las estadísticas se generan periódicamente.
                     </p>
                 </div>
             </AppLayout>
@@ -95,9 +94,9 @@ export default function RatingDashboard({
 
     // Preparar datos para distribución
     const distributionData = (Array.isArray(distribution) ? distribution : [])
-        .map(item => ({ 
-            name: `${item.score} ★`, 
-            value: Number(item.total ?? item.count ?? 0) 
+        .map(item => ({
+            name: `${item.score} ★`,
+            value: Number(item.total ?? item.count ?? 0)
         }))
         .sort((a, b) => b.name.localeCompare(a.name));
 
@@ -114,9 +113,9 @@ export default function RatingDashboard({
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
-                        <Button 
+                        <Button
                             onClick={() => setExportOpen(true)}
-                            variant="outline" 
+                            variant="outline"
                             className="flex items-center gap-2"
                         >
                             <FileText size={16} />
@@ -183,12 +182,12 @@ export default function RatingDashboard({
                                         </defs>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
                                         <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize: 12}} />
-                                        <YAxis 
-                                            domain={[0, 5]} 
+                                        <YAxis
+                                            domain={[0, 5]}
                                             ticks={[0, 1, 2, 3, 4, 5]}
-                                            axisLine={false} 
-                                            tickLine={false} 
-                                            tick={{fontSize: 12}} 
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{fontSize: 12}}
                                         />
                                         <Tooltip
                                             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
@@ -337,9 +336,9 @@ export default function RatingDashboard({
                 </div>
             </div>
 
-            <RatingExportModal 
-                open={exportOpen} 
-                onClose={() => setExportOpen(false)} 
+            <RatingExportModal
+                open={exportOpen}
+                onClose={() => setExportOpen(false)}
                 data={{
                     stats,
                     rankings,
