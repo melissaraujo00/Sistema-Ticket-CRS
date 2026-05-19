@@ -1,13 +1,9 @@
 import { Head, useForm } from '@inertiajs/react';
-import { LoaderCircle } from 'lucide-react';
-
+import { LoaderCircle, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
-import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import AuthLayout from '@/layouts/auth-layout';
+import { useState, useEffect } from 'react';
 
 export default function Login({ status, canResetPassword }) {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -16,76 +12,205 @@ export default function Login({ status, canResetPassword }) {
         remember: false,
     });
 
+    const [showPassword, setShowPassword] = useState(false);
+    const [throttleSeconds, setThrottleSeconds] = useState(0);
+
+    // Detecta el error de throttle y extrae los segundos
+    useEffect(() => {
+        if (errors.email) {
+            const match = errors.email.match(/(\d+)\s*segundo/i);
+            if (match) {
+                setThrottleSeconds(parseInt(match[1]));
+            }
+        }
+    }, [errors.email]);
+
+    // Countdown regresivo
+    useEffect(() => {
+        if (throttleSeconds <= 0) return;
+        const timer = setInterval(() => {
+            setThrottleSeconds((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [throttleSeconds]);
+
+    const isThrottled = throttleSeconds > 0;
+
     const submit = (e) => {
         e.preventDefault();
+        if (isThrottled) return;
         post(route('login'), {
             onFinish: () => reset('password'),
         });
     };
 
     return (
-        <AuthLayout title="Inicia sesión en tu cuenta" description="Ingresa tu correo electrónico y contraseña para iniciar sesión.">
-            <Head title="Log in" />
+        <>
+            <Head title="Iniciar Sesión" />
 
-            <form className="flex flex-col gap-6" onSubmit={submit}>
-                <div className="grid gap-6">
-                    <div className="grid gap-2">
-                        <Label htmlFor="email">Correo</Label>
-                        <Input
-                            id="email"
-                            type="email"
-                            required
-                            autoFocus
-                            tabIndex={1}
-                            autoComplete="email"
-                            value={data.email}
-                            onChange={(e) => setData('email', e.target.value)}
-                            placeholder="email@example.com"
-                        />
-                        <InputError message={errors.email} />
+            <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap');
+                .font-bebas { font-family: 'Bebas Neue', sans-serif; }
+                .font-dm    { font-family: 'DM Sans', sans-serif; }
+                .field-input:focus {
+                    border-color: #DA291C !important;
+                    background: #fff !important;
+                    box-shadow: 0 0 0 4px rgba(218,41,28,0.08) !important;
+                    outline: none;
+                }
+            `}</style>
+
+            <div className="font-dm min-h-screen flex items-center justify-center bg-transparent p-4">
+
+                <div className="flex w-full max-w-[820px] min-h-[480px] rounded-[22px] overflow-hidden bg-white"
+                    style={{ boxShadow: '0 35px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04)' }}>
+
+                    {/* ───────── LEFT ───────── */}
+                    <div className="flex-1 bg-white flex flex-col justify-center px-11 py-10 relative">
+
+                        <div className="absolute left-0 top-0 w-[5px] h-full bg-[#DA291C]" />
+
+                        <h1 className="font-bebas text-[2.2rem] text-[#111] tracking-wide mb-1">
+                            Iniciar Sesión
+                        </h1>
+
+                        <p className="text-[0.78rem] text-[#777] mb-7">
+                            Ingresa tus credenciales para continuar
+                        </p>
+
+                        <form onSubmit={submit}>
+
+                            <div className="flex flex-col gap-4 mb-4">
+
+                                {/* EMAIL */}
+                                <div>
+                                    <label htmlFor="email"
+                                        className="block text-[0.68rem] font-bold uppercase tracking-[1.2px] text-[#444] mb-[0.35rem]">
+                                        Correo electrónico
+                                    </label>
+                                    <div className="relative">
+                                        <Mail className="absolute left-[13px] top-1/2 -translate-y-1/2 w-[15px] h-[15px] text-[#999] pointer-events-none" />
+                                        <input
+                                            id="email"
+                                            type="email"
+                                            maxLength={100}
+                                            className="field-input w-full py-[0.72rem] pr-[0.9rem] pl-10 rounded-[10px] border-[1.5px] border-[#e5e5e5] bg-[#fafafa] text-[0.86rem] font-dm placeholder-[#c4c4c4]"
+                                            placeholder="correo@ejemplo.com"
+                                            required
+                                            autoFocus
+                                            autoComplete="email"
+                                            tabIndex={1}
+                                            value={data.email}
+                                            onChange={(e) => setData('email', e.target.value.replace(/\s/g, ''))}
+                                            onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
+                                            onPaste={(e) => {
+                                                e.preventDefault();
+                                                const pasted = e.clipboardData.getData('text').replace(/\s/g, '');
+                                                setData('email', pasted);
+                                            }}
+                                        />
+                                    </div>
+                                    <InputError message={errors.email} />
+                                </div>
+
+                                {/* PASSWORD */}
+                                <div>
+                                    <label htmlFor="password"
+                                        className="block text-[0.68rem] font-bold uppercase tracking-[1.2px] text-[#444] mb-[0.35rem]">
+                                        Contraseña
+                                    </label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-[13px] top-1/2 -translate-y-1/2 w-[15px] h-[15px] text-[#999] pointer-events-none" />
+                                        <input
+                                            id="password"
+                                            type={showPassword ? 'text' : 'password'}
+                                            className="field-input w-full py-[0.72rem] pr-10 pl-10 rounded-[10px] border-[1.5px] border-[#e5e5e5] bg-[#fafafa] text-[0.86rem] font-dm placeholder-[#c4c4c4]"
+                                            placeholder="••••••••"
+                                            required
+                                            autoComplete="current-password"
+                                            tabIndex={2}
+                                            value={data.password}
+                                            onChange={(e) => setData('password', e.target.value)}
+                                        />
+                                        <button
+                                            type="button"
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-[#999] flex items-center justify-center"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                        >
+                                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                        </button>
+                                    </div>
+                                    <InputError message={errors.password} />
+                                </div>
+                            </div>
+
+                            {/* RECORDAR */}
+                            <div className="flex items-center justify-between my-3 mb-[1.3rem]">
+                                <div className="flex items-center gap-[0.45rem]">
+                                    <Checkbox
+                                        id="remember"
+                                        checked={data.remember}
+                                        onCheckedChange={(checked) => setData('remember', checked)}
+                                    />
+                                    <label htmlFor="remember" className="text-[0.78rem] text-[#666]">
+                                        Recordarme
+                                    </label>
+                                </div>
+                            </div>
+
+                            {/* BOTÓN */}
+                            <button
+                                type="submit"
+                                disabled={processing || isThrottled}
+                                className="font-bebas w-full py-[0.82rem] border-none rounded-xl bg-[#DA291C] text-white text-[1rem] tracking-[2px] cursor-pointer flex items-center justify-center gap-[0.45rem] disabled:opacity-70 disabled:cursor-not-allowed"
+                                style={{ boxShadow: '0 10px 25px rgba(218,41,28,0.30)' }}
+                            >
+                                {processing && <LoaderCircle size={18} />}
+                                {isThrottled ? `Espera ${throttleSeconds}s` : 'Iniciar sesión'}
+                            </button>
+
+                        </form>
+
+                        {status && (
+                            <div className="mt-4 text-center text-[0.82rem] text-green-600 font-medium">
+                                {status}
+                            </div>
+                        )}
                     </div>
 
-                    <div className="grid gap-2">
-                        <div className="flex items-center">
-                            <Label htmlFor="password">Contraseña</Label>
-                            {canResetPassword && (
-                                <TextLink href={route('password.request')} className="ml-auto text-sm" tabIndex={5}>
-                                    ¿Olvidaste tu contraseña?
-                                </TextLink>
-                            )}
+                    {/* ───────── RIGHT ───────── */}
+                    <div className="w-80 flex flex-col items-center justify-center p-8 relative overflow-hidden"
+                        style={{ background: 'linear-gradient(180deg, #DA291C 0%, #b6160d 100%)' }}>
+
+                        <div className="absolute w-[260px] h-[260px] rounded-full -top-20 -right-20"
+                            style={{ background: 'rgba(255,255,255,0.06)' }} />
+                        <div className="absolute w-[180px] h-[180px] rounded-full -bottom-12 -left-12"
+                            style={{ background: 'rgba(0,0,0,0.08)' }} />
+
+                        {/* logo card */}
+                        <div className="relative z-10 bg-white rounded-[18px] p-4 border-4 border-[#111]"
+                            style={{ boxShadow: '0 25px 50px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.1)' }}>
+                            <img
+                                src="/img_cruzroja.jpeg"
+                                alt="Cruz Roja Salvadoreña"
+                                className="w-[220px] h-auto block object-contain select-none pointer-events-none"
+                                draggable={false}
+                            />
                         </div>
-                        <Input
-                            id="password"
-                            type="password"
-                            required
-                            tabIndex={2}
-                            autoComplete="current-password"
-                            value={data.password}
-                            onChange={(e) => setData('password', e.target.value)}
-                            placeholder="Password"
-                        />
-                        <InputError message={errors.password} />
+
+                        <p className="relative z-10 mt-6 text-white/80 text-[0.72rem] uppercase tracking-[2px] font-light">
+                            Sistema de Gestión
+                        </p>
                     </div>
 
-                    <div className="flex items-center space-x-3">
-                        <Checkbox
-                            id="remember"
-                            name="remember"
-                            tabIndex={3}
-                            checked={data.remember}
-                            onCheckedChange={(checked) => setData('remember', checked)}
-                        />
-                        <Label htmlFor="remember">Recordarme</Label>
-                    </div>
-
-                    <Button type="submit" className="mt-4 w-full" tabIndex={4} disabled={processing}>
-                        {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
-                        Iniciar sesión
-                    </Button>
                 </div>
-            </form>
-
-            {status && <div className="mb-4 text-center text-sm font-medium text-green-600">{status}</div>}
-        </AuthLayout>
+            </div>
+        </>
     );
 }
