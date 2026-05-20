@@ -20,6 +20,7 @@ class Ticket extends Model
         'message',
         'expiration_date',
         'closing_date',
+        'cancellation_reason',
         'requesting_user', //id
         'assigned_user', //id
         'help_topic_id',

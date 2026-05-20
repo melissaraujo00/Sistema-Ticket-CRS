@@ -156,24 +156,34 @@ class TicketController extends Controller
             return redirect()->back()->with('error', 'Solo puedes cancelar tickets que aún no han sido asignados.');
         }
 
-        // 3. Buscar el estado de "Cancelado" o "Cerrado" (Ajusta el nombre según tu BD)
-        // Si en tu BD lo llamas "Cerrado" en lugar de "Cancelado", cambia la palabra abajo:
+        // 3. Validar la justificación
+        $validated = $request->validate(
+            [
+                'cancellation_reason' => 'required|string|min:10',
+            ],
+            [
+                'cancellation_reason.required' => 'Debes indicar el motivo de la cancelación.',
+                'cancellation_reason.min' => 'El motivo debe tener al menos 10 caracteres.',
+            ]
+        );
+        // 4. Buscar el estado "Cancelado"
         $statusCancelado = \App\Models\Status::where('name', 'Cancelado')->first();
-
         if (!$statusCancelado) {
-            // Fallback por si no tienes el estado "Cancelado" creado en BD
             $statusCancelado = \App\Models\Status::where('name', 'Cerrado')->firstOrFail();
         }
 
-        // 4. Actualizar el ticket
+        // 5. Actualizar el ticket
         $ticket->update([
             'status_id' => $statusCancelado->id,
-            'closing_date' => now(), // Registramos cuándo se cerró/canceló
+            'closing_date' => now(),
+            'cancellation_reason' => $validated['cancellation_reason'],
         ]);
+
+        // 6. Soft delete
+        $ticket->delete();
 
         return redirect()->route('tickets.my')->with('success', 'Tu ticket ha sido cancelado exitosamente.');
     }
-
     /**
      * Cierra el ticket y guarda la calificación del usuario.
      */
