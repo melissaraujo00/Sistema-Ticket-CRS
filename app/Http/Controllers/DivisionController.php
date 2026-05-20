@@ -5,8 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Division;
 use App\Models\Department;
-use App\Http\Requests\DivisionStoreRequest;
-use App\Http\Requests\DivisionUpdateRequest;
+use App\Http\Requests\SaveDivisionRequest;
 use App\Services\DivisionService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
@@ -58,7 +57,7 @@ class DivisionController extends Controller
     /**
      * Almacena una división recién creada en la base de datos.
      */
-    public function store(DivisionStoreRequest $request): RedirectResponse
+    public function store(SaveDivisionRequest $request): RedirectResponse
     {
         $this->divisionService->createDivision($request->validated());
 
@@ -80,7 +79,7 @@ class DivisionController extends Controller
     /**
      * Actualiza la división especificada en la base de datos.
      */
-    public function update(DivisionUpdateRequest $request, Division $division): RedirectResponse
+    public function update(SaveDivisionRequest $request, Division $division): RedirectResponse
     {
         $this->divisionService->updateDivision($division, $request->validated());
 
