@@ -197,7 +197,7 @@ export default function Login({ status, canResetPassword }) {
                         <div className="relative z-10 bg-white rounded-[18px] p-4 border-4 border-[#111]"
                             style={{ boxShadow: '0 25px 50px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.1)' }}>
                             <img
-                                src="/img_cruzroja.jpeg"
+                                src="/img_cruzroja.webp"
                                 alt="Cruz Roja Salvadoreña"
                                 className="w-[220px] h-auto block object-contain select-none pointer-events-none"
                                 draggable={false}

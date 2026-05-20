@@ -10,22 +10,21 @@ class UserRoleSeeder extends Seeder
     public function run(): void
     {
         // Asignar Super Admin
-        User::where('email', 'admin@admin.com')->first()?->syncRoles(['superadmin']);
+        User::where('email', 'admin@cruzroja.com')->first()?->syncRoles(['superadmin']);
 
         // Asignar Administradores de Área
-        User::whereIn('email', ['admin.soporte@empresa.com', 'admin.sistemas@empresa.com'])
+        User::whereIn('email', ['admin.soporte@cruzroja.com', 'admin.sistemas@cruzroja.com'])
             ->get()
             ->each(fn($user) => $user->syncRoles(['admin']));
 
         // Asignar Agentes (Técnicos)
-        User::whereIn('email', ['tecnico1@empresa.com', 'tecnico2@empresa.com'])
+        User::whereIn('email', ['carlos.soporte@cruzroja.com', 'maria.sistemas@cruzroja.com'])
             ->get()
             ->each(fn($user) => $user->syncRoles(['agent']));
 
         // Asignar Usuarios Solicitantes
-        User::whereIn('email', ['juan.perez@empresa.com', 'ana.martinez@empresa.com'])
+        User::whereIn('email', ['juan.soporte@cruzroja.com', 'ana.sistemas@cruzroja.com'])
             ->get()
             ->each(fn($user) => $user->syncRoles(['user']));
-
     }
 }
