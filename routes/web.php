@@ -12,6 +12,7 @@ use App\Http\Controllers\PriorityController;
 use App\Http\Controllers\TecnicoController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\AreaController;
+use App\Http\Controllers\DivisionController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\QualificationController;
 use App\Http\Controllers\SolutionTypeController;
@@ -113,7 +114,13 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['permission:manage_departments'])->group(function () {
         Route::get('/departments/trashed', [DepartmentController::class, 'trashed'])->name('departments.trashed');
         Route::put('/departments/{id}/restore', [DepartmentController::class, 'restore'])->name('departments.restore');
-        Route::resource('departments', DepartmentController::class);
+        Route::resource('departments', DepartmentController::class)->except(['show']);
+    });
+
+    Route::middleware(['permission:manage_divisions'])->group(function () {
+        Route::get('/divisions/trashed', [DivisionController::class, 'trashed'])->name('divisions.trashed');
+        Route::put('/divisions/{id}/restore', [DivisionController::class, 'restore'])->name('divisions.restore');
+        Route::resource('divisions', DivisionController::class)->except(['show']);
     });
 
 
