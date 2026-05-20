@@ -1,30 +1,20 @@
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
+import { AppSidebar } from '@/components/app-sidebar';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 
 export default function AppSidebarLayout({ children, breadcrumbs = [] }) {
     return (
-        // 1. Le damos un fondo gris muy sutil a toda la pantalla (o fondo oscuro en dark mode)
-        // Esto crea el contraste necesario para separar el menú del contenido.
-        <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-zinc-950 font-sans">
+        <SidebarProvider>
+            <AppSidebar />
 
-            {/* ==========================================
-                EL MENÚ (AFUERA)
-                Ocupa el 100% del ancho, tiene fondo blanco y sombra
-            ========================================== */}
-            <div className="w-full relative z-50">
-                <AppSidebarHeader breadcrumbs={breadcrumbs} />
-            </div>
-
-            {/* ==========================================
-                EL CONTENIDO (ADENTRO)
-                Está centrado, tiene un ancho máximo y no toca los bordes
-            ========================================== */}
-            <main className="flex-1 w-full max-w-[1600px] mx-auto p-4 md:p-6 lg:p-8">
-                {/* Aquí adentro se inyectan tus dashboards (Dashboard, Mis Tickets, etc.) */}
-                <div className="w-full h-full animate-in fade-in duration-500">
-                    {children}
+            <SidebarInset className="flex min-h-screen w-full flex-col bg-slate-50 font-sans dark:bg-zinc-950">
+                <div className="relative z-50 w-full">
+                    <AppSidebarHeader breadcrumbs={breadcrumbs} />
                 </div>
-            </main>
-
-        </div>
+                <main className="mx-auto w-full max-w-[1600px] flex-1 p-4 md:p-6 lg:p-8">
+                    <div className="animate-in fade-in h-full w-full duration-500">{children}</div>
+                </main>
+            </SidebarInset>
+        </SidebarProvider>
     );
 }
