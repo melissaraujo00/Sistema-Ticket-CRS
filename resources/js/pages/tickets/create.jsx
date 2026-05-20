@@ -35,20 +35,23 @@ export default function Create() {
     const { auth, departments, divisions, helpTopics } = usePage().props;
 
     const [showPreview, setShowPreview] = useState(false);
-    const [dept, setDept] = useState("");
-    const [div, setDiv] = useState("");
 
-    // Estado para los archivos seleccionados (array de File)
-    const [selectedFiles, setSelectedFiles] = useState([]);
+    const { data, setData, post, processing, errors, setError, clearErrors } = useForm(
+        "CreateTicketForm", 
+        {
+            department_id: "",
+            division_id: "",
+            help_topic_id: "",
+            subject: "",
+            message: "",
+            attachments: [], 
+        }
+    );
 
-    const { data, setData, post, processing, errors, setError, clearErrors } = useForm({
-        department_id: "",
-        division_id: "",
-        help_topic_id: "",
-        subject: "",
-        message: "",
-        attachments: [], // será un array de archivos
-    });
+    const [dept, setDept] = useState(data.department_id || "");
+    const [div, setDiv] = useState(data.division_id || "");
+
+    const [selectedFiles, setSelectedFiles] = useState(data.attachments || []);
 
     const filteredDivisions = dept
         ? divisions.filter((d) => parseInt(d.department_id) === parseInt(dept))
@@ -61,35 +64,40 @@ export default function Create() {
     const handleDeptChange = (val) => {
         setDept(val);
         setDiv("");
-        setData("department_id", val);
-        setData("division_id", "");
-        setData("help_topic_id", "");
+        setData((prev) => ({
+            ...prev,
+            department_id: val,
+            division_id: "",
+            help_topic_id: "",
+        }));
     };
 
     const handleDivChange = (val) => {
         setDiv(val);
-        setData("division_id", val);
-        setData("help_topic_id", "");
+        setData((prev) => ({
+            ...prev,
+            division_id: val,
+            help_topic_id: "",
+        }));
     };
 
-    // Manejar selección de archivos (múltiples)
-const handleFileChange = (e) => {
-    const newFiles = Array.from(e.target.files);
-    if (newFiles.length === 0) return;
+    const handleFileChange = (e) => {
+        const newFiles = Array.from(e.target.files);
+        if (newFiles.length === 0) return;
 
-    const updatedFiles = [...selectedFiles];
-    for (const file of newFiles) {
-        const exists = updatedFiles.some(
-            (f) => f.name === file.name && f.size === file.size
-        );
-        if (!exists) updatedFiles.push(file);
-    }
+        const updatedFiles = [...selectedFiles];
+        for (const file of newFiles) {
+            const exists = updatedFiles.some(
+                (f) => f.name === file.name && f.size === file.size
+            );
+            if (!exists) updatedFiles.push(file);
+        }
 
-    setSelectedFiles(updatedFiles);
-    setData("attachments", updatedFiles);
-    e.target.value = null;
-};
-    // Eliminar un archivo de la lista
+        setSelectedFiles(updatedFiles);
+        setData("attachments", updatedFiles);
+        e.target.value = null;
+    };
+
     const removeFile = (index) => {
         const updatedFiles = selectedFiles.filter((_, i) => i !== index);
         setSelectedFiles(updatedFiles);
@@ -126,7 +134,7 @@ const handleFileChange = (e) => {
                 helpTopics={helpTopics}
                 breadcrumbs={breadcrumbs}
                 processing={processing}
-                onEdit={() => setShowPreview(falfse)}
+                onEdit={() => setShowPreview(false)}
                 onSubmit={submit}
             />
         );
@@ -306,7 +314,6 @@ const handleFileChange = (e) => {
                                 <Label className="text-zinc-700 dark:text-zinc-300">Adjuntos (máx. 10MB por archivo)</Label>
                                 <div className="relative">
                                     <div className="mt-1 rounded-xl border-2 border-dashed border-zinc-300 p-6 text-center dark:border-zinc-700">
-                                        {/* Input file oculto */}
                                         <input
                                             type="file"
                                             multiple
@@ -314,7 +321,6 @@ const handleFileChange = (e) => {
                                             className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
                                             id="file-upload"
                                         />
-                                        {/* Botón personalizado */}
                                         <label
                                             htmlFor="file-upload"
                                             className="inline-flex cursor-pointer items-center justify-center rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
