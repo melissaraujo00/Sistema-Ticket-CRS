@@ -98,7 +98,11 @@ export default function TicketDetails({ id }) {
 
     const data = ticket
 
-    if (!data) return <div>Cargando...</div>;
+    if (!data) return (
+        <div className="flex items-center justify-center min-h-screen">
+            Cargando...
+        </div>
+    );
 
     return (
         <AppLayout>
@@ -165,7 +169,7 @@ export default function TicketDetails({ id }) {
                                 </div>
                                 <div className="grid grid-cols-[100px_1fr] gap-2">
                                     <span className="font-bold text-xs text-gray-900">Area</span>
-                                     <span>{data.division_solicitante}</span>
+                                    <span>{data.division_solicitante}</span>
                                 </div>
                             </div>
 
@@ -219,7 +223,7 @@ export default function TicketDetails({ id }) {
                                 {data.soluciones.map((sol, idx) => (
                                     <div key={idx} className="bg-gray-50 rounded-xl p-5 border border-gray-200 relative overflow-hidden">
                                         <div className="absolute top-0 right-0 w-24 h-24 bg-green-500/5 -rotate-12 translate-x-8 -translate-y-8 rounded-full"></div>
-                                        
+
                                         <div className="flex justify-between items-start mb-4">
                                             <span className="inline-flex items-center rounded-lg bg-green-600 px-3 py-1 text-[10px] font-black text-white uppercase tracking-wider">
                                                 {sol.tipo}
@@ -228,12 +232,12 @@ export default function TicketDetails({ id }) {
                                                 {new Date(sol.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })}
                                             </span>
                                         </div>
-                                        
+
                                         <div className="mb-6">
                                             <h5 className="text-[11px] font-bold text-gray-400 uppercase mb-2">Observaciones del Técnico</h5>
                                             <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap bg-white p-3 rounded-lg border border-gray-100 shadow-sm">{sol.mensaje}</p>
                                         </div>
-                                        
+
                                         {sol.adjuntos && sol.adjuntos.length > 0 && (
                                             <div className="mt-4">
                                                 <h5 className="text-[11px] font-bold text-gray-400 uppercase mb-3 flex items-center gap-2">
@@ -269,14 +273,14 @@ export default function TicketDetails({ id }) {
                                                 {new Date(inc.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })}
                                             </span>
                                         </div>
-                                        
+
                                         <div className="mt-4">
                                             <h5 className="text-[11px] font-bold text-red-800 uppercase mb-2">Nota Interna</h5>
                                             <div className="text-xs text-slate-700 bg-white/80 p-3 rounded-lg border border-red-100 shadow-sm leading-relaxed whitespace-pre-wrap font-medium italic">
                                                 "{inc.internal_note}"
                                             </div>
                                         </div>
-                                        
+
                                         <div className="mt-4 flex items-center justify-end text-[10px] text-slate-400 font-medium">
                                             Reportado por: {inc.tecnico}
                                         </div>
