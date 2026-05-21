@@ -25,11 +25,12 @@ class TecnicoDataSeeder extends Seeder
 
         $deptSoporte = Department::where('name', 'Soporte Técnico')->first();
         $deptSistemas = Department::where('name', 'Desarrollo de Sistemas')->first();
-        $adminSoporte = User::where('email', 'admin.soporte@empresa.com')->first();
 
-        $tecnico1 = User::where('email', 'tecnico1@empresa.com')->first();
-        $usuario1 = User::where('email', 'juan.perez@empresa.com')->first();
-        $usuario2 = User::where('email', 'ana.martinez@empresa.com')->first();
+        $adminSoporte = User::where('email', 'admin.soporte@cruzroja.com')->first();
+
+        $tecnico1 = User::where('email', 'carlos.soporte@cruzroja.com')->first();
+        $usuario1 = User::where('email', 'juan.soporte@cruzroja.com')->first();
+        $usuario2 = User::where('email', 'ana.sistemas@cruzroja.com')->first();
 
 
 
