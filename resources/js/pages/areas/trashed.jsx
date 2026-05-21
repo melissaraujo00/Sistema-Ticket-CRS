@@ -1,5 +1,6 @@
 import { GenericTable } from '@/components/GenericTable';
 import { Button } from '@/components/ui/button';
+import Pagination from '@/components/Pagination';
 import { useAreaActions } from '@/hooks/use-area-actions';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, usePage } from '@inertiajs/react';
@@ -7,7 +8,7 @@ import { ArrowLeft, RotateCcw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Toaster, toast } from 'sonner';
 
-export default function Trashed({ areas = [] }) {
+export default function Trashed({ areas }) {
     const { restore, isProcessingAction } = useAreaActions();
     const [confirmId, setConfirmId] = useState(null);
 
@@ -86,7 +87,8 @@ export default function Trashed({ areas = [] }) {
                     </Button>
                 </div>
 
-                <GenericTable data={areas} columns={columns} />
+                <GenericTable data={areas?.data || []} columns={columns} />
+                <Pagination links={areas?.links || []} />
             </div>
         </AppLayout>
     );

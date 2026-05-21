@@ -144,7 +144,10 @@ class UserService
 
     public function getTrashedUsers()
     {
-        return User::onlyTrashed()->with(['department', 'roles'])->latest()->get();
+        return User::onlyTrashed()
+            ->with(['department', 'roles'])
+            ->latest()
+            ->paginate(10);
     }
 
     public function restoreUser($id): bool

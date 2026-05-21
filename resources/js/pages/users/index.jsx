@@ -72,7 +72,6 @@ export default function Users({ users, departments = [], roles = [], areas = [],
                     </div>
                     <div>
                         <span className="block font-semibold text-zinc-900 dark:text-zinc-50">{user.name}</span>
-                        {/* REVISIÓN: Aquí se muestra el código institucional debajo del nombre */}
                         <span className="text-xs text-zinc-500">{user.institution_code && `Cód: ${user.institution_code}`}</span>
                     </div>
                 </div>
@@ -163,7 +162,7 @@ export default function Users({ users, departments = [], roles = [], areas = [],
                             <Button variant="outline" asChild className="border-zinc-200 dark:border-zinc-800">
                                 <Link href={route('users.trashed')}>
                                     <Trash2 className="mr-2 h-4 w-4" />
-                                    Ver Borrados
+                                    Ver Inactivos
                                 </Link>
                             </Button>
                         </div>

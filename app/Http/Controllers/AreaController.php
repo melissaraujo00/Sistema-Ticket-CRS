@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Area;
 use App\Http\Requests\SaveAreaRequest;
+use Illuminate\Http\Request;
 use App\Services\AreaService;
 use Inertia\Inertia;
 use Exception;
@@ -18,10 +19,13 @@ class AreaController extends Controller
         $this->areaService = $areaService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
+        $filters = $request->only(['search']);
+
         return Inertia::render('areas/index', [
-            'areas' => $this->areaService->getAllAreas()
+            'areas'   => $this->areaService->getPaginatedAreas($filters),
+            'filters' => $filters,
         ]);
     }
 

@@ -1,6 +1,7 @@
 import AreaTableActions from '@/components/areas/AreaTableActions';
 import DeleteEntityModal from '@/components/DeleteEntityModal';
 import { GenericTable } from '@/components/GenericTable';
+import Pagination from '@/components/Pagination';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, usePage } from '@inertiajs/react';
@@ -8,7 +9,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Toaster, toast } from 'sonner';
 
-export default function Areas({ areas = [] }) {
+export default function Areas({ areas }) {
     const { flash } = usePage().props;
     const [selectedArea, setSelectedArea] = useState(null);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -75,7 +76,11 @@ export default function Areas({ areas = [] }) {
                     </div>
                 </div>
 
-                <GenericTable data={areas} columns={columns} />
+                {/* 3. Tabla con el data seguro */}
+                <GenericTable data={areas?.data || []} columns={columns} />
+
+                {/* 4. Renderizamos la paginación del backend */}
+                <Pagination links={areas?.links || []} />
             </div>
 
             <DeleteEntityModal
