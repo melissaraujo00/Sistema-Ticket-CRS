@@ -1,18 +1,25 @@
+import { GenericTable } from '@/components/GenericTable';
 import Pagination from '@/components/Pagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/app-layout';
-import { Head, Link, router } from '@inertiajs/react';
-import { Pencil, Plus, Search, Trash2, X } from 'lucide-react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { Toaster, toast } from 'sonner';
 
 export default function Divisions({ divisions, departments = [], filters = {} }) {
-    const divisionList = divisions?.data ?? [];
+    const { flash } = usePage().props;
 
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
     const [selectedDepartment, setSelectedDepartment] = useState(filters.department_id || '');
 
     const isFirstRender = useRef(true);
+
+    useEffect(() => {
+        if (flash?.success) toast.success(flash.success);
+        if (flash?.error) toast.error(flash.error);
+    }, [flash]);
 
     useEffect(() => {
         if (isFirstRender.current) {
@@ -38,35 +45,92 @@ export default function Divisions({ divisions, departments = [], filters = {} })
         return () => clearTimeout(timeoutId);
     }, [searchTerm, selectedDepartment]);
 
-    const deleteDivision = (division) => {
-        if (confirm(`¿Seguro que deseas eliminar la división "${division.name}"?`)) {
-            router.delete(route('divisions.destroy', division.id));
-        }
-    };
+    const columns = [
+        {
+            header: 'ID',
+            className: 'w-16',
+            render: (division) => (
+                <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    {division.id}
+                </span>
+            ),
+        },
+        {
+            header: 'División',
+            className: 'w-1/4',
+            render: (division) => (
+                <span className="font-semibold text-zinc-900 dark:text-zinc-50">
+                    {division.name}
+                </span>
+            ),
+        },
+        {
+            header: 'Departamento',
+            className: 'text-zinc-600 dark:text-zinc-400',
+            render: (division) => (
+                <span className="rounded-md bg-zinc-100 px-2 py-1 text-[10px] font-bold tracking-wider text-zinc-500 uppercase dark:bg-zinc-800">
+                    {division.department?.name ?? 'Sin departamento'}
+                </span>
+            ),
+        },
+        {
+            header: 'Área',
+            className: 'hidden md:table-cell text-zinc-600 dark:text-zinc-400',
+            render: (division) => (
+                <span className="text-sm">
+                    {division.department?.area?.name ?? 'Sin área'}
+                </span>
+            ),
+        },
+        {
+            header: 'Características',
+            className: 'hidden md:table-cell text-zinc-600 dark:text-zinc-400',
+            render: (division) => (
+                <span className="text-sm">
+                    {division.characteristics || (
+                        <span className="italic text-zinc-400">
+                            Sin características
+                        </span>
+                    )}
+                </span>
+            ),
+        },
+        {
+            header: 'Acciones',
+            className: 'text-right w-24',
+            render: (division) => (
+                <div className="flex justify-end gap-2">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        asChild
+                        className="h-8 w-8 rounded-full"
+                    >
+                        <Link href={route('divisions.edit', division.id)}>
+                            <Pencil className="h-4 w-4" />
+                        </Link>
+                    </Button>
 
-    const clearFilters = () => {
-        setSearchTerm('');
-        setSelectedDepartment('');
-
-        router.get(
-            route('divisions.index'),
-            {},
-            {
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            },
-        );
-    };
-
-    const hasFilters = searchTerm || selectedDepartment;
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-full text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30"
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </div>
+            ),
+        },
+    ];
 
     return (
         <AppLayout>
             <Head title="Divisiones" />
+            <Toaster position="top-right" richColors />
 
             <div className="space-y-6 p-4 md:p-8">
-                {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
@@ -94,9 +158,7 @@ export default function Divisions({ divisions, departments = [], filters = {} })
                     </div>
                 </div>
 
-                {/* Buscador y filtros */}
                 <div className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-zinc-50/50 p-4 md:flex-row md:items-center dark:border-zinc-800 dark:bg-zinc-900/50">
-                    {/* Buscador */}
                     <div className="relative w-full md:w-1/3">
                         <label htmlFor="search-divisions" className="sr-only">
                             Buscar división
@@ -106,15 +168,14 @@ export default function Divisions({ divisions, departments = [], filters = {} })
 
                         <Input
                             id="search-divisions"
-                            placeholder="Buscar división"
+                            placeholder="Buscar división..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="h-10 w-full rounded-lg border-zinc-200 bg-white pl-9 focus-visible:ring-zinc-500 dark:border-zinc-800 dark:bg-zinc-950"
                         />
                     </div>
 
-                    {/* Filtro por departamento */}
-                    <div className="w-full md:w-1/3">
+                    <div className="w-full md:w-1/4">
                         <label htmlFor="department-select" className="sr-only">
                             Filtrar por departamento
                         </label>
@@ -134,113 +195,11 @@ export default function Divisions({ divisions, departments = [], filters = {} })
                             ))}
                         </select>
                     </div>
-
-                    
                 </div>
 
-                {/* Tabla */}
-                <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-bold tracking-wider text-zinc-500 uppercase dark:border-zinc-800 dark:bg-zinc-900/50">
-                                <tr>
-                                    <th className="px-6 py-4">ID</th>
-                                    <th className="px-6 py-4">División</th>
-                                    <th className="px-6 py-4">Departamento</th>
-                                    <th className="px-6 py-4">Área</th>
-                                    <th className="px-6 py-4">Características</th>
-                                    <th className="px-6 py-4 text-right">Acciones</th>
-                                </tr>
-                            </thead>
+                <GenericTable data={divisions.data} columns={columns} />
 
-                            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                                {divisionList.length > 0 ? (
-                                    divisionList.map((division) => (
-                                        <tr
-                                            key={division.id}
-                                            className="transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900/40"
-                                        >
-                                            <td className="px-6 py-4 font-medium text-zinc-700 dark:text-zinc-300">
-                                                {division.id}
-                                            </td>
-
-                                            <td className="px-6 py-4">
-                                                <span className="font-semibold text-zinc-900 dark:text-zinc-50">
-                                                    {division.name}
-                                                </span>
-                                            </td>
-
-                                            <td className="px-6 py-4">
-                                                <span className="rounded-md bg-zinc-100 px-2 py-1 text-[10px] font-bold tracking-wider text-zinc-500 uppercase dark:bg-zinc-800">
-                                                    {division.department?.name || 'Sin departamento'}
-                                                </span>
-                                            </td>
-
-                                            <td className="px-6 py-4">
-                                                <span className="text-sm text-zinc-500">
-                                                    {division.department?.area?.name || 'Sin área'}
-                                                </span>
-                                            </td>
-
-                                            <td className="max-w-md px-6 py-4 text-zinc-600 dark:text-zinc-400">
-                                                {division.characteristics || (
-                                                    <span className="italic text-zinc-400">
-                                                        Sin características
-                                                    </span>
-                                                )}
-                                            </td>
-
-                                            <td className="px-6 py-4">
-                                                <div className="flex justify-end gap-2">
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        asChild
-                                                        className="h-8 w-8 rounded-full"
-                                                    >
-                                                        <Link href={route('divisions.edit', division.id)}>
-                                                            <Pencil className="h-4 w-4" />
-                                                        </Link>
-                                                    </Button>
-
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => deleteDivision(division)}
-                                                        className="h-8 w-8 rounded-full text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan="6" className="px-6 py-16 text-center">
-                                            <div className="flex flex-col items-center justify-center">
-                                                <p className="text-sm font-medium text-zinc-500">
-                                                    No hay divisiones registradas.
-                                                </p>
-
-                                                <Button
-                                                    asChild
-                                                    className="mt-4 bg-zinc-900 dark:bg-zinc-50 dark:text-zinc-900"
-                                                >
-                                                </Button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                {/* Paginador */}
-                {divisions?.links && <Pagination links={divisions.links} />}
+                <Pagination links={divisions.links} />
             </div>
         </AppLayout>
     );
