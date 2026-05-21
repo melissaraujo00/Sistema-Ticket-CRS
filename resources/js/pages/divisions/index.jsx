@@ -1,10 +1,12 @@
+import DeleteEntityModal from '@/components/DeleteEntityModal';
+import DivisionTableActions from '@/components/divisions/DivisionTableActions';
 import { GenericTable } from '@/components/GenericTable';
 import Pagination from '@/components/Pagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { Plus, Search, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Toaster, toast } from 'sonner';
 
@@ -13,6 +15,10 @@ export default function Divisions({ divisions, departments = [], filters = {} })
 
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
     const [selectedDepartment, setSelectedDepartment] = useState(filters.department_id || '');
+
+    // 2. Estados para controlar el Modal de Eliminación
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+    const [selectedDivision, setSelectedDivision] = useState(null);
 
     const isFirstRender = useRef(true);
 
@@ -45,24 +51,22 @@ export default function Divisions({ divisions, departments = [], filters = {} })
         return () => clearTimeout(timeoutId);
     }, [searchTerm, selectedDepartment]);
 
+    // 3. Función para abrir el Modal y setear la división a eliminar
+    const handleDeleteClick = (division) => {
+        setSelectedDivision(division);
+        setIsDeleteOpen(true);
+    };
+
     const columns = [
         {
             header: 'ID',
             className: 'w-16',
-            render: (division) => (
-                <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                    {division.id}
-                </span>
-            ),
+            render: (division) => <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{division.id}</span>,
         },
         {
             header: 'División',
             className: 'w-1/4',
-            render: (division) => (
-                <span className="font-semibold text-zinc-900 dark:text-zinc-50">
-                    {division.name}
-                </span>
-            ),
+            render: (division) => <span className="font-semibold text-zinc-900 dark:text-zinc-50">{division.name}</span>,
         },
         {
             header: 'Departamento',
@@ -76,52 +80,19 @@ export default function Divisions({ divisions, departments = [], filters = {} })
         {
             header: 'Área',
             className: 'hidden md:table-cell text-zinc-600 dark:text-zinc-400',
-            render: (division) => (
-                <span className="text-sm">
-                    {division.department?.area?.name ?? 'Sin área'}
-                </span>
-            ),
+            render: (division) => <span className="text-sm">{division.department?.area?.name ?? 'Sin área'}</span>,
         },
         {
             header: 'Características',
             className: 'hidden md:table-cell text-zinc-600 dark:text-zinc-400',
             render: (division) => (
-                <span className="text-sm">
-                    {division.characteristics || (
-                        <span className="italic text-zinc-400">
-                            Sin características
-                        </span>
-                    )}
-                </span>
+                <span className="text-sm">{division.characteristics || <span className="text-zinc-400 italic">Sin características</span>}</span>
             ),
         },
         {
             header: 'Acciones',
             className: 'text-right w-24',
-            render: (division) => (
-                <div className="flex justify-end gap-2">
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        asChild
-                        className="h-8 w-8 rounded-full"
-                    >
-                        <Link href={route('divisions.edit', division.id)}>
-                            <Pencil className="h-4 w-4" />
-                        </Link>
-                    </Button>
-
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 rounded-full text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30"
-                    >
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
-                </div>
-            ),
+            render: (division) => <DivisionTableActions division={division} onDelete={handleDeleteClick} />,
         },
     ];
 
@@ -133,12 +104,8 @@ export default function Divisions({ divisions, departments = [], filters = {} })
             <div className="space-y-6 p-4 md:p-8">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
-                            Divisiones
-                        </h1>
-                        <p className="text-sm text-zinc-500">
-                            Gestión de divisiones vinculadas a departamentos.
-                        </p>
+                        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Divisiones</h1>
+                        <p className="text-sm text-zinc-500">Gestión de divisiones vinculadas a departamentos.</p>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -201,6 +168,18 @@ export default function Divisions({ divisions, departments = [], filters = {} })
 
                 <Pagination links={divisions.links} />
             </div>
+
+            {/* 4. Renderizar el Modal fuera del flujo principal de la página */}
+            <DeleteEntityModal
+                isOpen={isDeleteOpen}
+                entity={selectedDivision}
+                entityType="División"
+                deleteEndpoint={route('divisions.index')}
+                closeModal={() => {
+                    setIsDeleteOpen(false);
+                    setSelectedDivision(null);
+                }}
+            />
         </AppLayout>
     );
 }

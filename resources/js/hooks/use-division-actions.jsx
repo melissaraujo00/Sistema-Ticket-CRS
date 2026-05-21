@@ -59,11 +59,9 @@ export function useDivisionActions(division = null) {
                 onSuccess: () => {
                     if (onSuccessCallback) onSuccessCallback();
                     setIsProcessingAction(null);
-                    toast.success('División restaurada exitosamente.');
                 },
                 onError: () => {
                     setIsProcessingAction(null);
-                    toast.error('Error al restaurar la división.');
                 },
             },
         );

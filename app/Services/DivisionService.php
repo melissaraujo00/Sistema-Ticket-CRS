@@ -13,13 +13,17 @@ class DivisionService
      */
     public function getPaginatedDivisions(array $filters): LengthAwarePaginator
     {
-        return Division::with('department.area') // Traemos el departamento y su área para mostrar jerarquía
-        ->when($filters['search'] ?? null, function ($query, $search) {
-            $query->where('name', 'like', "%{$search}%")
-                ->orWhereHas('department', function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%");
+        return Division::with('department.area')
+            // 1. Agrupamos la búsqueda con un sub-where usando una función anónima
+            ->when($filters['search'] ?? null, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhereHas('department', function ($subQ) use ($search) {
+                            $subQ->where('name', 'like', "%{$search}%");
+                        });
                 });
-        })
+            })
+            // 2. El filtro por departamento ahora se aplicará estrictamente al resultado de arriba
             ->when($filters['department_id'] ?? null, function ($query, $departmentId) {
                 $query->where('department_id', $departmentId);
             })
