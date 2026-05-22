@@ -1,18 +1,23 @@
 import { GenericTable } from '@/components/GenericTable';
 import Pagination from '@/components/Pagination';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import UserRoleBadge from '@/components/users/UserRoleBadge';
 import { useUserActions } from '@/hooks/use-user-actions';
 import AppLayout from '@/layouts/app-layout';
-import { Head, Link, usePage } from '@inertiajs/react';
-import { ArrowLeft, RotateCcw, User } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { ArrowLeft, RotateCcw, Search, User } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { Toaster, toast } from 'sonner';
 
-export default function Trashed({ users }) {
+export default function Trashed({ users, filters = {} }) {
     const { restore } = useUserActions();
     const [confirmId, setConfirmId] = useState(null);
     const [isRestoring, setIsRestoring] = useState(null);
+
+    // Estado para la búsqueda
+    const [searchTerm, setSearchTerm] = useState(filters.search || '');
+    const isFirstRender = useRef(true);
 
     const { flash } = usePage().props;
 
@@ -20,6 +25,20 @@ export default function Trashed({ users }) {
         if (flash?.success) toast.success(flash.success);
         if (flash?.error) toast.error(flash.error);
     }, [flash]);
+
+    // Efecto de búsqueda con debounce
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
+        const timeoutId = setTimeout(() => {
+            router.get(route('users.trashed'), { search: searchTerm }, { preserveState: true, preserveScroll: true, replace: true });
+        }, 300);
+
+        return () => clearTimeout(timeoutId);
+    }, [searchTerm]);
 
     const columns = [
         {
@@ -131,18 +150,31 @@ export default function Trashed({ users }) {
             <div className="space-y-6 p-4 md:p-8">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
-                            Papelera de Usuarios
-                        </h1>
-                        <p className="text-sm text-zinc-500">
-                            Consulta y recupera los miembros del equipo eliminados.
-                        </p>
+                        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Papelera de Usuarios</h1>
+                        <p className="text-sm text-zinc-500">Consulta y recupera los miembros del equipo eliminados.</p>
                     </div>
                     <Button asChild className="bg-zinc-900 dark:bg-zinc-50 dark:text-zinc-900">
                         <Link href={route('users.index')}>
                             <ArrowLeft className="mr-2 h-4 w-4" /> Volver a Usuarios
                         </Link>
                     </Button>
+                </div>
+
+                {/* UI de Búsqueda agregada aquí */}
+                <div className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
+                    <div className="relative w-full md:w-1/3">
+                        <label htmlFor="search-trashed-users" className="sr-only">
+                            Buscar en papelera
+                        </label>
+                        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                        <Input
+                            id="search-trashed-users"
+                            placeholder="Buscar usuario borrado..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="h-10 w-full rounded-lg border-zinc-200 bg-white pl-9 focus-visible:ring-zinc-500 dark:border-zinc-800 dark:bg-zinc-950"
+                        />
+                    </div>
                 </div>
 
                 <GenericTable data={users?.data || []} columns={columns} />

@@ -1,16 +1,21 @@
 import { GenericTable } from '@/components/GenericTable';
-import Pagination from '@/components/Pagination'; // 1. Importamos tu componente de paginación
+import Pagination from '@/components/Pagination';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useDivisionActions } from '@/hooks/use-division-actions';
 import AppLayout from '@/layouts/app-layout';
-import { Head, Link, usePage } from '@inertiajs/react';
-import { ArrowLeft, RotateCcw } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { ArrowLeft, RotateCcw, Search } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { Toaster, toast } from 'sonner';
 
-export default function Trashed({ divisions }) {
+export default function Trashed({ divisions, filters = {} }) {
     const { restore, isProcessingAction } = useDivisionActions();
     const [confirmId, setConfirmId] = useState(null);
+
+    // Estados para la búsqueda
+    const [searchTerm, setSearchTerm] = useState(filters.search || '');
+    const isFirstRender = useRef(true);
 
     const { flash } = usePage().props;
 
@@ -18,6 +23,20 @@ export default function Trashed({ divisions }) {
         if (flash?.success) toast.success(flash.success);
         if (flash?.error) toast.error(flash.error);
     }, [flash]);
+
+    // Efecto de búsqueda con debounce
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
+        const timeoutId = setTimeout(() => {
+            router.get(route('divisions.trashed'), { search: searchTerm }, { preserveState: true, preserveScroll: true, replace: true });
+        }, 300);
+
+        return () => clearTimeout(timeoutId);
+    }, [searchTerm]);
 
     const columns = [
         {
@@ -36,9 +55,7 @@ export default function Trashed({ divisions }) {
         {
             header: 'Área',
             render: (division) => (
-                <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                    {division.department?.area?.name || 'No asignado'}
-                </span>
+                <span className="text-sm text-zinc-600 dark:text-zinc-400">{division.department?.area?.name || 'No asignado'}</span>
             ),
         },
         {
@@ -107,9 +124,26 @@ export default function Trashed({ divisions }) {
                     </Button>
                 </div>
 
-                <GenericTable data={divisions.data} columns={columns} />
+                {/* UI de Búsqueda */}
+                <div className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
+                    <div className="relative w-full md:w-1/3">
+                        <label htmlFor="search-trashed-divisions" className="sr-only">
+                            Buscar en papelera
+                        </label>
+                        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                        <Input
+                            id="search-trashed-divisions"
+                            placeholder="Buscar división borrada..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="h-10 w-full rounded-lg border-zinc-200 bg-white pl-9 focus-visible:ring-zinc-500 dark:border-zinc-800 dark:bg-zinc-950"
+                        />
+                    </div>
+                </div>
 
-                <Pagination links={divisions.links} />
+                <GenericTable data={divisions?.data || []} columns={columns} />
+
+                <Pagination links={divisions?.links || []} />
             </div>
         </AppLayout>
     );

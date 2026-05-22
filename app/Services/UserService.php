@@ -142,12 +142,20 @@ class UserService
         return $user->load(['department.area', 'roles', 'headedDepartments']);
     }
 
-    public function getTrashedUsers()
+    public function getTrashedUsers(array $filters = [])
     {
         return User::onlyTrashed()
             ->with(['department', 'roles'])
+            ->when($filters['search'] ?? null, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('institution_code', 'like', "%{$search}%");
+                });
+            })
             ->latest()
-            ->paginate(10);
+            ->paginate(10)
+            ->withQueryString();
     }
 
     public function restoreUser($id): bool

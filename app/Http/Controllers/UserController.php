@@ -87,10 +87,13 @@ class UserController extends Controller
         }
     }
 
-    public function trashed()
+    public function trashed(\Illuminate\Http\Request $request)
     {
+        $filters = $request->only(['search']);
+
         return Inertia::render('users/trashed', [
-            'users' => $this->userService->getTrashedUsers(),
+            'users' => $this->userService->getTrashedUsers($filters),
+            'filters' => $filters,
         ]);
     }
 

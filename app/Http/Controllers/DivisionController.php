@@ -105,10 +105,13 @@ class DivisionController extends Controller
     /**
      * Muestra el listado de divisiones eliminadas lógicamente.
      */
-    public function trashed(): Response
+    public function trashed(Request $request): Response
     {
+        $filters = $request->only(['search']);
+
         return Inertia::render('divisions/trashed', [
-            'divisions' => $this->divisionService->getTrashedDivisions(),
+            'divisions' => $this->divisionService->getTrashedDivisions($filters),
+            'filters' => $filters,
         ]);
     }
 

@@ -105,10 +105,13 @@ class DepartmentController extends Controller
         }
     }
 
-    public function trashed()
+    public function trashed(Request $request)
     {
+        $filters = $request->only(['search']);
+
         return Inertia::render('departments/trashed', [
-            'departments' => $this->departmentService->getTrashedDepartments(),
+            'departments' => $this->departmentService->getTrashedDepartments($filters),
+            'filters' => $filters,
         ]);
     }
 

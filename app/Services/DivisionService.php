@@ -62,12 +62,21 @@ class DivisionService
         $division->delete();
     }
 
-    public function getTrashedDivisions()
+    public function getTrashedDivisions(array $filters = [])
     {
         return Division::onlyTrashed()
             ->with('department.area')
+            ->when($filters['search'] ?? null, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhereHas('department', function ($subQ) use ($search) {
+                            $subQ->where('name', 'like', "%{$search}%");
+                        });
+                });
+            })
             ->orderBy('deleted_at', 'desc')
-            ->paginate(10);
+            ->paginate(10)
+            ->withQueryString();
     }
 
     public function restoreDivision(int $id): void

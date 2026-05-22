@@ -72,12 +72,19 @@ class DepartmentService
         return $department->delete();
     }
 
-    public function getTrashedDepartments(): LengthAwarePaginator
+    public function getTrashedDepartments(array $filters = []): LengthAwarePaginator
     {
         return Department::onlyTrashed()
             ->with('area:id,name')
+            ->when($filters['search'] ?? null, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('email_department', 'like', "%{$search}%");
+                });
+            })
             ->latest()
-            ->paginate(10);
+            ->paginate(10)
+            ->withQueryString();
     }
 
     public function restoreDepartment($id): bool
