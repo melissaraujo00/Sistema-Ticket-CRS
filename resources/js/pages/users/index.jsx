@@ -1,56 +1,65 @@
 import DeleteEntityModal from '@/components/DeleteEntityModal';
 import { GenericTable } from '@/components/GenericTable';
+import Pagination from '@/components/Pagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import UserRoleBadge from '@/components/users/UserRoleBadge';
 import UserTableActions from '@/components/users/UserTableActions';
 import { usePermissions } from '@/hooks/usePermissions';
 import AppLayout from '@/layouts/app-layout';
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Plus, Search, Trash2, User } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Toaster, toast } from 'sonner';
 
-export default function Users({ users = [], departments = [], roles = [], areas = [] }) {
+export default function Users({ users, departments = [], roles = [], areas = [], filters = {} }) {
     const { flash } = usePage().props;
 
     const [selectedUser, setSelectedUser] = useState(null);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const { hasPermission, authUser } = usePermissions();
 
-    // Estados para los filtros
-    const [searchTerm, setSearchTerm] = useState('');
-    const [selectedArea, setSelectedArea] = useState('');
-    const [selectedDepartment, setSelectedDepartment] = useState('');
+    // Estados inicializados con los filtros que vienen de la URL
+    const [searchTerm, setSearchTerm] = useState(filters.search || '');
+    const [selectedArea, setSelectedArea] = useState(filters.area_id || '');
+    const [selectedDepartment, setSelectedDepartment] = useState(filters.department_id || '');
+
+    // Ref para evitar que la búsqueda se dispare en el primer renderizado
+    const isFirstRender = useRef(true);
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
         if (flash?.error) toast.error(flash.error);
     }, [flash]);
 
-    // Lógica de filtrado reactivo
-    const filteredUsers = useMemo(() => {
-        return users.filter((user) => {
-            // Filtrado por texto (Nombre, Email o Código)
-            const matchesSearch =
-                user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                user.institution_code?.toLowerCase().includes(searchTerm.toLowerCase());
+    // Lógica de filtrado en Backend con Debounce (Retraso de 300ms)
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
 
-            // Filtrado por área (accediendo a través de la relación del departamento)
-            const matchesArea = selectedArea === '' || user.department?.area_id == selectedArea;
+        const timeoutId = setTimeout(() => {
+            router.get(
+                route('users.index'),
+                {
+                    search: searchTerm,
+                    area_id: selectedArea,
+                    department_id: selectedDepartment,
+                },
+                {
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true,
+                },
+            );
+        }, 300);
 
-            // Filtrado por departamento
-            const matchesDept = selectedDepartment === '' || user.department_id == selectedDepartment;
-
-            return matchesSearch && matchesArea && matchesDept;
-        });
-    }, [users, searchTerm, selectedArea, selectedDepartment]);
+        return () => clearTimeout(timeoutId);
+    }, [searchTerm, selectedArea, selectedDepartment]);
 
     // Departamentos filtrados para el Select (solo muestra los del área seleccionada)
-    const filteredDepartments = useMemo(() => {
-        return departments.filter((dept) => dept.area_id == selectedArea);
-    }, [departments, selectedArea]);
+    const filteredDepartments = departments.filter((dept) => dept.area_id == selectedArea);
 
     const allColumns = [
         {
@@ -153,7 +162,7 @@ export default function Users({ users = [], departments = [], roles = [], areas 
                             <Button variant="outline" asChild className="border-zinc-200 dark:border-zinc-800">
                                 <Link href={route('users.trashed')}>
                                     <Trash2 className="mr-2 h-4 w-4" />
-                                    Ver Borrados
+                                    Ver Inactivos
                                 </Link>
                             </Button>
                         </div>
@@ -222,7 +231,11 @@ export default function Users({ users = [], departments = [], roles = [], areas 
                     </div>
                 </div>
 
-                <GenericTable data={filteredUsers} columns={columns} />
+                {/* Pasamos users.data para conectarnos con la paginación del servidor */}
+                <GenericTable data={users.data} columns={columns} />
+
+                {/* Paginación nativa */}
+                <Pagination links={users.links} />
             </div>
 
             <DeleteEntityModal

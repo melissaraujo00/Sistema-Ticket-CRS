@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             TecnicoDataSeeder::class,
             HelpTopicSeeder::class,
             SolutionTypeSeeder::class,
+            DatabaseSummarySeeder::class,
         ]);
 
     }
