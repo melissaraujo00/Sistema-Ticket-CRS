@@ -30,6 +30,45 @@ class UserService
         return collect();
     }
 
+    /**
+     * Obtiene usuarios paginados y filtrados exclusivamente para la tabla principal.
+     */
+    public function getPaginatedUsersForIndex(array $filters)
+    {
+        $authUser = auth()->user();
+
+        $query = User::with(['department.area', 'roles']);
+
+        // políticas de acceso
+        if ($authUser->hasRole('admin')) {
+            $query->role('agent')->where('department_id', $authUser->department_id);
+        } elseif (!$authUser->hasRole('superadmin')) {
+            return collect();
+        }
+
+        return $query
+            ->when($filters['search'] ?? null, function ($q, $search) {
+                $q->where(function ($query) use ($search) {
+                    $query->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('institution_code', 'like', "%{$search}%");
+                });
+            })
+            ->when($filters['area_id'] ?? null, function ($q, $areaId) {
+                // usuarios cuyo departamento pertenezca al área seleccionada
+                $q->whereHas('department', function ($deptQuery) use ($areaId) {
+                    $deptQuery->where('area_id', $areaId);
+                });
+            })
+            ->when($filters['department_id'] ?? null, function ($q, $deptId) {
+                $q->where('department_id', $deptId);
+            })
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+    }
+
+
     public function getDepartmentsList()
     {
         return Department::all(['id', 'name', 'area_id']);
@@ -103,9 +142,20 @@ class UserService
         return $user->load(['department.area', 'roles', 'headedDepartments']);
     }
 
-    public function getTrashedUsers()
+    public function getTrashedUsers(array $filters = [])
     {
-        return User::onlyTrashed()->with(['department', 'roles'])->latest()->get();
+        return User::onlyTrashed()
+            ->with(['department', 'roles'])
+            ->when($filters['search'] ?? null, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('institution_code', 'like', "%{$search}%");
+                });
+            })
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
     }
 
     public function restoreUser($id): bool

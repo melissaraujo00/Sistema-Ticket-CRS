@@ -21,10 +21,13 @@ class UserController extends Controller
         ]);
     }
 
-    public function index()
+    public function index(\Illuminate\Http\Request $request)
     {
+        $filters = $request->only(['search', 'area_id', 'department_id']);
+
         return Inertia::render('users/index', [
-            'users'       => $this->userService->getAllUsers(),
+            'users'       => $this->userService->getPaginatedUsersForIndex($filters),
+            'filters'     => $filters,
             'areas'       => $this->userService->getAreasList(),
             'departments' => $this->userService->getDepartmentsList(),
             'roles'       => $this->userService->getRolesList(),
@@ -84,10 +87,13 @@ class UserController extends Controller
         }
     }
 
-    public function trashed()
+    public function trashed(\Illuminate\Http\Request $request)
     {
+        $filters = $request->only(['search']);
+
         return Inertia::render('users/trashed', [
-            'users' => $this->userService->getTrashedUsers(),
+            'users' => $this->userService->getTrashedUsers($filters),
+            'filters' => $filters,
         ]);
     }
 

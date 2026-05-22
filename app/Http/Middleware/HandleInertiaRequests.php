@@ -117,7 +117,7 @@ class HandleInertiaRequests extends Middleware
             // ==========================================
             // 6. ESTRUCTURA ORGANIZACIONAL (NUEVO)
             // ==========================================
-            if ($user->hasPermissionTo('manage_areas')) {
+            if ($user->hasPermissionTo('manage_areas') || $user->hasPermissionTo('manage_departments') || $user->hasPermissionTo('manage_divisions')) {
                 $nav[] = [
                     'title' => 'Estructura',
                     'icon'  => 'Network',
@@ -131,6 +131,11 @@ class HandleInertiaRequests extends Middleware
                             'title' => 'Departamentos',
                             'url'   => route('departments.index'),
                             'icon'  => 'Building'
+                        ],
+                        [
+                            'title' => 'Divisiones',
+                            'url'   => route('divisions.index'),
+                            'icon'  => 'Component'
                         ],
                     ]
                 ];

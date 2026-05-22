@@ -1,22 +1,57 @@
 import DeleteEntityModal from '@/components/DeleteEntityModal';
 import DepartmentTableActions from '@/components/departments/DepartmentTableActions';
 import { GenericTable } from '@/components/GenericTable';
+import Pagination from '@/components/Pagination';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/app-layout';
-import { Head, Link, usePage } from '@inertiajs/react';
-import { Plus, Trash2, UserCheck } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Plus, Search, Trash2, UserCheck } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { Toaster, toast } from 'sonner';
 
-export default function Departments({ departments = [] }) {
+export default function Departments({ departments, areas = [], filters = {} }) {
     const { flash } = usePage().props;
+
+    // 1. Estados para los filtros (Búsqueda y Área)
+    const [searchTerm, setSearchTerm] = useState(filters.search || '');
+    const [selectedArea, setSelectedArea] = useState(filters.area_id || '');
+
     const [selectedDepartment, setSelectedDepartment] = useState(null);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+
+    // 2. Referencia para evitar que el useEffect se dispare en la carga inicial
+    const isFirstRender = useRef(true);
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
         if (flash?.error) toast.error(flash.error);
     }, [flash]);
+
+    // 3. Efecto para aplicar los filtros (con debounce de 300ms)
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
+        const timeoutId = setTimeout(() => {
+            router.get(
+                route('departments.index'),
+                {
+                    search: searchTerm,
+                    area_id: selectedArea,
+                },
+                {
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true,
+                },
+            );
+        }, 300);
+
+        return () => clearTimeout(timeoutId);
+    }, [searchTerm, selectedArea]);
 
     const columns = [
         {
@@ -103,7 +138,49 @@ export default function Departments({ departments = [] }) {
                     </div>
                 </div>
 
-                <GenericTable data={departments} columns={columns} />
+                {/* 4. UI de Filtros y Búsqueda */}
+                <div className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-zinc-50/50 p-4 md:flex-row md:items-center dark:border-zinc-800 dark:bg-zinc-900/50">
+                    <div className="relative w-full md:w-1/3">
+                        <label htmlFor="search-departments" className="sr-only">
+                            Buscar departamento
+                        </label>
+
+                        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+
+                        <Input
+                            id="search-departments"
+                            placeholder="Buscar por nombre o correo..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="h-10 w-full rounded-lg border-zinc-200 bg-white pl-9 focus-visible:ring-zinc-500 dark:border-zinc-800 dark:bg-zinc-950"
+                        />
+                    </div>
+
+                    <div className="w-full md:w-1/4">
+                        <label htmlFor="area-select" className="sr-only">
+                            Filtrar por área
+                        </label>
+
+                        <select
+                            id="area-select"
+                            value={selectedArea}
+                            onChange={(e) => setSelectedArea(e.target.value)}
+                            className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-800 outline-none focus:ring-2 focus:ring-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200"
+                        >
+                            <option value="">Todas las áreas</option>
+
+                            {areas.map((area) => (
+                                <option key={area.id} value={area.id}>
+                                    {area.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
+                <GenericTable data={departments?.data || []} columns={columns} />
+
+                <Pagination links={departments?.links || []} />
             </div>
 
             <DeleteEntityModal
