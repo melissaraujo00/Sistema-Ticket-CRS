@@ -7,6 +7,7 @@ use App\Models\Area;
 use App\Models\User;
 use App\Http\Requests\SaveDepartmentRequest;
 use App\Services\DepartmentService;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Exception;
 use Illuminate\Http\RedirectResponse;
@@ -20,10 +21,14 @@ class DepartmentController extends Controller
         $this->departmentService = $departmentService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
+        $filters = $request->only(['search', 'area_id']);
+
         return Inertia::render('departments/index', [
-            'departments' => $this->departmentService->getAllDepartments()
+            'departments' => $this->departmentService->getPaginatedDepartments($filters),
+            'filters'     => $filters,
+            'areas'       => Area::orderBy('name')->get(['id', 'name']),
         ]);
     }
 

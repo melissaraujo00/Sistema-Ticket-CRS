@@ -5,9 +5,32 @@ namespace App\Services;
 use App\Models\Department;
 use Illuminate\Support\Facades\DB;
 use Exception;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class DepartmentService
 {
+    /**
+     * Obtiene los departamentos paginados y filtrados para el datatable principal.
+     */
+    public function getPaginatedDepartments(array $filters): LengthAwarePaginator
+    {
+        return Department::with(['area:id,name', 'heads:id,name'])
+            ->when($filters['search'] ?? null, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('email_department', 'like', "%{$search}%");
+                });
+            })
+            ->when($filters['area_id'] ?? null, function ($query, $areaId) {
+                $query->where('area_id', $areaId);
+            })
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+    }
+
+
+
     public function getAllDepartments()
     {
         return Department::with(['area:id,name', 'heads:id,name'])->latest()->get();
@@ -49,9 +72,12 @@ class DepartmentService
         return $department->delete();
     }
 
-    public function getTrashedDepartments()
+    public function getTrashedDepartments(): LengthAwarePaginator
     {
-        return Department::with('area:id,name')->onlyTrashed()->latest()->get();
+        return Department::onlyTrashed()
+            ->with('area:id,name')
+            ->latest()
+            ->paginate(10);
     }
 
     public function restoreDepartment($id): bool

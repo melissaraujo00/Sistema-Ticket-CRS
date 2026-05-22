@@ -14,8 +14,10 @@ class AreaService
     public function getPaginatedAreas(array $filters): LengthAwarePaginator
     {
         return Area::when($filters['search'] ?? null, function ($query, $search) {
-            $query->where('name', 'like', "%{$search}%")
-                ->orWhere('description', 'like', "%{$search}%");
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
         })
             ->latest()
             ->paginate(10)
@@ -39,11 +41,18 @@ class AreaService
         return Area::create($data);
     }
 
-    public function getTrashedAreas(): LengthAwarePaginator
+    public function getTrashedAreas(array $filters = []): LengthAwarePaginator
     {
         return Area::onlyTrashed()
+            ->when($filters['search'] ?? null, function ($query, $search) {
+                $query->where(function($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                });
+            })
             ->latest()
-            ->paginate(10);
+            ->paginate(10)
+            ->withQueryString();
     }
 
     /**

@@ -5,7 +5,7 @@ import UserRoleBadge from '@/components/users/UserRoleBadge';
 import { useUserActions } from '@/hooks/use-user-actions';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { ArrowLeft, RotateCcw, User as UserIcon } from 'lucide-react';
+import { ArrowLeft, RotateCcw, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Toaster, toast } from 'sonner';
 
@@ -28,7 +28,7 @@ export default function Trashed({ users }) {
             render: (user) => (
                 <div className="flex items-center gap-3">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-zinc-100 text-zinc-500 dark:bg-zinc-800">
-                        <UserIcon className="h-4 w-4" />
+                        <User className="h-4 w-4" />
                     </div>
                     <div>
                         <span className="block font-semibold text-zinc-900 dark:text-zinc-50">{user.name}</span>

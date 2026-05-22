@@ -1,13 +1,14 @@
 import { GenericTable } from '@/components/GenericTable';
 import { Button } from '@/components/ui/button';
-import { useDepartmentActions } from '@/hooks/use-department-actions'; // Asumiendo que existe el hook
+import Pagination from '@/components/Pagination';
+import { useDepartmentActions } from '@/hooks/use-department-actions';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { ArrowLeft, RotateCcw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Toaster, toast } from 'sonner';
 
-export default function Trashed({ departments = [] }) {
+export default function Trashed({ departments }) {
     const { restore, isProcessingAction } = useDepartmentActions();
     const [confirmId, setConfirmId] = useState(null);
 
@@ -95,7 +96,8 @@ export default function Trashed({ departments = [] }) {
                     </Button>
                 </div>
 
-                <GenericTable data={departments} columns={columns} />
+                <GenericTable data={departments?.data || []} columns={columns} />
+                <Pagination links={departments?.links || []} />
             </div>
         </AppLayout>
     );

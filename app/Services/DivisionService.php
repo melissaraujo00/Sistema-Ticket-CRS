@@ -64,7 +64,10 @@ class DivisionService
 
     public function getTrashedDivisions()
     {
-        return Division::onlyTrashed()->with('department')->orderBy('deleted_at', 'desc')->paginate(10);
+        return Division::onlyTrashed()
+            ->with('department.area')
+            ->orderBy('deleted_at', 'desc')
+            ->paginate(10);
     }
 
     public function restoreDivision(int $id): void

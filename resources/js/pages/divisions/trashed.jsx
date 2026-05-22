@@ -34,10 +34,18 @@ export default function Trashed({ divisions }) {
             ),
         },
         {
+            header: 'Área',
+            render: (division) => (
+                <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                    {division.department?.area?.name || 'No asignado'}
+                </span>
+            ),
+        },
+        {
             header: 'Características',
             render: (division) => (
                 <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                    {division.characteristics || <span className="italic text-zinc-400">Sin características</span>}
+                    {division.characteristics || <span className="text-zinc-400 italic">Sin características</span>}
                 </span>
             ),
         },
@@ -99,10 +107,8 @@ export default function Trashed({ divisions }) {
                     </Button>
                 </div>
 
-                {/* 2. Pasamos divisions.data al GenericTable */}
                 <GenericTable data={divisions.data} columns={columns} />
 
-                {/* 3. Renderizamos los controles de paginación */}
                 <Pagination links={divisions.links} />
             </div>
         </AppLayout>

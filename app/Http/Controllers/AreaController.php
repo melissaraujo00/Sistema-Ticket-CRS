@@ -91,13 +91,13 @@ class AreaController extends Controller
     /**
      * Muestra la lista de áreas en la papelera (Soft Deleted).
      */
-    public function trashed()
+    public function trashed(Request $request)
     {
-        // El servicio debe devolver Area::onlyTrashed()
-        $areas = $this->areaService->getTrashedAreas();
+        $filters = $request->only(['search']);
 
         return Inertia::render('areas/trashed', [
-            'areas' => $areas,
+            'areas' => $this->areaService->getTrashedAreas($filters),
+            'filters' => $filters,
         ]);
     }
 
