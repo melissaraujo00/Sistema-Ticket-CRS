@@ -23,6 +23,11 @@ enum ActionTypeEnum: string
     // Cierre o reapertura
     case CLOSED = 'closed';
     case REOPENED = 'reopened';
+    case SLA_PAUSED = 'sla_paused';
+    case SLA_RESUMED = 'sla_resumed';
+    case SLA_EXPIRED = 'sla_expired';
+    case SLA_MET = 'sla_met';
+    case SLA_PLAN_CHANGED = 'sla_plan_changed';
 
     // Para el frontend en español
     public function label(): string
@@ -38,6 +43,11 @@ enum ActionTypeEnum: string
             self::NOTE_ADDED => 'Nota Privada Agregada',
             self::CLOSED => 'Ticket Cerrado',
             self::REOPENED => 'Ticket Reabierto',
+            self::SLA_PAUSED => 'SLA Pausado',
+            self::SLA_RESUMED => 'SLA Reanudado',
+            self::SLA_EXPIRED => 'SLA Incumplido',
+            self::SLA_MET => 'SLA Cumplido',
+            self::SLA_PLAN_CHANGED => 'Cambio de Plan SLA',
         };
     }
 }

@@ -5,6 +5,10 @@ namespace App\Observers;
 use App\Enums\ActionTypeEnum;
 use App\Models\Ticket;
 use App\Models\TicketHistory;
+use App\Models\Status;
+use App\Models\Priority;
+use App\Models\SlaPlan;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 
 class TicketObserver
@@ -30,8 +34,8 @@ class TicketObserver
             $newStatusId = $ticket->status_id;
             
             // Buscamos los nombres de los estados para que el historial sea legible
-            $oldStatus = \App\Models\Status::find($oldStatusId);
-            $newStatus = \App\Models\Status::find($newStatusId);
+            $oldStatus = Status::find($oldStatusId);
+            $newStatus = Status::find($newStatusId);
 
             $this->createHistory($ticket, ActionTypeEnum::STATUS_CHANGED, [
                 'internal_note' => "Estado actualizado: de '" . ($oldStatus->name ?? 'N/A') . "' a '{$newStatus->name}'"
@@ -49,8 +53,8 @@ class TicketObserver
             $this->createHistory($ticket, $action, [
                 'assigned_user' => $newAssignedId,
                 'internal_note' => $newAssignedId 
-                    ? "Ticket reasignado al técnico. (Anterior ID: " . ($oldAssignedId ?? 'Sin asignar') . ")"
-                    : "El ticket ha sido desasignado del técnico ID: {$oldAssignedId}"
+                    ? "Ticket reasignado al técnico."
+                    : "El ticket ha sido desasignado del técnico."
             ]);
         }
 
@@ -65,13 +69,74 @@ class TicketObserver
 
         // DETECTAR CAMBIO DE PRIORIDAD
         if ($ticket->isDirty('priority_id')) {
-            $oldPriority = \App\Models\Priority::find($ticket->getOriginal('priority_id'));
-            $newPriority = \App\Models\Priority::find($ticket->priority_id);
+            $oldPriority = Priority::find($ticket->getOriginal('priority_id'));
+            $newPriority = Priority::find($ticket->priority_id);
 
             $this->createHistory($ticket, ActionTypeEnum::PRIORITY_CHANGED, [
-                'internal_note' => "Prioridad modificada: de '" . ($oldPriority->name ?? 'N/A') . "' a '" . ($newPriority->name ?? 'N/A') . "'"
+                'internal_note' => "Prioridad modificada de: '" . ($oldPriority->name ?? 'Sin Prioridad') . "' a '" .  ($newPriority->name ?? 'N/A') . "'"
             ]);
         }
+
+        // DETECTAR CAMBIO DE PLAN SLA
+        if ($ticket->isDirty('sla_plan_id')) {
+            $oldPlan = SlaPlan::find($ticket->getOriginal('sla_plan_id'));
+            $newPlan = SlaPlan::find($ticket->sla_plan_id);
+
+            $this->createHistory($ticket, ActionTypeEnum::SLA_PLAN_CHANGED, [
+                'internal_note' => "Plan SLA actualizado: de '" . ($oldPlan->name ?? 'Sin Plan') . "' a '" . ($newPlan->name ?? 'N/A') . "'"
+            ]);
+        }
+
+        // DETECTAR CUMPLIMIENTO DE SLA AL RESOLVER/CERRAR
+        if ($ticket->isDirty('status_id')) {
+            $newStatus = Status::find($ticket->status_id);
+            if ($newStatus && in_array($newStatus->name, ['Resuelto', 'Cerrado'])) {
+                $this->checkAndLogSlaCompliance($ticket);
+            }
+
+            // Registro de pausa
+            if ($newStatus && $newStatus->name === 'No Resuelto') {
+                $this->createHistory($ticket, ActionTypeEnum::SLA_PAUSED, [
+                    'internal_note' => 'El conteo del SLA ha sido pausado debido al estado del ticket.'
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Verifica el cumplimiento del SLA y registra el evento correspondiente.
+     */
+    private function checkAndLogSlaCompliance(Ticket $ticket): void
+    {
+        if (!$ticket->expiration_date) {
+            return;
+        }
+
+        $now = now();
+        $expiration = Carbon::parse($ticket->expiration_date);
+        $isCompliant = $now->lte($expiration);
+
+        // Calcular tiempo restante o de retraso
+        $diff = $now->locale('es')->diffForHumans($expiration, [
+            'parts' => 2,
+            'join' => true,
+            'short' => false,
+        ]);
+
+        $technicianName = $ticket->assignedUser ? $ticket->assignedUser->name : 'No asignado';
+
+        if ($isCompliant) {
+            $note = "SLA Cumplido. El ticket fue resuelto a tiempo. Tiempo restante: {$diff}.";
+            $action = ActionTypeEnum::SLA_MET;
+        } else {
+            $note = "SLA Incumplido. El ticket excedió el tiempo límite por {$diff}.";
+            $action = ActionTypeEnum::SLA_EXPIRED;
+        }
+
+        $this->createHistory($ticket, $action, [
+            'internal_note' => $note,
+            'assigned_user' => $ticket->assigned_user
+        ]);
     }
 
     /**

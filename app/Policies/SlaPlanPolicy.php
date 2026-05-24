@@ -37,15 +37,16 @@ class SlaPlanPolicy
      */
     public function update(User $user, SlaPlan $slaPlan): bool
     {
-        return $user->can('editar plan_sla');
+        return false;
     }
 
     /**
      * Determine whether the user can delete the model.
+     * SLA is immutable: no deletions allowed.
      */
     public function delete(User $user, SlaPlan $slaPlan): bool
     {
-        return $user->can('eliminar plan_sla');
+        return false;
     }
 
     /**
