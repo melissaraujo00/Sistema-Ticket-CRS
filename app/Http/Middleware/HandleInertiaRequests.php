@@ -96,12 +96,7 @@ class HandleInertiaRequests extends Middleware
             // ==========================================
             if ($user->hasPermissionTo('manage_catalogs')) {
                 $nav[] = [
-                    'title' => 'Configuración',
-                    'icon' => 'Settings',
-                    'items' => [
-                        ['title' => 'Planes SLA', 'url' => route('sla-plans.index'), 'icon' => 'FileText'],
-                        ['title' => 'Prioridades', 'url' => route('priorities.index'), 'icon' => 'AlertTriangle'],
-                    ]
+                        'title' => 'Planes SLA', 'url' => route('sla-plans.index'), 'icon' => 'FileText'
                 ];
             }
 

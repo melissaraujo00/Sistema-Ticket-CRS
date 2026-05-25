@@ -38,6 +38,7 @@ class TicketController extends Controller
 
         return Inertia::render('tickets/index', [
             'tickets' => $tickets,
+            'statuses'=> Status::all(['id', 'name']),
         ]);
     }
 
