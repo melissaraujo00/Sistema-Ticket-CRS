@@ -2,6 +2,10 @@ import React from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
+import { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import {
     ArrowLeft,
     User,
@@ -30,6 +34,10 @@ export default function Show({ ticket }) {
 
     // Solo permitimos ver la nota interna a superadmin, admin o agente
     const canViewInternalNote = userRoles.some(role => ['superadmin', 'admin', 'agent'].includes(role));
+    const [openCancelModal, setOpenCancelModal] = useState(false);
+    const [cancellationReason, setCancellationReason] = useState('');
+    const [processingCancel, setProcessingCancel] = useState(false);
+    const [cancelErrors, setCancelErrors] = useState({});
 
     const statusName = ticket.status?.name || "Sin estado";
 
@@ -44,15 +52,26 @@ export default function Show({ ticket }) {
 
     const styleClass = statusStyles[statusName] || "bg-gray-100 text-gray-700 border-gray-200";
 
-    const handleCancelTicket = () => {
-        if (confirm("¿Estás seguro de que deseas cancelar este ticket? Esta acción no se puede deshacer.")) {
-            router.put(route('tickets.cancel', ticket.id), {}, {
-                onSuccess: () => toast.success("Ticket cancelado correctamente"),
-                onError: () => toast.error("Hubo un error al cancelar el ticket")
-            });
-        }
-    };
+    const handleCancelTicket = (e) => {
+    e.preventDefault();
+    setProcessingCancel(true);
+    setCancelErrors({});
 
+    router.put(route('tickets.cancel', ticket.id), {
+        cancellation_reason: cancellationReason,
+    }, {
+        onSuccess: () => {
+            setOpenCancelModal(false);
+            setCancellationReason('');
+            setProcessingCancel(false);
+            toast.success("Ticket cancelado correctamente");
+        },
+        onError: (errors) => {
+            setCancelErrors(errors);
+            setProcessingCancel(false);
+        },
+    });
+    };
     // Tomamos la primera solución (el diagnóstico) del array que devuelve Laravel
     const diagnostico = ticket.ticketSolutions && ticket.ticketSolutions.length > 0
                         ? ticket.ticketSolutions[0]
@@ -98,7 +117,7 @@ export default function Show({ ticket }) {
                         <Button
                             variant="destructive"
                             className="bg-red-600 hover:bg-red-700 text-white font-bold w-full sm:w-auto shadow-md"
-                            onClick={handleCancelTicket}
+                            onClick={() => setOpenCancelModal(true)}
                         >
                             <Ban className="w-4 h-4 mr-2" />
                             Cancelar Solicitud
@@ -303,6 +322,51 @@ export default function Show({ ticket }) {
                     </div>
                 </div>
             </div>
+
+            {/* MODAL DE CANCELACIÓN */}
+            <Dialog open={openCancelModal} onOpenChange={setOpenCancelModal}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-red-600 flex items-center gap-2">
+                            <Ban className="w-5 h-5" />
+                            Cancelar Solicitud
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                            Esta acción retirará el ticket de la bandeja de atención. Una vez cancelado, no podrá ser reabierto.
+                        </p>
+                        <div className="space-y-2">
+                            <Label htmlFor="cancellation_reason">Motivo de la cancelación</Label>
+                            <Textarea
+                                id="cancellation_reason"
+                                value={cancellationReason}
+                                onChange={(e) => setCancellationReason(e.target.value)}
+                                placeholder="Describe el motivo por el cual deseas cancelar este ticket..."
+                                rows={4}
+                                required
+                            />
+                            {cancelErrors.cancellation_reason && (
+                                <p className="text-sm text-red-500">{cancelErrors.cancellation_reason}</p>
+                            )}
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="ghost" onClick={() => { setOpenCancelModal(false); setCancellationReason(''); setCancelErrors({}); }}>
+                            Volver
+                        </Button>
+                        <Button
+                            type="submit"
+                            variant="destructive"
+                            disabled={processingCancel || cancellationReason.trim().length < 10}
+                            className="bg-red-600 hover:bg-red-700"
+                            onClick={handleCancelTicket}
+                        >
+                            {processingCancel ? "Cancelando..." : "Confirmar Cancelación"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

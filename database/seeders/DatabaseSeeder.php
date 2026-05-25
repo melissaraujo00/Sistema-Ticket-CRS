@@ -8,7 +8,7 @@ use Database\Seeders\CategorySeeder;
 use Database\Seeders\DepartmentSeeder;
 use Database\Seeders\HelpTopicSeeder;
 use Database\Seeders\UserSeeder;
-
+use Database\Seeders\PrioritiesSeeder;
 
 
 class DatabaseSeeder extends Seeder
@@ -25,7 +25,7 @@ class DatabaseSeeder extends Seeder
             UserRoleSeeder::class,
             DepartmentHeadSeeder::class,
             StatusesTableSeeder::class,
-            PrioritiesTableSeeder::class,
+            PrioritiesSeeder::class,
             TecnicoDataSeeder::class,
             HelpTopicSeeder::class,
             SolutionTypeSeeder::class,

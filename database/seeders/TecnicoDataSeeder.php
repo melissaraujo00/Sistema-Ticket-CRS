@@ -43,7 +43,7 @@ class TecnicoDataSeeder extends Seeder
         $prioridadBaja = Priority::firstOrCreate(['name' => 'Baja', 'color' => '#28a745', 'level' => 1]);
         $prioridadMedia = Priority::firstOrCreate(['name' => 'Media', 'color' => '#ffc107', 'level' => 2]);
         $prioridadAlta = Priority::firstOrCreate(['name' => 'Alta', 'color' => '#fd7e14', 'level' => 3]);
-        $prioridadCritica = Priority::firstOrCreate(['name' => 'Crítica', 'color' => '#dc3545', 'level' => 4]);
+        $prioridadCritica = Priority::firstOrCreate(['name' => 'Urgente', 'color' => '#dc3545', 'level' => 4]);
 
         // Crear planes SLA
         $slaBasico = SlaPlan::firstOrCreate(['name' => 'Básico', 'grace_time_hours' => 48, 'working_hours' => 1]);

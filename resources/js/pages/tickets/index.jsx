@@ -9,6 +9,7 @@ import { GenericTable } from "@/components/GenericTable";
 import { route } from "ziggy-js";
 import { History as HistoryIcon } from "lucide-react";
 import TicketRatingModal from '@/components/rating/calificationModal'
+import StatusFilter from "@/components/status-filter";
 
 const breadcrumbs = [
     { title: "Dashboard", href: "/dashboard" },
@@ -37,11 +38,20 @@ export default function Index() {
         return () => clearInterval(timer);
     }, []);
 
+    const [statusFilter, setStatusFilter] = useState("Todos los estados")
+    const statuses = props.statuses || [];
+    const uniqueStatuses = statuses.map(s => s.name);
 
-    // Filtrar tickets por código o asunto
-    const filteredTickets = tickets.filter((ticket) =>
-        `${ticket.code} ${ticket.subject}`.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredTickets = tickets.filter((ticket) => {
+        const matchesSearch = `${ticket.code} ${ticket.subject}`
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase());
+
+        const matchesStatus = statusFilter === "Todos los estados"
+            || ticket.status?.name === statusFilter;
+
+        return matchesSearch && matchesStatus;
+    });
 
     //conteo de sla 
 
@@ -133,6 +143,7 @@ export default function Index() {
                         {ticket.subject}
                     </span>
                 </div>
+                
             ),
         },
         {
@@ -285,6 +296,13 @@ export default function Index() {
                         </p>
                     </div>
                     <div className="flex gap-2 w-full sm:w-auto">
+                        {route().current("tickets.index") && (
+                                <StatusFilter
+                                    value={statusFilter}
+                                    onChange={setStatusFilter}
+                                    statuses={uniqueStatuses}
+                                />
+                        )}                    
                         <div className="relative flex-1 sm:flex-initial">
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500" />
                             <Input
