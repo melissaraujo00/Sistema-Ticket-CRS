@@ -57,7 +57,7 @@ export default function Show({ ticket }) {
     setProcessingCancel(true);
     setCancelErrors({});
 
-    router.post(route('tickets.cancel', ticket.id), {
+    router.put(route('tickets.cancel', ticket.id), {
         cancellation_reason: cancellationReason,
     }, {
         onSuccess: () => {

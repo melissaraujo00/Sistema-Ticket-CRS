@@ -152,7 +152,7 @@ class TicketController extends Controller
     /**
      * Cancela un ticket si aún está pendiente de asignación.
      */
-    public function cancel(Ticket $ticket)
+    public function cancel(CloseTicketRequest $request, Ticket $ticket)
     {
         // 1. Verificar que el ticket pertenezca al usuario autenticado
         if ($ticket->requesting_user !== auth()->id()) {
