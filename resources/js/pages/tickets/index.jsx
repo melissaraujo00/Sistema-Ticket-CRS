@@ -35,6 +35,7 @@ export default function Index() {
         `${ticket.code} ${ticket.subject}`.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+
     useEffect(() => {
         if (resolvedTickets.length > 0) {
             setCurrentIndex(0);

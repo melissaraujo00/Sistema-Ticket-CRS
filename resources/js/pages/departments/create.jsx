@@ -37,7 +37,6 @@ export default function Create({ areas = [], potentialHeads = [] }) {
                 <div className="flex flex-1 items-start justify-center overflow-y-auto p-8">
                     <div className="w-full max-w-2xl space-y-8">
                         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-
                             {/* Nombre del Departamento */}
                             <div className="space-y-3">
                                 <Label htmlFor="name" className="text-sm font-bold text-zinc-500">
@@ -64,11 +63,11 @@ export default function Create({ areas = [], potentialHeads = [] }) {
                                     placeholder="departamento@nextask.com"
                                     value={data.email_department}
                                     onChange={(e) => setData('email_department', e.target.value)}
+                                    onKeyDown={(e) => e.key === ' ' && e.preventDefault()}
                                     className="h-12 rounded-xl border-zinc-200 bg-zinc-50/30 focus-visible:ring-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/30"
                                 />
                                 {errors.email_department && <p className="text-xs font-medium text-red-500">{errors.email_department}</p>}
                             </div>
-
                             {/* Selector de Área Responsable */}
                             <div className="space-y-3 md:col-span-2">
                                 <Label htmlFor="area_id" className="text-sm font-bold text-zinc-500">
@@ -91,29 +90,25 @@ export default function Create({ areas = [], potentialHeads = [] }) {
                             </div>
 
                             {/* Panel de Asignación de Jefes con Revelación Progresiva */}
-                            <div className="space-y-4 md:col-span-2 rounded-2xl border border-zinc-200 bg-zinc-50/50 p-6 dark:border-zinc-800/80 dark:bg-zinc-900/30">
+                            <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50/50 p-6 md:col-span-2 dark:border-zinc-800/80 dark:bg-zinc-900/30">
                                 <div className="flex flex-col">
                                     <Label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">
                                         Asignar Jefes de Departamento <span className="text-xs font-normal text-zinc-400">(Opcional)</span>
                                     </Label>
-                                    <p className="mt-1 text-xs text-zinc-500">
-                                        Se muestran administradores activos del área seleccionada.
-                                    </p>
+                                    <p className="mt-1 text-xs text-zinc-500">Se muestran administradores activos del área seleccionada.</p>
                                 </div>
 
                                 {(() => {
                                     const selectedAreaId = data.area_id?.toString();
 
                                     // Filtrado dinámico por Área
-                                    const availableHeads = potentialHeads.filter(
-                                        (user) => user.department?.area_id?.toString() === selectedAreaId
-                                    );
+                                    const availableHeads = potentialHeads.filter((user) => user.department?.area_id?.toString() === selectedAreaId);
 
                                     if (!selectedAreaId) {
                                         return (
                                             <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-zinc-200 bg-white py-10 dark:border-zinc-800 dark:bg-zinc-950">
                                                 <span className="mb-2 text-2xl"></span>
-                                                <p className="text-sm font-medium text-zinc-500 text-center px-4">
+                                                <p className="px-4 text-center text-sm font-medium text-zinc-500">
                                                     Selecciona un Área arriba para ver los candidatos disponibles.
                                                 </p>
                                             </div>
@@ -132,7 +127,7 @@ export default function Create({ areas = [], potentialHeads = [] }) {
                                     }
 
                                     return (
-                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 max-h-52 overflow-y-auto pr-2 custom-scrollbar">
+                                        <div className="custom-scrollbar grid max-h-52 grid-cols-1 gap-3 overflow-y-auto pr-2 sm:grid-cols-2 md:grid-cols-3">
                                             {availableHeads.map((user) => {
                                                 const isSelected = data.head_ids.includes(user.id);
                                                 return (

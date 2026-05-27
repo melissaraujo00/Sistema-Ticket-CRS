@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Area;
 use App\Http\Requests\SaveAreaRequest;
+use Illuminate\Http\Request;
 use App\Services\AreaService;
 use Inertia\Inertia;
 use Exception;
@@ -18,10 +19,13 @@ class AreaController extends Controller
         $this->areaService = $areaService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
+        $filters = $request->only(['search']);
+
         return Inertia::render('areas/index', [
-            'areas' => $this->areaService->getAllAreas()
+            'areas'   => $this->areaService->getPaginatedAreas($filters),
+            'filters' => $filters,
         ]);
     }
 
@@ -87,13 +91,13 @@ class AreaController extends Controller
     /**
      * Muestra la lista de áreas en la papelera (Soft Deleted).
      */
-    public function trashed()
+    public function trashed(Request $request)
     {
-        // El servicio debe devolver Area::onlyTrashed()
-        $areas = $this->areaService->getTrashedAreas();
+        $filters = $request->only(['search']);
 
         return Inertia::render('areas/trashed', [
-            'areas' => $areas,
+            'areas' => $this->areaService->getTrashedAreas($filters),
+            'filters' => $filters,
         ]);
     }
 

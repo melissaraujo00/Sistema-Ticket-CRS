@@ -1,10 +1,12 @@
 import { GenericTable } from '@/components/GenericTable';
 import { Button } from '@/components/ui/button';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, RotateCcw, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import DeleteEntityModal from '@/components/DeleteEntityModal';
+import { router } from '@inertiajs/react';
+import { toast } from 'sonner';
 
-export default function KnowledgeTable({ knowledges, onEdit }) {
+export default function KnowledgeTable({ knowledges, onEdit, isTrashed = false }) {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [faqToDelete, setFaqToDelete] = useState(null);
 
@@ -14,6 +16,17 @@ export default function KnowledgeTable({ knowledges, onEdit }) {
             name: faq.title // El modal usa entity.name para mostrar qué se borra
         });
         setIsDeleteModalOpen(true);
+    };
+
+    const handleRestore = (id) => {
+        router.put(route('faq.restore', id), {}, {
+            onSuccess: () => {
+                toast.success('FAQ restaurada correctamente');
+            },
+            onError: () => {
+                toast.error('Hubo un error al restaurar la FAQ');
+            }
+        });
     };
 
     const columns = [
@@ -44,22 +57,52 @@ export default function KnowledgeTable({ knowledges, onEdit }) {
             className: 'text-right',
             render: (faq) => (
                 <div className="flex justify-end gap-2">
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => onEdit(faq)}
-                        className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                    >
-                        <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => handleDeleteClick(faq)}
-                        className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {isTrashed ? (
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleRestore(faq.id)}
+                            className="h-8 flex items-center gap-2 text-green-600 hover:text-green-700 hover:bg-green-50"
+                        >
+                            <RotateCcw className="h-4 w-4" />
+                            Restaurar
+                        </Button>
+                    ) : (
+                        <>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => onEdit(faq)}
+                                className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                title="Editar"
+                            >
+                                <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => handleDeleteClick(faq)}
+                                className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                title="Desactivar"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => {
+                                    if (window.confirm('¿Estás seguro de que deseas eliminar permanentemente esta FAQ?')) {
+                                        router.delete(route('faq.force-delete', faq.id));
+                                    }
+                                }}
+                                className="h-8 w-8 text-red-800 hover:text-red-900 hover:bg-red-100"
+                                title={faq.has_relations ? "No se puede eliminar porque tiene temas de ayuda asociados" : "Eliminación Permanente"}
+                                disabled={faq.has_relations}
+                            >
+                                <XCircle className="h-4 w-4" />
+                            </Button>
+                        </>
+                    )}
                 </div>
             )
         }

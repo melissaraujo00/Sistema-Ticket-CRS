@@ -45,7 +45,14 @@ class HandleInertiaRequests extends Middleware
             // 1. DASHBOARD SEGÚN ROL
             // ==========================================
             if ($user->hasRole('superadmin')) {
-                $nav[] = ['title' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'LayoutGrid'];
+                $nav[] = [
+                    'title' => 'Dashboards',
+                    'icon' => 'LayoutGrid',
+                    'items' => [
+                        ['title' => 'General', 'url' => route('dashboard'), 'icon' => 'LayoutGrid'],
+                        ['title' => 'Rating Técnicos', 'url' => route('ratings.dashboard'), 'icon' => 'Star'],
+                    ]
+                ];
             } elseif ($user->hasRole('admin')) {
                 $nav[] = ['title' => 'Panel de Área', 'url' => route('dashboard'), 'icon' => 'LayoutGrid'];
             } elseif ($user->hasRole('agent')) {
@@ -110,7 +117,7 @@ class HandleInertiaRequests extends Middleware
             // ==========================================
             // 6. ESTRUCTURA ORGANIZACIONAL (NUEVO)
             // ==========================================
-            if ($user->hasPermissionTo('manage_areas')) {
+            if ($user->hasPermissionTo('manage_areas') || $user->hasPermissionTo('manage_departments') || $user->hasPermissionTo('manage_divisions')) {
                 $nav[] = [
                     'title' => 'Estructura',
                     'icon'  => 'Network',
@@ -124,6 +131,11 @@ class HandleInertiaRequests extends Middleware
                             'title' => 'Departamentos',
                             'url'   => route('departments.index'),
                             'icon'  => 'Building'
+                        ],
+                        [
+                            'title' => 'Divisiones',
+                            'url'   => route('divisions.index'),
+                            'icon'  => 'Component'
                         ],
                     ]
                 ];

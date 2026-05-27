@@ -1,9 +1,12 @@
-import { Link } from '@inertiajs/react';
+import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
-import { Activity, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, Clock, Computer, Globe, Monitor, Search } from 'lucide-react';
-import { useEffect, useState, useCallback } from 'react';
+import { Clock, Activity } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
-
+import AgentKpis from '@/components/componts-agent/AgentKpis';
+import AgentFilters from '@/components/componts-agent/AgentFilters';
+import AgentTicketsTable from '@/components/componts-agent/AgentTicketsTable';
+import DiagnosisPanel from '@/components/componts-agent/DiagnosisPanel';
+import UnresolvedModal from '@/components/componts-agent/UnresolvedModal';
 
 export default function AgentDashboard() {
     const [ticketsPaginados, setTicketsPaginados] = useState({ data: [], links: [], current_page: 1, last_page: 1 });
@@ -27,7 +30,6 @@ export default function AgentDashboard() {
     const [showCustomDiagnostic, setShowCustomDiagnostic] = useState(false);
     const [observacionDiagnostico, setObservacionDiagnostico] = useState('');
     const [adjuntosDiagnostico, setAdjuntosDiagnostico] = useState([]);
-    const [diagnosticStatus, setDiagnosticStatus] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showUnresolvedModal, setShowUnresolvedModal] = useState(false);
     const [unresolvedData, setUnresolvedData] = useState({
@@ -99,26 +101,24 @@ export default function AgentDashboard() {
     };
 
     const ticketsAsignados = ticketsPaginados.data;
-    const finalTickets = ticketsAsignados;
-
     const uniqueStatuses = availableStatuses;
-
-    const displayedTickets = finalTickets;
+    const displayedTickets = ticketsAsignados;
 
     const submitDiagnostic = async () => {
+        setValidationErrors({});
         try {
             if (!selectedTicketId) {
-                setDiagnosticStatus({ type: 'error', msg: 'Debe seleccionar un ticket.' });
+                toast.error('Debe seleccionar un ticket.');
                 return;
             }
 
             if (!observacionDiagnostico.trim()) {
-                setDiagnosticStatus({ type: 'error', msg: 'La observación es obligatoria.' });
+                toast.error('La observación del diagnóstico es obligatoria.');
                 return;
             }
 
             if (adjuntosDiagnostico.length === 0) {
-                setDiagnosticStatus({ type: 'error', msg: 'Debe adjuntar al menos un archivo.' });
+                toast.error('Debe adjuntar al menos un archivo como evidencia.');
                 return;
             }
 
@@ -139,7 +139,8 @@ export default function AgentDashboard() {
             await axios.post(`/agent/ticket/${selectedTicketId}/diagnostico`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
-            setDiagnosticStatus({ type: 'success', msg: 'Diagnóstico guardado exitosamente.' });
+
+            toast.success('Diagnóstico registrado exitosamente.');
             setTipoDiagnostico('');
             setCustomDiagnosticType('');
             setShowCustomDiagnostic(false);
@@ -148,18 +149,28 @@ export default function AgentDashboard() {
             setSelectedTicketId(null);
             setShowDiagnosticPanel(false);
 
-            fetchData(currentPage, searchTerm, statusFilter);
-
-
-            setTimeout(() => setDiagnosticStatus(null), 3000);
+            fetchData(currentPage, searchTerm, statusFilter, priorityFilter);
         } catch (error) {
-            console.error('Error al guardar diagnóstico:', error);
-            setDiagnosticStatus({ type: 'error', msg: 'Ocurrió un error al guardar el diagnóstico.' });
+            if (error.response && error.response.status === 422) {
+                const errors = error.response.data.errors;
+                setValidationErrors(errors || {});
+
+                if (errors) {
+                    const firstError = Object.values(errors)[0][0];
+                    toast.error(firstError);
+                } else if (error.response.data.message) {
+                    toast.error(error.response.data.message);
+                } else {
+                    toast.error('Campos de diagnóstico inválidos.');
+                }
+            } else {
+                console.error('Error al guardar diagnóstico:', error);
+                toast.error(error.response?.data?.message || 'Ocurrió un error al guardar el diagnóstico.');
+            }
         } finally {
             setIsSubmitting(false);
         }
     };
-
 
     const submitUnresolved = async () => {
         setValidationErrors({});
@@ -180,9 +191,7 @@ export default function AgentDashboard() {
             setSelectedTicketId(null);
             setShowDiagnosticPanel(false);
 
-            fetchData(currentPage, searchTerm, statusFilter);
-
-
+            fetchData(currentPage, searchTerm, statusFilter, priorityFilter);
         } catch (error) {
             if (error.response && error.response.status === 422) {
                 const errors = error.response.data.errors;
@@ -200,91 +209,25 @@ export default function AgentDashboard() {
     };
 
     return (
-        <div className="mx-auto flex h-full w-full flex-col space-y-6 p-4 font-sans text-gray-800 sm:p-6 md:p-6 lg:p-8">
+        <div className="mx-auto flex h-full w-full flex-col space-y-6 p-4 font-sans text-gray-800 sm:p-6 md:p-6 lg:p-8 animate-in fade-in duration-300">
             <Toaster position="top-right" richColors />
+
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                <div className="group relative flex flex-col overflow-hidden rounded-xl border border-red-50 bg-gradient-to-br from-red-50 to-red-100 p-5 shadow-sm transition-colors hover:border-red-100">
-                    <div className="mb-1 text-sm font-semibold text-red-700">Tickets Asignados</div>
-                    <div className="text-3xl font-bold text-red-800">{stats.total_tickets_asignados}</div>
-                    <AlertCircle
-                        className="absolute top-1/2 right-5 h-8 w-8 -translate-y-1/2 text-red-300 transition-colors group-hover:text-red-400"
-                        opacity={0.8}
-                    />
-                </div>
-                <div className="group relative flex flex-col overflow-hidden rounded-xl border border-orange-50 bg-gradient-to-br from-orange-50 to-orange-100 p-5 shadow-sm transition-colors hover:border-orange-100">
-                    <div className="mb-1 text-sm font-semibold text-orange-700">En Proceso</div>
-                    <div className="text-3xl font-bold text-orange-800">{stats.total_tickets_proceso}</div>
-                    <Clock
-                        className="absolute top-1/2 right-5 h-8 w-8 -translate-y-1/2 text-orange-300 transition-colors group-hover:text-orange-400"
-                        opacity={0.8}
-                    />
-                </div>
-                <div className="group relative flex flex-col overflow-hidden rounded-xl border border-green-50 bg-gradient-to-br from-green-50 to-green-100 p-5 shadow-sm transition-colors hover:border-green-100">
-                    <div className="mb-1 text-sm font-semibold text-green-700">Total Resueltos</div>
-                    <div className="text-3xl font-bold text-green-800">{stats.total_tickets_resueltos}</div>
-                    <CheckCircle2
-                        className="absolute top-1/2 right-5 h-8 w-8 -translate-y-1/2 text-green-300 transition-colors group-hover:text-green-400"
-                        opacity={0.8}
-                    />
-                </div>
-            </div>
+            <AgentKpis stats={stats} />
 
             {/* Search Bar & Filters */}
-            <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
-                <div className="flex items-center gap-4">
-                    <div className="relative flex-1">
-                        <input
-                            type="text"
-                            placeholder="Buscar ticket"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full rounded-lg border-none bg-gray-50 py-2 pr-4 pl-10 text-sm focus:ring-1 focus:ring-blue-100"
-                        />
-                        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                    </div>
-                    <select
-                        value={priorityFilter}
-                        onChange={(e) => setPriorityFilter(e.target.value)}
-                        className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm focus:outline-none"
-                    >
-                        <option value="Todas las prioridades">Todas las prioridades</option>
-                        {availablePriorities.map((priority) => (
-                            <option key={priority} value={priority}>
-                                {priority}
-                            </option>
-                        ))}
-                    </select>
-                    <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm focus:outline-none"
-                    >
-                        <option value="Todos los estados">Todos los estados</option>
-                        {uniqueStatuses.map((status) => (
-                            <option key={status} value={status}>
-                                {status}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-                <div className="mt-3 flex gap-2 border-t border-gray-100 pt-3">
-                    <button
-                        onClick={() => setActiveView(activeView === 'historial' ? 'main' : 'historial')}
-                        className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${activeView === 'historial' ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                    >
-                        <Clock className="h-4 w-4" /> Historial
-                    </button>
-                    <button
-                        onClick={() => setActiveView(activeView === 'estadisticas' ? 'main' : 'estadisticas')}
-                        className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${activeView === 'estadisticas' ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                    >
-                        <Activity className="h-4 w-4" /> Mis Estadisticas
-                    </button>
-                </div>
-            </div>
+            <AgentFilters
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                priorityFilter={priorityFilter}
+                setPriorityFilter={setPriorityFilter}
+                statusFilter={statusFilter}
+                setStatusFilter={setStatusFilter}
+                availablePriorities={availablePriorities}
+                uniqueStatuses={uniqueStatuses}
+                activeView={activeView}
+                setActiveView={setActiveView}
+            />
 
             {/* Historial de Tickets */}
             {activeView === 'historial' && (
@@ -294,23 +237,29 @@ export default function AgentDashboard() {
                         <h3 className="font-bold text-gray-800">Historial de Tickets</h3>
                     </div>
                     <div className="divide-y divide-gray-100">
-                        {historialData.map((ticket, idx) => (
-                            <div key={idx} className="flex items-start justify-between p-4 transition-colors hover:bg-gray-50">
-                                <div>
-                                    <h4 className="text-sm font-bold text-gray-900">{ticket.asunto}</h4>
-                                    <div className="mt-1 text-xs text-gray-500 uppercase">
-                                        {ticket.id} | {ticket.departamento}
+                        {historialData.length > 0 ? (
+                            historialData.map((ticket, idx) => (
+                                <div key={idx} className="flex items-start justify-between p-4 transition-colors hover:bg-gray-50">
+                                    <div>
+                                        <h4 className="text-sm font-bold text-gray-900">{ticket.asunto}</h4>
+                                        <div className="mt-1 text-xs text-gray-500 uppercase">
+                                            #{ticket.id} | {ticket.departamento}
+                                        </div>
+                                        <div className="mt-1 text-xs text-gray-400">
+                                            <span className="block">Asignado: {ticket.fecha_asignacion}</span>
+                                            <span className="block">Finalizado: {ticket.fecha_finalizacion}</span>
+                                        </div>
                                     </div>
-                                    <div className="mt-1 text-xs text-gray-400">
-                                        <span className="block">Asignado: {ticket.fecha_asignacion}</span>
-                                        <span className="block">Finalizado: {ticket.fecha_finalizacion}</span>
-                                    </div>
+                                    <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-semibold whitespace-nowrap text-green-700">
+                                        Resuelto
+                                    </span>
                                 </div>
-                                <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-semibold whitespace-nowrap text-green-700">
-                                    Resuelto
-                                </span>
+                            ))
+                        ) : (
+                            <div className="p-8 text-center text-xs text-gray-400 font-medium">
+                                No se encontraron tickets finalizados en el historial.
                             </div>
-                        ))}
+                        )}
                     </div>
                 </div>
             )}
@@ -320,12 +269,12 @@ export default function AgentDashboard() {
                 <div className="animate-in fade-in slide-in-from-top-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm duration-300">
                     <div className="mb-4 flex items-center gap-2">
                         <Activity className="h-5 w-5 text-red-500" />
-                        <h3 className="font-bold text-gray-800">Mis Estadisticas</h3>
+                        <h3 className="font-bold text-gray-800">Mis Estadísticas</h3>
                     </div>
 
                     <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
                         <div className="flex flex-col justify-center rounded-lg border border-gray-100 bg-gray-50 p-4">
-                            <div className="mb-1 text-xs font-semibold text-gray-500">Tasa de Resolucion</div>
+                            <div className="mb-1 text-xs font-semibold text-gray-500">Tasa de Resolución</div>
                             <div className="text-xl font-bold">{stats.tasa_resolucion_porcentaje}%</div>
                         </div>
                         <div className="flex flex-col justify-center rounded-lg border border-gray-100 bg-gray-50 p-4">
@@ -342,7 +291,7 @@ export default function AgentDashboard() {
                         </div>
                     </div>
 
-                    <div className="mt-2 mb-3 text-sm font-semibold text-gray-700">Distribucion por Prioridad (Tickets Activos)</div>
+                    <div className="mt-2 mb-3 text-sm font-semibold text-gray-700">Distribución por Prioridad (Tickets Activos)</div>
                     <div className="space-y-3 px-2">
                         {(() => {
                             const priorityData = stats.prioridades || {};
@@ -371,519 +320,50 @@ export default function AgentDashboard() {
                 </div>
             )}
 
-            {/* Tickets Asignados (Tabla Principal) */}
-            {(activeView === 'main' || activeView === 'historial' || activeView === 'estadisticas') && (
-                <>
-                    <div id="tickets-table-container" className="scroll-mt-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-                        <div className="flex items-center justify-between border-b border-gray-100 p-4">
-                            <div className="flex items-center gap-2">
-                                <AlertCircle className="h-5 w-5 text-red-500" />
-                                <h3 className="font-bold text-gray-800">Tickets Asignados</h3>
-                            </div>
-                            {isLoading && (
-                                <div className="flex items-center gap-2 text-xs font-medium text-gray-400 animate-pulse">
-                                    <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                                    Actualizando datos...
-                                </div>
-                            )}
-                        </div>
-                        <div className="relative overflow-x-auto">
-                            {/* Loading Overlay */}
-                            {isLoading && (
-                                <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/40 backdrop-blur-[1px] transition-all">
-                                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent"></div>
-                                </div>
-                            )}
+            {/* Tickets Asignados */}
+            <AgentTicketsTable
+                displayedTickets={displayedTickets}
+                isLoading={isLoading}
+                ticketsPaginados={ticketsPaginados}
+                currentPage={currentPage}
+                setCurrentPage={setCurrentPage}
+                setSelectedTicketId={setSelectedTicketId}
+                setShowDiagnosticPanel={setShowDiagnosticPanel}
+            />
 
-                            <table className={`w-full text-left text-sm whitespace-nowrap md:whitespace-normal transition-opacity duration-200 ${isLoading ? 'opacity-50' : 'opacity-100'}`}>
-                                <thead className="bg-gray-50/50 text-xs font-bold tracking-wider text-red-600 uppercase">
-                                    <tr>
-                                        <th className="px-4 py-4">Código</th>
-                                        <th className="px-4 py-4">Asunto</th>
-                                        <th className="px-4 py-4">Departamento</th>
-                                        <th className="px-4 py-4">Estado</th>
-                                        <th className="px-4 py-4">Prioridad</th>
-                                        <th className="px-4 py-4">Creado Por</th>
-                                        <th className="px-4 py-4 text-center">Accion</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100 text-gray-700">
-                                    {displayedTickets.length > 0 ? (
-                                        displayedTickets.map((row, i) => (
-                                            <tr key={i} className="transition-colors hover:bg-blue-50/30">
-                                                <td className="px-4 py-4 text-xs font-semibold">{row.code || row.id}</td>
-                                                <td className="min-w-[200px] px-4 py-4 text-xs leading-tight font-medium">{row.asunto || row.subject}</td>
-                                                <td className="px-4 py-4 text-xs font-bold uppercase">{row.departamento || row.department?.name}</td>
-                                                <td className="px-4 py-4 text-xs">
-                                                    {(() => {
-                                                        const status = row.estado || row.status?.name || 'N/A';
-                                                        const statusLower = status.toLowerCase();
-
-                                                        if (statusLower === 'abierto' || statusLower === 'nuevo') {
-                                                            return (
-                                                                <span className="inline-flex items-center rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-xs font-bold text-green-800">
-                                                                    <span className="mr-1.5 h-2 w-2 animate-pulse rounded-full bg-green-500"></span>
-                                                                    {status}
-                                                                </span>
-                                                            );
-                                                        } else if (
-                                                            statusLower === 'en proceso' ||
-                                                            statusLower === 'proceso' ||
-                                                            statusLower === 'progreso' ||
-                                                            statusLower === 'en progreso'
-                                                        ) {
-                                                            return (
-                                                                <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-100 px-2.5 py-1 text-xs font-bold text-blue-800">
-                                                                    <span className="mr-1.5 h-2 w-2 rounded-full bg-blue-500"></span>
-                                                                    {status}
-                                                                </span>
-                                                            );
-                                                        } else if (
-                                                            statusLower === 'cerrado' ||
-                                                            statusLower === 'resuelto' ||
-                                                            statusLower === 'finalizado'
-                                                        ) {
-                                                            return (
-                                                                <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-800">
-                                                                    <span className="mr-1.5 h-2 w-2 rounded-full bg-gray-500"></span>
-                                                                    {status}
-                                                                </span>
-                                                            );
-                                                        } else if (statusLower === 'pendiente' || statusLower === 'esperando') {
-                                                            return (
-                                                                <span className="inline-flex items-center rounded-full border border-orange-200 bg-orange-100 px-2.5 py-1 text-xs font-bold text-orange-800">
-                                                                    <span className="mr-1.5 h-2 w-2 animate-pulse rounded-full bg-orange-500"></span>
-                                                                    {status}
-                                                                </span>
-                                                            );
-                                                        } else if (statusLower === 'no resuelto') {
-                                                            return (
-                                                                <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800">
-                                                                    <span className="mr-1.5 h-2 w-2 rounded-full bg-amber-500"></span>
-                                                                    {status}
-                                                                </span>
-                                                            );
-                                                        } else if (statusLower === 'cancelado') {
-                                                            return (
-                                                                <span className="inline-flex items-center rounded-full border border-red-200 bg-red-100 px-2.5 py-1 text-xs font-bold text-red-800">
-                                                                    <span className="mr-1.5 h-2 w-2 rounded-full bg-red-500"></span>
-                                                                    {status}
-                                                                </span>
-                                                            );
-                                                        } else {
-                                                            return (
-                                                                <span className="inline-flex items-center rounded-full border border-purple-200 bg-purple-100 px-2.5 py-1 text-xs font-bold text-purple-800">
-                                                                    <span className="mr-1.5 h-2 w-2 rounded-full bg-purple-500"></span>
-                                                                    {status}
-                                                                </span>
-                                                            );
-                                                        }
-                                                    })()}
-                                                </td>
-                                                <td className="px-4 py-4 text-xs">
-                                                    {(() => {
-                                                        const priority = row.prioridad || row.priority?.name || 'N/A';
-                                                        const priorityLower = priority.toLowerCase();
-
-                                                        if (priorityLower === 'alta') {
-                                                            return (
-                                                                <span className="inline-flex items-center rounded-full border border-red-200 bg-red-100 px-2.5 py-1 text-xs font-bold text-red-800">
-                                                                    <span className="mr-1.5 h-2 w-2 animate-pulse rounded-full bg-red-500"></span>
-                                                                    {priority}
-                                                                </span>
-                                                            );
-                                                        } else if (priorityLower === 'media' || priorityLower === 'normal') {
-                                                            return (
-                                                                <span className="inline-flex items-center rounded-full border border-yellow-200 bg-yellow-100 px-2.5 py-1 text-xs font-bold text-yellow-800">
-                                                                    <span className="mr-1.5 h-2 w-2 rounded-full bg-yellow-500"></span>
-                                                                    {priority}
-                                                                </span>
-                                                            );
-                                                        } else if (priorityLower === 'baja') {
-                                                            return (
-                                                                <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-100 px-2.5 py-1 text-xs font-bold text-blue-800">
-                                                                    <span className="mr-1.5 h-2 w-2 rounded-full bg-blue-500"></span>
-                                                                    {priority}
-                                                                </span>
-                                                            );
-                                                        } else {
-                                                            return (
-                                                                <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-800">
-                                                                    <span className="mr-1.5 h-2 w-2 rounded-full bg-gray-500"></span>
-                                                                    {priority}
-                                                                </span>
-                                                            );
-                                                        }
-                                                    })()}
-                                                </td>
-                                                <td className="px-4 py-4 text-xs leading-tight text-gray-500">
-                                                    <div dangerouslySetInnerHTML={{ __html: (row.creado_por || '').replace('\n', '<br/>') }} />
-                                                </td>
-                                                <td className="flex min-w-[160px] flex-col items-center gap-3 px-4 py-4">
-                                                    <Link
-                                                        href={`/agent/ticket/${row.id}`}
-                                                        className="w-full rounded bg-blue-500 px-4 py-3 text-center text-xs font-bold text-white shadow-sm transition-colors hover:bg-blue-600"
-                                                    >
-                                                        Ver Detalles
-                                                    </Link>
-                                                    {(() => {
-                                                        const status = row.estado || row.status?.name || '';
-                                                        const statusLower = status.toLowerCase();
-                                                        const isTerminal =
-                                                            statusLower === 'cerrado' ||
-                                                            statusLower === 'resuelto' ||
-                                                            statusLower === 'finalizado' ||
-                                                            statusLower === 'no resuelto';
-
-                                                        const tieneDiagnostico = row.tiene_diagnostico;
-
-                                                        if (isTerminal) {
-                                                            const label = statusLower === 'no resuelto' ? 'Incidencia Reportada' : 'Diagnóstico Realizado';
-                                                            return (
-                                                                <div className={`w-full px-4 py-3 text-center text-xs font-medium ${statusLower === 'no resuelto' ? 'text-amber-600' : 'text-green-600'}`}>
-                                                                    {label}
-                                                                </div>
-                                                            );
-                                                        } else if (tieneDiagnostico) {
-                                                            return (
-                                                                <div className="w-full px-4 py-3 text-center text-xs font-medium text-green-600">
-                                                                    Diagnóstico Realizado
-                                                                </div>
-                                                            );
-                                                        } else {
-                                                            return (
-                                                                <button
-                                                                    onClick={() => {
-                                                                        setSelectedTicketId(row.id);
-                                                                        setShowDiagnosticPanel(true);
-                                                                        setTimeout(() => {
-                                                                            document
-                                                                                .getElementById('diagnostico-section')
-                                                                                ?.scrollIntoView({ behavior: 'smooth' });
-                                                                        }, 100);
-                                                                    }}
-                                                                    className="w-full rounded bg-red-500 px-4 py-3 text-xs font-bold text-white shadow-sm transition-colors hover:bg-red-600"
-                                                                >
-                                                                    Realizar Diagnostico
-                                                                </button>
-                                                            );
-                                                        }
-                                                    })()}
-                                                </td>
-                                            </tr>
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td colSpan={7} className="px-4 py-12 text-center text-gray-500">
-                                                <div className="flex flex-col items-center gap-2">
-                                                    <Search className="h-8 w-8 text-gray-300" />
-                                                    <p className="font-medium">No se encontraron tickets con los filtros actuales</p>
-                                                    <p className="text-xs">Intenta ajustar tu búsqueda o filtros de estado</p>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {/* Pagination Controls */}
-                        <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/50 px-4 py-3 sm:px-6">
-                            <div className="flex flex-1 justify-between sm:hidden">
-                                <button
-                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                    disabled={currentPage === 1 || isLoading}
-                                    className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                                >
-                                    Anterior
-                                </button>
-                                <button
-                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, ticketsPaginados.last_page))}
-                                    disabled={currentPage === ticketsPaginados.last_page || isLoading}
-                                    className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                                >
-                                    Siguiente
-                                </button>
-                            </div>
-                            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                                <div className="flex items-center gap-4">
-                                    <p className="text-sm text-gray-700">
-                                        Mostrando <span className="font-medium">{ticketsPaginados.from || 0}</span> a <span className="font-medium">{ticketsPaginados.to || 0}</span> de{' '}
-                                        <span className="font-medium">{ticketsPaginados.total || 0}</span> resultados
-                                    </p>
-                                    <div className="h-4 w-px bg-gray-200"></div>
-                                    <p className="text-xs font-medium text-gray-500">
-                                        Página <span className="text-gray-900">{currentPage}</span> de <span className="text-gray-900">{ticketsPaginados.last_page || 1}</span>
-                                    </p>
-                                </div>
-                                <div>
-                                    <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                                        <button
-                                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                            disabled={currentPage === 1 || isLoading}
-                                            className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
-                                        >
-                                            <span className="sr-only">Anterior</span>
-                                            <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-                                        </button>
-
-                                        <span className="relative inline-flex items-center px-4 py-2 text-sm font-semibold z-10 bg-red-600 text-white ring-1 ring-inset ring-red-600">
-                                            {currentPage}
-                                        </span>
-
-                                        <button
-                                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, ticketsPaginados.last_page))}
-                                            disabled={currentPage === ticketsPaginados.last_page || isLoading}
-                                            className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
-                                        >
-                                            <span className="sr-only">Siguiente</span>
-                                            <ChevronRight className="h-5 w-5" aria-hidden="true" />
-                                        </button>
-                                    </nav>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </>
-            )}
-
-
-            {/* Panel de Diagnóstico */}
+            {/* Realizar Diagnóstico */}
             {showDiagnosticPanel && (
-                <div
-                    id="diagnostico-section"
-                    className="animate-in fade-in slide-in-from-top-4 mt-8 mb-8 rounded-xl border border-gray-200 bg-white shadow-sm duration-300"
-                >
-                    <div className="flex items-center justify-between rounded-t-xl bg-red-600 p-4 text-white">
-                        <h3 className="flex items-center gap-2 text-sm font-bold">
-                            <Activity className="h-4 w-4" /> Plan de Diagnostico {selectedTicketId ? `- Ticket #${selectedTicketId}` : ''}
-                        </h3>
-                        <button
-                            onClick={() => {
-                                setShowDiagnosticPanel(false);
-                                setSelectedTicketId(null);
-                                setTipoDiagnostico('');
-                                setCustomDiagnosticType('');
-                                setShowCustomDiagnostic(false);
-                                setObservacionDiagnostico('');
-                                setAdjuntosDiagnostico([]);
-                                setDiagnosticStatus(null);
-                            }}
-                            className="text-white transition-colors hover:text-red-200"
-                        >
-                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-                    <div className="p-6">
-                        <p className="mb-4 text-[13px] font-medium text-gray-700">Seleccione el tipo de diagnóstico realizado (Opcional):</p>
-                        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                            {(() => {
-                                const activeTicket = ticketsAsignados.find(t => t.id === selectedTicketId);
-                                const availableDiagnostics = solutionTypes.filter(st => {
-                                    if (!activeTicket) return false;
-                                    return st.help_topic_id === activeTicket.help_topic_id;
-                                });
-
-                                return availableDiagnostics.map(diag => (
-                                    <button
-                                        key={diag.id}
-                                        onClick={() => {
-                                            setTipoDiagnostico(diag.name);
-                                            setShowCustomDiagnostic(false);
-                                        }}
-                                        className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${tipoDiagnostico === diag.name
-                                                ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
-                                                : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                                            }`}
-                                    >
-                                        <span className="mb-1 text-sm font-bold text-gray-800 text-center">{diag.name}</span>
-                                        <span className="mb-3 text-center text-[10px] leading-tight text-gray-500">{diag.description || 'Diagnóstico del sistema'}</span>
-                                        <Activity
-                                            className={`h-8 w-8 transition-colors ${tipoDiagnostico === diag.name ? 'text-blue-600' : 'text-black group-hover:text-blue-600'}`}
-                                        />
-                                    </button>
-                                ));
-                            })()}
-
-                            <button
-                                onClick={() => {
-                                    setTipoDiagnostico('');
-                                    setShowCustomDiagnostic(true);
-                                }}
-                                className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 transition-all ${showCustomDiagnostic
-                                        ? 'border-gray-600 bg-gray-50 ring-2 ring-gray-200'
-                                        : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
-                                    }`}
-                            >
-                                <span className="mb-1 text-sm font-bold text-gray-800">Otro Tipo</span>
-                                <span className="mb-3 text-center text-[10px] leading-tight text-gray-500">Especificar diagnóstico</span>
-                                <div
-                                    className={`rounded p-2 transition-colors ${showCustomDiagnostic ? 'bg-gray-600 text-white' : 'bg-gray-600 text-white'}`}
-                                >
-                                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                    </svg>
-                                </div>
-                            </button>
-                        </div>
-
-                        {showCustomDiagnostic && (
-                            <div className="animate-in fade-in slide-in-from-top-2 mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4 duration-200">
-                                <label className="mb-2 block text-sm font-bold text-gray-700">Especifique el tipo de diagnóstico:</label>
-                                <input
-                                    type="text"
-                                    value={customDiagnosticType}
-                                    onChange={(e) => setCustomDiagnosticType(e.target.value)}
-                                    placeholder="Ej: Problema de aire acondicionado, Sistema de RCP, etc."
-                                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                />
-                                {customDiagnosticType && (
-                                    <div className="mt-2 text-xs text-gray-600">
-                                        Tipo seleccionado: <span className="font-bold text-blue-600">{customDiagnosticType}</span>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                        <textarea
-                            className="mb-4 h-24 w-full resize-none rounded-lg border border-gray-200 p-3 text-[13px] text-gray-700 focus:border-red-300 focus:ring focus:ring-red-200/50"
-                            placeholder="Escriba aquí la observación y detalles del diagnóstico..."
-                            value={observacionDiagnostico}
-                            onChange={(e) => setObservacionDiagnostico(e.target.value)}
-                        ></textarea>
-
-                        <div className="mb-4">
-                            <label className="mb-2 block text-sm font-bold text-gray-700">
-                                Archivo Adjunto / Evidencias <span className="text-red-500">* (Obligatorio)</span>:
-                            </label>
-                            <input
-                                type="file"
-                                multiple
-                                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.mp4,.mov,.avi,.wmv"
-                                className="block w-full cursor-pointer text-sm text-gray-500 transition-colors file:mr-4 file:rounded file:border-0 file:bg-red-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-red-700 hover:file:bg-red-100"
-                                onChange={(e) => {
-                                    if (e.target.files) {
-                                        const filesArray = Array.from(e.target.files);
-                                        // Validar tipos de archivo
-                                        const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-ms-wmv'];
-
-                                        const maxSize = 10 * 1024 * 1024; // 10MB por archivo
-                                        const validFiles = [];
-
-                                        for (const file of filesArray) {
-                                            if (!allowedTypes.includes(file.type) && !file.name.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx|jpg|jpeg|png|gif|mp4|mov|avi|wmv)$/i)) {
-                                                alert(`El archivo "${file.name}" no es un tipo permitido.`);
-                                                continue;
-                                            }
-
-                                            if (file.size > maxSize) {
-                                                alert(`El archivo "${file.name}" excede el tamaño máximo de 10MB.`);
-                                                continue;
-                                            }
-
-                                            validFiles.push(file);
-                                        }
-
-                                        // Maximo 4 archivos para no romper limite de DB
-                                        if (validFiles.length > 4) {
-                                            alert('Se permite un máximo de 4 archivos.');
-                                            setAdjuntosDiagnostico(validFiles.slice(0, 4));
-                                        } else {
-                                            setAdjuntosDiagnostico(validFiles);
-                                        }
-                                    }
-                                }}
-                            />
-                            {adjuntosDiagnostico.length > 0 && (
-                                <p className="mt-2 text-xs text-gray-500">
-                                    Archivos seleccionados: {adjuntosDiagnostico.map((f) => f.name).join(', ')}
-                                </p>
-                            )}
-                        </div>
-
-                        {diagnosticStatus && (
-                            <div
-                                className={`mb-3 rounded px-3 py-2 text-sm font-medium ${diagnosticStatus.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
-                            >
-                                {diagnosticStatus.msg}
-                            </div>
-                        )}
-
-                        <div className="flex justify-end gap-3">
-                            <button
-                                className="rounded-lg bg-slate-100 px-6 py-2.5 text-xs font-bold text-slate-600 transition-all hover:bg-slate-200"
-                                onClick={() => setShowUnresolvedModal(true)}
-                                disabled={isSubmitting}
-                            >
-                                NO PUEDO RESOLVER
-                            </button>
-                            <button
-                                className={`flex items-center gap-2 rounded-lg bg-red-600 px-6 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-red-700 hover:shadow-md ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
-                                onClick={submitDiagnostic}
-                                disabled={isSubmitting}
-                            >
-                                {isSubmitting ? (
-                                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                                ) : null}
-                                COMPLETAR DIAGNÓSTICO
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <DiagnosisPanel
+                    selectedTicketId={selectedTicketId}
+                    setShowDiagnosticPanel={setShowDiagnosticPanel}
+                    ticketsAsignados={ticketsAsignados}
+                    solutionTypes={solutionTypes}
+                    submitDiagnostic={submitDiagnostic}
+                    isSubmitting={isSubmitting}
+                    setShowUnresolvedModal={setShowUnresolvedModal}
+                    tipoDiagnostico={tipoDiagnostico}
+                    setTipoDiagnostico={setTipoDiagnostico}
+                    customDiagnosticType={customDiagnosticType}
+                    setCustomDiagnosticType={setCustomDiagnosticType}
+                    showCustomDiagnostic={showCustomDiagnostic}
+                    setShowCustomDiagnostic={setShowCustomDiagnostic}
+                    observacionDiagnostico={observacionDiagnostico}
+                    setObservacionDiagnostico={setObservacionDiagnostico}
+                    adjuntosDiagnostico={adjuntosDiagnostico}
+                    setAdjuntosDiagnostico={setAdjuntosDiagnostico}
+                />
             )}
 
-            {/* Modal Profesional para No Puede Resolver */}
-            {showUnresolvedModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl animate-in zoom-in-95 duration-200">
-                        <div className="bg-slate-50 px-6 py-4 border-b border-slate-100">
-                            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                <AlertCircle className="w-5 h-5 text-red-600" /> Reporte de Incidencia Técnica
-                            </h3>
-                            <p className="text-xs text-slate-500 mt-1">Documente el proceso y la justificación de la no resolución.</p>
-                        </div>
-
-                        <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Nota Interna (Justificación / Avances)</label>
-                                <textarea
-                                    className={`w-full h-32 rounded-xl border text-sm p-4 focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all ${validationErrors.internal_note ? 'border-red-500 bg-red-50' : 'border-slate-200'}`}
-                                    placeholder="Describa los avances realizados y la justificación de por qué no se pudo resolver el ticket..."
-                                    value={unresolvedData.internal_note}
-                                    onChange={(e) => setUnresolvedData({ ...unresolvedData, internal_note: e.target.value })}
-                                ></textarea>
-                                {validationErrors.internal_note && (
-                                    <p className="mt-1 text-[10px] font-bold text-red-600">{validationErrors.internal_note[0]}</p>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="p-6 bg-slate-50 border-t border-slate-100 flex gap-3">
-                            <button
-                                className="flex-1 rounded-xl bg-white border border-slate-200 py-3 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-50"
-                                onClick={() => {
-                                    setShowUnresolvedModal(false);
-                                    setUnresolvedData({ internal_note: '' });
-                                }}
-                                disabled={isSubmitting}
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                className={`flex-1 flex items-center justify-center gap-2 rounded-xl bg-red-600 py-3 text-sm font-bold text-white shadow-lg shadow-red-600/20 transition-all hover:bg-red-700 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
-                                onClick={submitUnresolved}
-                                disabled={isSubmitting}
-                            >
-                                {isSubmitting ? (
-                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                                ) : null}
-                                Enviar Reporte Detallado
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* No Puede Resolver */}
+            <UnresolvedModal
+                showUnresolvedModal={showUnresolvedModal}
+                setShowUnresolvedModal={setShowUnresolvedModal}
+                unresolvedData={unresolvedData}
+                setUnresolvedData={setUnresolvedData}
+                validationErrors={validationErrors}
+                isSubmitting={isSubmitting}
+                submitUnresolved={submitUnresolved}
+            />
         </div>
     );
 }

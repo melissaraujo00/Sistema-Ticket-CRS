@@ -6,6 +6,7 @@ use App\Models\knowledge;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Http\Requests\SaveKnowledgeRequest;
 
 class KnowledgeController extends Controller
 {
@@ -14,7 +15,12 @@ class KnowledgeController extends Controller
      */
     public function index(Request $request)
     {
+        $showDeleted = $request->boolean('show_deleted');
+
         $knowledges = knowledge::with('category')
+            ->when($showDeleted, function ($query) {
+                $query->onlyTrashed();
+            })
             ->when($request->search, function ($query, $search) {
                 $query->where('title', 'like', "%{$search}%");
             })
@@ -25,12 +31,14 @@ class KnowledgeController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $categories = Category::all();
+        $categories = $request->boolean('show_deleted_categories') 
+            ? Category::onlyTrashed()->get() 
+            : Category::all();
 
         return Inertia::render('faqs/Faq', [
             'knowledges' => $knowledges,
             'categories' => $categories,
-            'filters' => $request->only(['search', 'category_id']),
+            'filters' => $request->only(['search', 'category_id', 'show_deleted', 'show_deleted_categories']),
         ]);
     }
 
@@ -45,16 +53,9 @@ class KnowledgeController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(SaveKnowledgeRequest $request)
     {
-        $validated = $request->validate([
-            'title' => 'required|string|max:100',
-            'content_response' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
-            'creation_date' => 'required|date',
-        ]);
-
-        knowledge::create($validated);
+        knowledge::create($request->validated());
 
         return back()->with('success', 'FAQ creada con éxito.');
     }
@@ -78,27 +79,40 @@ class KnowledgeController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, knowledge $faq)
+    public function update(SaveKnowledgeRequest $request, knowledge $faq)
     {
-        $validated = $request->validate([
-            'title' => 'required|string|max:100',
-            'content_response' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
-            'creation_date' => 'required|date',
-        ]);
-
-        $faq->update($validated);
+        $faq->update($request->validated());
 
         return back()->with('success', 'FAQ actualizada con éxito.');
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified resource from storage (Soft Delete).
      */
     public function destroy(knowledge $faq)
     {
         $faq->delete();
 
-        return back()->with('success', 'FAQ eliminada con éxito.');
+        return back()->with('success', 'FAQ desactivada con éxito.');
+    }
+
+    /**
+     * Restore the specified resource from storage.
+     */
+    public function restore($id)
+    {
+        knowledge::withTrashed()->findOrFail($id)->restore();
+
+        return back()->with('success', 'FAQ restaurada con éxito.');
+    }
+
+    /**
+     * Permanent remove the specified resource from storage.
+     */
+    public function forceDelete($id)
+    {
+        knowledge::withTrashed()->findOrFail($id)->forceDelete();
+
+        return back()->with('success', 'FAQ eliminada permanentemente.');
     }
 }

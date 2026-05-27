@@ -20,6 +20,19 @@ class LoginRequest extends FormRequest
     }
 
     /**
+     * Prepara los datos ANTES de la validación.
+     * Sanitiza el correo electrónico a nivel de servidor quitando espacios en blanco.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('email')) {
+            $this->merge([
+                'email' => str_replace(' ', '', trim($this->email)),
+            ]);
+        }
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
@@ -57,7 +70,7 @@ class LoginRequest extends FormRequest
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'email' => __('auth.failed'),
+                'email' => __('Estas credenciales no coinciden con nuestros registros.'),
             ]);
         }
 
@@ -80,10 +93,7 @@ class LoginRequest extends FormRequest
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'email' => __('auth.throttle', [
-                'seconds' => $seconds,
-                'minutes' => ceil($seconds / 60),
-            ]),
+            'email' => "Demasiados intentos de inicio de sesión. Por favor intente nuevamente en " . $seconds . " segundos.",
         ]);
     }
 

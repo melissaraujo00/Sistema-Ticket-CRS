@@ -5,6 +5,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import { NotificationsDropdown } from '@/components/NotificationsDropdown';
 import { UserMenuContent } from '@/components/user-menu-content';
 import { useAppearance } from '@/hooks/use-appearance';
@@ -29,6 +30,8 @@ import {
     Network,
     Layers,
     Building,
+    Star,
+    Component,
 } from 'lucide-react';
 
 // ==========================================
@@ -52,6 +55,8 @@ const ICONS = {
     Network,
     Layers,
     Building,
+    Star,
+    Component,
 };
 
 // ==========================================
@@ -69,44 +74,46 @@ export function AppSidebarHeader({ breadcrumbs = [] }) {
     const currentUrl = usePage().url;
 
     return (
-        <header className="sticky top-0 z-50 flex flex-col w-full bg-background border-b border-border shadow-sm">
-
+        <header className="bg-background border-border sticky top-0 z-50 flex w-full flex-col border-b shadow-sm">
             {/* FILA 1: Logo, Modo Oscuro y Perfil */}
             <div className="flex h-16 items-center justify-between px-4 md:px-6">
+                {/* NUEVO CONTENEDOR: Agrupa el botón de menú móvil y el logo */}
+                <div className="flex items-center gap-2">
+                    <SidebarTrigger className="md:hidden" />
 
-                <Link href="/" className="flex items-center gap-2 text-red-600 font-black text-lg">
-                    <span className="text-2xl leading-none">+</span>
-                    <span className="text-foreground tracking-tight">Gestión de Tickets</span>
-                </Link>
+                    <Link href="/" className="flex items-center gap-2 text-lg font-black text-red-600">
+                        <span className="text-2xl leading-none">+</span>
+                        <span className="text-foreground tracking-tight">Gestión de Tickets</span>
+                    </Link>
+                </div>
 
                 <div className="flex items-center gap-4">
-                    <button onClick={toggleTheme} className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-muted-foreground hover:text-foreground transition-colors">
-                        {appearance === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                    <button
+                        onClick={toggleTheme}
+                        className="bg-secondary text-muted-foreground hover:text-foreground flex h-8 w-8 items-center justify-center rounded-full transition-colors"
+                    >
+                        {appearance === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                     </button>
 
                     <NotificationsDropdown />
 
-                    <div className="h-6 w-px bg-border hidden md:block"></div>
+                    <div className="bg-border hidden h-6 w-px md:block"></div>
 
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <button className="flex items-center gap-3 outline-none hover:bg-accent hover:text-accent-foreground p-1.5 rounded-md transition-colors cursor-pointer text-left">
+                            <button className="hover:bg-accent hover:text-accent-foreground flex cursor-pointer items-center gap-3 rounded-md p-1.5 text-left transition-colors outline-none">
                                 <div className="hidden text-right md:block">
-                                    <span className="block text-sm font-medium text-foreground">
-                                        {auth?.user?.name || 'Administrador'}
-                                    </span>
-                                    <span className="block text-xs text-muted-foreground capitalize">
-                                        {auth?.user?.roles?.[0] || 'Usuario'}
-                                    </span>
+                                    <span className="text-foreground block text-sm font-medium">{auth?.user?.name || 'Administrador'}</span>
+                                    <span className="text-muted-foreground block text-xs capitalize">{auth?.user?.roles?.[0] || 'Usuario'}</span>
                                 </div>
-                                <div className="h-9 w-9 rounded-full bg-red-100 text-red-600 flex items-center justify-center font-bold overflow-hidden border border-red-200">
-                                    {(auth?.user?.name?.charAt(0)) || 'M'}
+                                <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-red-200 bg-red-100 font-bold text-red-600">
+                                    {auth?.user?.name?.charAt(0) || 'M'}
                                 </div>
-                                <ChevronDown className="hidden sm:block w-4 h-4 text-muted-foreground" />
+                                <ChevronDown className="text-muted-foreground hidden h-4 w-4 sm:block" />
                             </button>
                         </DropdownMenuTrigger>
 
-                        <DropdownMenuContent align="end" className="w-56 mt-1">
+                        <DropdownMenuContent align="end" className="mt-1 w-56">
                             <UserMenuContent user={auth.user} />
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -114,9 +121,8 @@ export function AppSidebarHeader({ breadcrumbs = [] }) {
             </div>
 
             {/* FILA 2: Rutas Dinámicas Horizontales (Server-Driven) */}
-            <div className="flex items-center px-4 md:px-6 h-12 bg-muted/10 border-t border-border overflow-x-auto hide-scrollbar">
-                <nav className="flex items-center gap-6 text-sm font-medium h-full">
-
+            <div className="bg-muted/10 border-border hide-scrollbar hidden h-12 items-center overflow-x-auto border-t px-4 md:flex md:px-6">
+                <nav className="flex h-full items-center gap-6 text-sm font-medium">
                     {/* Mapeamos las rutas dinámicamente desde Laravel */}
                     {navigation.map((item, index) => {
                         const Icon = item.icon ? ICONS[item.icon] : null;
@@ -174,10 +180,8 @@ export function AppSidebarHeader({ breadcrumbs = [] }) {
                             </Link>
                         );
                     })}
-
                 </nav>
             </div>
-
         </header>
     );
 }

@@ -11,7 +11,9 @@ class PublicController extends Controller
     //
     public function index()
     {
-        $knowledges = knowledge::with('category')->get();
+        $knowledges = knowledge::with(['category' => function ($query) {
+            $query->withTrashed();
+        }])->get();
 
         return Inertia::render('welcome', [
             'knowledges' => $knowledges

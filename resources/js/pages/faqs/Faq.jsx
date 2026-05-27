@@ -17,7 +17,7 @@ import Pagination from '@/components/Pagination';
 import { Button } from '@/components/ui/button.jsx';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Search, X } from 'lucide-react';
+import { Plus, Search, X, Eye, EyeOff } from 'lucide-react';
 import React, { useState, useEffect, useCallback } from 'react';
 import { debounce } from 'lodash';
 
@@ -31,6 +31,8 @@ export default function Faq({ knowledges = { data: [], links: [] }, categories =
     // Estados para filtros
     const [search, setSearch] = useState(filters.search || '');
     const [categoryId, setCategoryId] = useState(filters.category_id || 'all');
+    const [showDeleted, setShowDeleted] = useState(filters.show_deleted || false);
+    const [showDeletedCategories, setShowDeletedCategories] = useState(filters.show_deleted_categories || false);
 
     const breadcrumbs = [
         { title: 'Dashboard', href: '/dashboard' },
@@ -39,10 +41,12 @@ export default function Faq({ knowledges = { data: [], links: [] }, categories =
 
     // Lógica de filtrado
     const updateFilters = useCallback(
-        debounce((newSearch, newCategory) => {
+        debounce((newSearch, newCategory, newShowDeleted, newShowDeletedCategories) => {
             const params = {};
             if (newSearch) params.search = newSearch;
             if (newCategory && newCategory !== 'all') params.category_id = newCategory;
+            if (newShowDeleted) params.show_deleted = true;
+            if (newShowDeletedCategories) params.show_deleted_categories = true;
 
             router.get(route('faq.index'), params, {
                 preserveState: true,
@@ -53,12 +57,14 @@ export default function Faq({ knowledges = { data: [], links: [] }, categories =
     );
 
     useEffect(() => {
-        updateFilters(search, categoryId);
-    }, [search, categoryId]);
+        updateFilters(search, categoryId, showDeleted, showDeletedCategories);
+    }, [search, categoryId, showDeleted, showDeletedCategories]);
 
     const handleClearFilters = () => {
         setSearch('');
         setCategoryId('all');
+        setShowDeleted(false);
+        setShowDeletedCategories(false);
     };
 
     const handleCategoryEdit = (category) => {
@@ -103,36 +109,52 @@ export default function Faq({ knowledges = { data: [], links: [] }, categories =
                         <div className="dark:bg-sidebar border-sidebar-border overflow-hidden rounded-xl border bg-white p-6 shadow-sm">
                             <div className="flex flex-col gap-4 mb-6">
                                 <div className="flex justify-between items-center">
-                                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Lista de FAQs</h2>
+                                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                        {showDeleted ? 'FAQs Desactivadas' : 'Lista de FAQs'}
+                                    </h2>
 
-                                    <Dialog open={isFaqDialogOpen} onOpenChange={setIsFaqDialogOpen}>
-                                        <DialogTrigger asChild>
-                                            <Button 
-                                                onClick={handleFaqCreate}
-                                                className="bg-zinc-900 dark:bg-zinc-50 dark:text-zinc-900"
-                                            >
-                                                <Plus className="mr-2 h-4 w-4" /> Nuevo
-                                            </Button>
-                                        </DialogTrigger>
-                                        <DialogContent className="sm:max-w-[600px]">
-                                            <DialogHeader>
-                                                <DialogTitle>
-                                                    {selectedFaq ? 'Editar FAQ' : 'Agregar Nueva FAQ'}
-                                                </DialogTitle>
-                                                <DialogDescription>
-                                                    {selectedFaq 
-                                                        ? 'Modifica los detalles de la pregunta frecuente.' 
-                                                        : 'Ingresa los detalles para crear una nueva pregunta frecuente.'}
-                                                </DialogDescription>
-                                            </DialogHeader>
-                                            
-                                            <KnowledgeForm 
-                                                faq={selectedFaq} 
-                                                categories={categories}
-                                                onSuccess={() => setIsFaqDialogOpen(false)} 
-                                            />
-                                        </DialogContent>
-                                    </Dialog>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setShowDeleted(!showDeleted)}
+                                            className={showDeleted ? "bg-zinc-100 text-zinc-900 border-zinc-300" : ""}
+                                        >
+                                            {showDeleted ? (
+                                                <><Eye className="mr-2 h-4 w-4" /> Ver Activas</>
+                                            ) : (
+                                                <><EyeOff className="mr-2 h-4 w-4" /> Ver Desactivados</>
+                                            )}
+                                        </Button>
+
+                                        <Dialog open={isFaqDialogOpen} onOpenChange={setIsFaqDialogOpen}>
+                                            <DialogTrigger asChild>
+                                                <Button 
+                                                    onClick={handleFaqCreate}
+                                                    className="bg-zinc-900 dark:bg-zinc-50 dark:text-zinc-900"
+                                                >
+                                                    <Plus className="mr-2 h-4 w-4" /> Nuevo
+                                                </Button>
+                                            </DialogTrigger>
+                                            <DialogContent className="sm:max-w-[600px]">
+                                                <DialogHeader>
+                                                    <DialogTitle>
+                                                        {selectedFaq ? 'Editar FAQ' : 'Agregar Nueva FAQ'}
+                                                    </DialogTitle>
+                                                    <DialogDescription>
+                                                        {selectedFaq 
+                                                            ? 'Modifica los detalles de la pregunta frecuente.' 
+                                                            : 'Ingresa los detalles para crear una nueva pregunta frecuente.'}
+                                                    </DialogDescription>
+                                                </DialogHeader>
+                                                
+                                                <KnowledgeForm 
+                                                    faq={selectedFaq} 
+                                                    categories={categories}
+                                                    onSuccess={() => setIsFaqDialogOpen(false)} 
+                                                />
+                                            </DialogContent>
+                                        </Dialog>
+                                    </div>
                                 </div>
 
                                 {/* Barra de Filtros */}
@@ -147,22 +169,24 @@ export default function Faq({ knowledges = { data: [], links: [] }, categories =
                                             className="pl-9"
                                         />
                                     </div>
-                                    <div className="w-full sm:w-[200px]">
-                                        <Select value={categoryId} onValueChange={setCategoryId}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Categoría" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all">Todas las categorías</SelectItem>
-                                                {categories.map((cat) => (
-                                                    <SelectItem key={cat.id} value={cat.id.toString()}>
-                                                        {cat.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    {(search || (categoryId !== 'all')) && (
+                                    {!showDeleted && (
+                                        <div className="w-full sm:w-[200px]">
+                                            <Select value={categoryId} onValueChange={setCategoryId}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Categoría" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all">Todas las categorías</SelectItem>
+                                                    {categories.map((cat) => (
+                                                        <SelectItem key={cat.id} value={cat.id.toString()}>
+                                                            {cat.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    )}
+                                    {(search || (categoryId !== 'all') || showDeleted) && (
                                         <Button 
                                             variant="ghost" 
                                             onClick={handleClearFilters}
@@ -179,15 +203,16 @@ export default function Faq({ knowledges = { data: [], links: [] }, categories =
                                     <KnowledgeTable 
                                         knowledges={knowledges.data} 
                                         onEdit={handleFaqEdit} 
+                                        isTrashed={showDeleted}
                                     />
                                     <Pagination links={knowledges.links} />
                                 </>
                             ) : (
                                 <div className="text-center py-10">
                                     <p className="text-sm text-gray-500">
-                                        No se encontraron preguntas frecuentes con los filtros aplicados.
+                                        No se encontraron preguntas frecuentes {showDeleted ? 'desactivadas' : 'con los filtros aplicados'}.
                                     </p>
-                                    {(search || categoryId !== 'all') && (
+                                    {(search || categoryId !== 'all' || showDeleted) && (
                                         <Button 
                                             variant="link" 
                                             onClick={handleClearFilters}
@@ -204,45 +229,62 @@ export default function Faq({ knowledges = { data: [], links: [] }, categories =
                     <TabsContent value="categories">
                         <div className="dark:bg-sidebar border-sidebar-border overflow-hidden rounded-xl border bg-white p-6 shadow-sm">
                             <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Gestión de Categorías</h2>
+                                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                    {showDeletedCategories ? 'Categorías Desactivadas' : 'Gestión de Categorías'}
+                                </h2>
 
-                                <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
-                                    <DialogTrigger asChild>
-                                        <Button 
-                                            onClick={handleCategoryCreate}
-                                            className="bg-zinc-900 dark:bg-zinc-50 dark:text-zinc-900"
-                                        >
-                                            <Plus className="mr-2 h-4 w-4" /> Nuevo
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                        <DialogHeader>
-                                            <DialogTitle>
-                                                {selectedCategory ? 'Editar Categoría' : 'Agregar Nueva Categoría'}
-                                            </DialogTitle>
-                                            <DialogDescription>
-                                                {selectedCategory 
-                                                    ? 'Modifica el nombre de la categoría seleccionada.' 
-                                                    : 'Ingresa el nombre de la nueva categoría para organizar las FAQs.'}
-                                            </DialogDescription>
-                                        </DialogHeader>
-                                        
-                                        <CategoryForm 
-                                            category={selectedCategory} 
-                                            onSuccess={() => setIsCategoryDialogOpen(false)} 
-                                        />
-                                    </DialogContent>
-                                </Dialog>
+                                <div className="flex gap-2">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setShowDeletedCategories(!showDeletedCategories)}
+                                        className={showDeletedCategories ? "bg-zinc-100 text-zinc-900 border-zinc-300" : ""}
+                                    >
+                                        {showDeletedCategories ? (
+                                            <><Eye className="mr-2 h-4 w-4" /> Ver Activas</>
+                                        ) : (
+                                            <><EyeOff className="mr-2 h-4 w-4" /> Ver Desactivados</>
+                                        )}
+                                    </Button>
+
+                                    <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
+                                        <DialogTrigger asChild>
+                                            <Button 
+                                                onClick={handleCategoryCreate}
+                                                className="bg-zinc-900 dark:bg-zinc-50 dark:text-zinc-900"
+                                            >
+                                                <Plus className="mr-2 h-4 w-4" /> Nuevo
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent>
+                                            <DialogHeader>
+                                                <DialogTitle>
+                                                    {selectedCategory ? 'Editar Categoría' : 'Agregar Nueva Categoría'}
+                                                </DialogTitle>
+                                                <DialogDescription>
+                                                    {selectedCategory 
+                                                        ? 'Modifica el nombre de la categoría seleccionada.' 
+                                                        : 'Ingresa el nombre de la nueva categoría para organizar las FAQs.'}
+                                                </DialogDescription>
+                                            </DialogHeader>
+                                            
+                                            <CategoryForm 
+                                                category={selectedCategory} 
+                                                onSuccess={() => setIsCategoryDialogOpen(false)} 
+                                            />
+                                        </DialogContent>
+                                    </Dialog>
+                                </div>
                             </div>
 
                             {categories.length > 0 ? (
                                 <CategoryTable 
                                     categories={categories} 
                                     onEdit={handleCategoryEdit} 
+                                    isTrashed={showDeletedCategories}
                                 />
                             ) : (
                                 <p className="text-sm text-gray-500 text-center py-10">
-                                    No hay categorías registradas.
+                                    No hay categorías {showDeletedCategories ? 'desactivadas' : 'registradas'}.
                                 </p>
                             )}
                         </div>

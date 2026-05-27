@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::create('divisions', function (Blueprint $table) {
             $table->id();
             $table->string('name', 50);
-            $table->string('characteristics', 70);
+            $table->string('characteristics', 70)->nullable();
             $table->foreignIdFor(Department::class)->constrained();
             $table->softDeletes();
             $table->timestamps();

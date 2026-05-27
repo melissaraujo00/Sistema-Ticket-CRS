@@ -126,7 +126,7 @@ const handleFileChange = (e) => {
                 helpTopics={helpTopics}
                 breadcrumbs={breadcrumbs}
                 processing={processing}
-                onEdit={() => setShowPreview(false)}
+                onEdit={() => setShowPreview(falfse)}
                 onSubmit={submit}
             />
         );
