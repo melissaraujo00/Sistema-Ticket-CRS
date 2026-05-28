@@ -7,7 +7,10 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Pagination\Paginator; 
 use Illuminate\Support\Facades\Gate;
 use App\Models\Ticket;
+use App\Models\Qualification;
 use App\Observers\TicketObserver;
+use App\Observers\QualificationObserver;
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -24,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Ticket::observe(TicketObserver::class);
+        Qualification::observe(QualificationObserver::class);
 
         Route::middleware('api')
             ->prefix('api')
