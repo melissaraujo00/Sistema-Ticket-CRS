@@ -98,6 +98,7 @@ class TicketController extends Controller
             'status',
             'priority',
             'assignedUser',
+            'attachments',
             'ticketSolutions.solutionType',
             'ticketSolutions.attachments',
             'histories',

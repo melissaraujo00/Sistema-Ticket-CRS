@@ -46,7 +46,7 @@ class RoleSeeder extends Seeder
         $superAdminRole->syncPermissions(Permission::all());
 
         $adminRole->syncPermissions([
-            'manage_area_tickets', 'assign_tickets', 'view_area_dashboard',
+            'manage_area_tickets', 'assign_tickets'o, 'view_area_dashboard',
             'create_tickets', 'view_own_tickets', 'view_sla_expiration'
         ]);
 
