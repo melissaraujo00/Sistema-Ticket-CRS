@@ -218,6 +218,7 @@ class TicketAssignmentController extends Controller
             'requestingUser',
             'status',
             'assignedUser',
+            'attachments',
             'histories.user' // Esto incluye 'histories' automáticamente
         ]);
 

@@ -146,65 +146,6 @@ export default function Show({ ticket }) {
                             </div>
                         </div>
 
-                        {/* ========================================= */}
-                        {/* BLOQUE: ARCHIVOS ADJUNTOS DEL SOLICITANTE */}
-                        {/* ========================================= */}
-                        {ticket.attachments && ticket.attachments.length > 0 ? (
-                            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 md:p-8 shadow-sm">
-                                <h2 className="text-lg md:text-xl font-bold mb-4 text-zinc-900 dark:text-white border-b border-zinc-100 dark:border-zinc-800 pb-3 flex items-center gap-2">
-                                    <Paperclip className="w-5 h-5 text-zinc-500" />
-                                    Evidencia Adjunta
-                                </h2>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    {ticket.attachments.map((file, index) => (
-                                        <div
-                                            key={index}
-                                            className="flex items-center justify-between gap-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-4 py-3"
-                                        >
-                                            <div className="flex items-center gap-3 min-w-0">
-                                                {isImage(file.file_type) ? (
-                                                    <img
-                                                        src={`/storage/${file.file_path}`}
-                                                        alt={file.file_name}
-                                                        className="w-10 h-10 rounded object-cover border border-zinc-200 dark:border-zinc-700"
-                                                    />
-                                                ) : (
-                                                    <FileIcon className="w-8 h-8 text-zinc-400 flex-shrink-0" />
-                                                )}
-                                                <span className="text-sm text-zinc-700 dark:text-zinc-300 truncate">
-                                                    {file.file_name}
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center gap-1 flex-shrink-0">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setPreviewFile(file)}
-                                                    className="p-2 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition"
-                                                    title="Ver archivo"
-                                                >
-                                                    <Eye className="w-4 h-4" />
-                                                </button>
-                                                <a
-                                                    href={`/storage/${file.file_path}`}
-                                                    download={file.file_name}
-                                                    className="p-2 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition"
-                                                    title="Descargar archivo"
-                                                >
-                                                    <Download className="w-4 h-4" />
-                                                </a>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="bg-zinc-50 dark:bg-zinc-900 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-2xl p-6 text-center">
-                                <Paperclip className="w-8 h-8 text-zinc-300 dark:text-zinc-600 mx-auto mb-2" />
-                                <p className="text-sm text-zinc-400 dark:text-zinc-500">
-                                    Este ticket no contiene archivos adjuntos
-                                </p>
-                            </div>
-                        )}
 
                         {/* ========================================== */}
                         {/* BLOQUE: NOTA ADMINISTRATIVA                */}
@@ -431,65 +372,6 @@ export default function Show({ ticket }) {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-            {/* MODAL DE PREVISUALIZACIÓN DE ARCHIVOS */}
-            {previewFile && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
-                    onClick={() => setPreviewFile(null)}
-                >
-                    <div
-                        className="relative max-w-[90vw] max-h-[90vh] flex flex-col items-center"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {/* Botón cerrar */}
-                        <button
-                            type="button"
-                            onClick={() => setPreviewFile(null)}
-                            className="absolute -top-3 -right-3 z-10 bg-white dark:bg-zinc-800 rounded-full p-1.5 shadow-lg hover:bg-zinc-100 dark:hover:bg-zinc-700 transition"
-                        >
-                            <X className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
-                        </button>
-
-                        {/* Contenido */}
-                        {isImage(previewFile.file_type) ? (
-                            <img
-                                src={`/storage/${previewFile.file_path}`}
-                                alt={previewFile.file_name}
-                                className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
-                            />
-                        ) : previewFile.file_type === 'application/pdf' ? (
-                            <iframe
-                                src={`/storage/${previewFile.file_path}`}
-                                className="w-[80vw] h-[80vh] rounded-lg shadow-2xl bg-white"
-                                title={previewFile.file_name}
-                            />
-                        ) : (
-                            <div className="bg-white dark:bg-zinc-800 rounded-lg p-8 text-center shadow-2xl">
-                                <FileIcon className="w-16 h-16 text-zinc-400 mx-auto mb-4" />
-                                <p className="text-zinc-700 dark:text-zinc-300 font-medium mb-2">
-                                    {previewFile.file_name}
-                                </p>
-                                <p className="text-sm text-zinc-500 mb-4">
-                                    No se puede previsualizar este tipo de archivo
-                                </p>
-                                <a
-                                    href={`/storage/${previewFile.file_path}`}
-                                    download={previewFile.file_name}
-                                    className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-md hover:bg-zinc-800 dark:hover:bg-zinc-200 transition text-sm"
-                                >
-                                    <Download className="w-4 h-4" />
-                                    Descargar
-                                </a>
-                            </div>
-                        )}
-
-                        {/* Nombre del archivo debajo */}
-                        <p className="mt-3 text-sm text-white/80 text-center truncate max-w-full">
-                            {previewFile.file_name}
-                        </p>
-                    </div>
-                </div>
-            )}
         </AppLayout>
     );
 }
