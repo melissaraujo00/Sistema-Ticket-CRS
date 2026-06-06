@@ -21,7 +21,11 @@ import {
     Wrench,
     CheckCircle,
     Paperclip,
-    Info
+    Info,
+    Download,
+    Eye,
+    X,
+    FileIcon
 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 
