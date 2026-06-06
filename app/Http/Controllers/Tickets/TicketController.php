@@ -100,6 +100,7 @@ class TicketController extends Controller
             'assignedUser',
             'ticketSolutions.solutionType',
             'ticketSolutions.attachments',
+            'attachments',
             'histories',
             'histories.user'
         ]);
