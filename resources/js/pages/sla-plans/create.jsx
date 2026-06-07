@@ -52,7 +52,7 @@ export default function Create() {
                             </Label>
                             <Input
                                 id="name"
-                                placeholder="Ej: Gold, Plata, Bronce..."
+                                placeholder="Ej: Oro, Plata, Bronce..."
                                 value={data.name}
                                 onChange={(e) => setData("name", e.target.value)}
                                 className="h-12 border-zinc-200 dark:border-zinc-800 bg-zinc-50/30 dark:bg-zinc-900/30 rounded-xl focus-visible:ring-zinc-500"
