@@ -2,7 +2,7 @@ import React from "react";
 import { Head } from "@inertiajs/react";
 import AppLayout from "@/layouts/app-layout";
 import { Button } from "@/components/ui/button";
-import { Loader2, Image as ImageIcon, Pencil, Check } from "lucide-react";
+import { Loader2, Image as ImageIcon, Pencil, Check, FileText } from "lucide-react";
 
 export default function Preview({
     data,
@@ -93,8 +93,17 @@ export default function Preview({
                                 <div className="space-y-3">
                                     {data.attachments.map((file, index) => (
                                         <div key={index} className="flex items-center p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg border border-zinc-100 dark:border-zinc-800 gap-4">
-                                            <div className="p-2.5 bg-blue-100 dark:bg-blue-900/40 rounded-md text-blue-600 dark:text-blue-400">
-                                                <ImageIcon className="w-6 h-6" />
+                                            <div className="p-2.5 bg-blue-100 dark:bg-blue-900/40 rounded-md text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                                                {/* Aquí evaluamos si es imagen o cualquier otro archivo */}
+                                                {file.type.startsWith('image/') ? (
+                                                    <img
+                                                        src={URL.createObjectURL(file)}
+                                                        alt="Miniatura"
+                                                        className="h-6 w-6 rounded object-cover"
+                                                    />
+                                                ) : (
+                                                    <FileText className="w-6 h-6" />
+                                                )}
                                             </div>
                                             <div className="flex-1">
                                                 <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{file.name}</p>

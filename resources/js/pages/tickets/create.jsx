@@ -22,6 +22,14 @@ const breadcrumbs = [
     { title: "Mis Tickets", href: route("tickets.my") },
     { title: "Crear Ticket", href: "/tickets/create" },
 ];
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const SUPPORTED_FORMATS = [
+    "image/jpg",
+    "image/jpeg",
+    "image/png",
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+];
 
 const ticketSchema = Yup.object().shape({
     department_id: Yup.string().required("El departamento es obligatorio"),
@@ -29,7 +37,18 @@ const ticketSchema = Yup.object().shape({
     help_topic_id: Yup.string().required("El tema de ayuda es obligatorio"),
     subject: Yup.string().min(5, "El asunto es muy corto").required("El asunto es obligatorio"),
     message: Yup.string().min(10, "Por favor, explica mejor tu problema").required("El mensaje es obligatorio"),
+    attachments: Yup.mixed()
+        .nullable()
+        .test("fileSize", "Uno o más archivos superan los 10MB", (files) => {
+            if (!files || files.length === 0) return true;
+            return Array.from(files).every(file => file.size <= MAX_FILE_SIZE);
+        })
+        .test("fileFormat", "Archivos permitidos: JPG, PNG, PDF, DOC, DOCX", (files) => {
+            if (!files || files.length === 0) return true;
+            return Array.from(files).every(file => SUPPORTED_FORMATS.includes(file.type));
+        })
 });
+
 
 export default function Create() {
     const { auth, departments, divisions, helpTopics } = usePage().props;
@@ -37,19 +56,20 @@ export default function Create() {
     const [showPreview, setShowPreview] = useState(false);
 
     const { data, setData, post, processing, errors, setError, clearErrors } = useForm(
-        "CreateTicketForm", 
+        "CreateTicketForm",
         {
             department_id: "",
             division_id: "",
             help_topic_id: "",
             subject: "",
             message: "",
-            attachments: [], 
+            attachments: [],
         }
     );
 
     const [dept, setDept] = useState(data.department_id || "");
     const [div, setDiv] = useState(data.division_id || "");
+    const [previewItem, setPreviewItem] = useState(null);
 
     const [selectedFiles, setSelectedFiles] = useState(data.attachments || []);
 
@@ -331,6 +351,7 @@ export default function Create() {
                                         <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
                                             Puede seleccionar múltiples archivos (máx. 10MB c/u)
                                         </p>
+                                        {errors.attachments && <p className="text-xs text-red-600 dark:text-red-400">{errors.attachments}</p>}
                                     </div>
                                 </div>
                                 {selectedFiles.length > 0 && (
@@ -341,7 +362,24 @@ export default function Create() {
                                                 className="flex items-center justify-between rounded-md bg-zinc-100 p-2 text-sm dark:bg-zinc-800"
                                             >
                                                 <div className="flex items-center gap-2">
-                                                    <FileText className="h-4 w-4 text-zinc-500" />
+                                                    {file.type.startsWith('image/') ? (
+                                                        <img
+                                                            src={URL.createObjectURL(file)}
+                                                            alt="Vista previa"
+                                                            className="h-6 w-6 rounded object-cover border border-zinc-200 dark:border-zinc-700 cursor-pointer hover:opacity-75 transition-opacity"
+                                                            onClick={() => setPreviewItem({ url: URL.createObjectURL(file), type: 'image' })}
+                                                        />
+                                                    ) : file.type === 'application/pdf' ? (
+                                                        <div
+                                                            className="p-1 rounded cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+                                                            title="Ver documento PDF"
+                                                            onClick={() => setPreviewItem({ url: URL.createObjectURL(file), type: 'pdf' })}
+                                                        >
+                                                            <FileText className="h-5 w-5 text-red-500 hover:text-red-600" />
+                                                        </div>
+                                                    ) : (
+                                                        <FileText className="h-4 w-4 text-zinc-500" />
+                                                    )}
                                                     <span className="max-w-50 truncate text-zinc-700 dark:text-zinc-300">{file.name}</span>
                                                     <span className="text-xs text-zinc-500">({(file.size / 1024).toFixed(0)} KB)</span>
                                                 </div>
@@ -370,6 +408,39 @@ export default function Create() {
                     </div>
                 </div>
             </form>
+            {previewItem && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+                    onClick={() => setPreviewItem(null)}
+                >
+                    <div className="relative flex flex-col items-center">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            className="absolute -right-4 -top-12 text-white hover:bg-transparent hover:text-red-400"
+                            onClick={() => setPreviewItem(null)}
+                        >
+                            <X className="h-8 w-8" />
+                        </Button>
+
+                        {previewItem.type === 'image' ? (
+                            <img
+                                src={previewItem.url}
+                                alt="Vista previa grande"
+                                className="max-h-[85vh] max-w-[90vw] rounded-lg object-contain shadow-2xl"
+                                onClick={(e) => e.stopPropagation()}
+                            />
+                        ) : (
+                            <iframe
+                                src={previewItem.url}
+                                title="Vista previa PDF"
+                                className="h-[85vh] w-[90vw] md:w-[70vw] rounded-lg shadow-2xl bg-white"
+                                onClick={(e) => e.stopPropagation()}
+                            />
+                        )}
+                    </div>
+                </div>
+            )}
         </AppLayout>
     );
 }

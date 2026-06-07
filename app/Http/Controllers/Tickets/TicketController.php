@@ -19,7 +19,9 @@ use App\Actions\GenerateTicketCodeAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreTicketRequest;
 use App\Models\Status;
-
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
+use Illuminate\Support\Facades\Storage;
 
 class TicketController extends Controller
 {
@@ -38,7 +40,7 @@ class TicketController extends Controller
 
         return Inertia::render('tickets/index', [
             'tickets' => $tickets,
-            'statuses'=> Status::all(['id', 'name']),
+            'statuses' => Status::all(['id', 'name']),
         ]);
     }
 
@@ -123,8 +125,8 @@ class TicketController extends Controller
             ->where('requesting_user', auth()->id())
             ->orderBy('created_at', 'desc')
             ->get();
-        
-        $resolvedTickets = Ticket::with(['requestingUser', 'department', 'status','assignedUser'])
+
+        $resolvedTickets = Ticket::with(['requestingUser', 'department', 'status', 'assignedUser'])
             ->where('requesting_user', auth()->id())
             ->whereIn('status_id', [5, 7])
             ->whereDoesntHave('qualification')
@@ -142,7 +144,7 @@ class TicketController extends Controller
 
         return Inertia::render('tickets/index', [
             'tickets' => $tickets,
-            'resolvedTickets'=>$resolvedTickets
+            'resolvedTickets' => $resolvedTickets
         ]);
     }
 
@@ -241,21 +243,49 @@ class TicketController extends Controller
         ]);
 
         if ($request->hasFile('attachments')) {
+            // Preparamos el optimizador de imágenes
+            
+            $manager = new ImageManager(new Driver());
+
             foreach ($request->file('attachments') as $file) {
-                $path = $file->storeAs(
-                    "tickets/{$ticket->id}",
-                    Str::random(40) . '.' . $file->getClientOriginalExtension(),
-                    'public'
-                );
+                $extension = $file->getClientOriginalExtension();
+                $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                $mimeType = $file->getMimeType();
+
+                // 1. EL RENOMBRADO FÁCIL
+                $safeName = Str::slug($originalName);
+                $newFileName = "{$ticket->code}_{$safeName}_" . Str::random(4) . ".{$extension}";
+                $path = "tickets/{$ticket->id}/{$newFileName}";
+
+                // 2. LA OPTIMIZACIÓN
+                if (str_starts_with($mimeType, 'image/')) {
+                    // Leemos la imagen
+                    $img = $manager->read($file);
+
+                    // La achicamos a un máximo de 1200px de ancho sin deformarla
+                    $img->scaleDown(width: 1200);
+
+                    // La guardamos con 75% de calidad (mantiene claridad, baja el peso)
+                    $encoded = $img->toJpeg(75);
+
+                    Storage::disk('public')->put($path, $encoded->toString());
+                    $finalSize = strlen($encoded->toString());
+                } else {
+                    // Si es Word, Excel, etc., se guarda normal
+                    $file->storeAs("tickets/{$ticket->id}", $newFileName, 'public');
+                    $finalSize = $file->getSize();
+                }
+
+                // 3. GUARDAMOS EN BASE DE DATOS
                 $ticket->attachments()->create([
-                    'file_name' => $file->getClientOriginalName(),
+                    'file_name' => $newFileName,
                     'file_path' => $path,
-                    'file_type' => $file->getMimeType(),
-                    'file_size' => $file->getSize(),
+                    'file_type' => $mimeType,
+                    'file_size' => $finalSize,
                 ]);
+                
             }
         }
-
         $department = Department::with('heads')->find($ticket->department_id);
         if ($department && $department->heads->count()) {
             foreach ($department->heads as $head) {
