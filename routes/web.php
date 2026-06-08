@@ -11,6 +11,7 @@ use App\Http\Controllers\SlaPlanController;
 use App\Http\Controllers\TecnicoController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\AreaController;
+use App\Http\Controllers\DivisionController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\QualificationController;
 use App\Http\Controllers\SolutionTypeController;
@@ -96,6 +97,17 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('users', UserController::class);
     });
 
+
+    Route::post('/qualifications', [QualificationController::class, 'store']);
+
+    // Knowledge
+    Route::middleware(['role:superadmin'])->group(function () {
+        Route::resource('category', CategoryController::class);
+    });
+
+    Route::middleware(['role:superadmin'])->group(function () {
+        Route::resource('faq', KnowledgeController::class);
+
     Route::post('/qualifications', [QualificationController::class, 'store']);
 
     // --- G. ESTRUCTURA ORGANIZACIONAL ---
@@ -108,20 +120,30 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['permission:manage_departments'])->group(function () {
         Route::get('/departments/trashed', [DepartmentController::class, 'trashed'])->name('departments.trashed');
         Route::put('/departments/{id}/restore', [DepartmentController::class, 'restore'])->name('departments.restore');
-        Route::resource('departments', DepartmentController::class);
+        Route::resource('departments', DepartmentController::class)->except(['show']);
+    });
+
+    Route::middleware(['permission:manage_divisions'])->group(function () {
+        Route::get('/divisions/trashed', [DivisionController::class, 'trashed'])->name('divisions.trashed');
+        Route::put('/divisions/{id}/restore', [DivisionController::class, 'restore'])->name('divisions.restore');
+        Route::resource('divisions', DivisionController::class)->except(['show']);
     });
 
 
     // Knowledge
     Route::middleware(['role:superadmin'])->group(function () {
         Route::put('category/{id}/restore', [CategoryController::class, 'restore'])->name('category.restore');
+        Route::delete('category/{id}/force', [CategoryController::class, 'forceDelete'])->name('category.force-delete');
         Route::resource('category', CategoryController::class);
     });
 
     Route::middleware(['role:superadmin'])->group(function () {
         Route::put('faq/{id}/restore', [KnowledgeController::class, 'restore'])->name('faq.restore');
+        Route::delete('faq/{id}/force', [KnowledgeController::class, 'forceDelete'])->name('faq.force-delete');
         Route::resource('faq', KnowledgeController::class);
     });
+});
+
 });
 
 // ==========================================

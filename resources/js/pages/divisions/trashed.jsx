@@ -2,15 +2,15 @@ import { GenericTable } from '@/components/GenericTable';
 import Pagination from '@/components/Pagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useDepartmentActions } from '@/hooks/use-department-actions';
+import { useDivisionActions } from '@/hooks/use-division-actions';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { ArrowLeft, RotateCcw, Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Toaster, toast } from 'sonner';
 
-export default function Trashed({ departments, filters = {} }) {
-    const { restore, isProcessingAction } = useDepartmentActions();
+export default function Trashed({ divisions, filters = {} }) {
+    const { restore, isProcessingAction } = useDivisionActions();
     const [confirmId, setConfirmId] = useState(null);
 
     // Estados para la búsqueda
@@ -32,7 +32,7 @@ export default function Trashed({ departments, filters = {} }) {
         }
 
         const timeoutId = setTimeout(() => {
-            router.get(route('departments.trashed'), { search: searchTerm }, { preserveState: true, preserveScroll: true, replace: true });
+            router.get(route('divisions.trashed'), { search: searchTerm }, { preserveState: true, preserveScroll: true, replace: true });
         }, 300);
 
         return () => clearTimeout(timeoutId);
@@ -40,37 +40,47 @@ export default function Trashed({ departments, filters = {} }) {
 
     const columns = [
         {
-            header: 'Departamento',
+            header: 'División',
             className: 'w-1/4',
-            render: (dept) => <span className="font-semibold text-zinc-900 dark:text-zinc-50">{dept.name}</span>,
+            render: (division) => <span className="font-semibold text-zinc-900 dark:text-zinc-50">{division.name}</span>,
         },
         {
-            header: 'Área',
-            render: (dept) => (
-                <span className="rounded-md bg-zinc-100 px-2 py-1 text-[10px] font-bold text-zinc-500 uppercase dark:bg-zinc-800">
-                    {dept.area?.name || 'No asignada'}
+            header: 'Departamento',
+            render: (division) => (
+                <span className="rounded-md bg-zinc-100 px-2 py-1 text-[10px] font-bold tracking-wider text-zinc-500 uppercase dark:bg-zinc-800">
+                    {division.department?.name || 'No asignado'}
                 </span>
             ),
         },
         {
-            header: 'Correo',
-            render: (dept) => <span className="text-sm text-zinc-600 dark:text-zinc-400">{dept.email_department}</span>,
+            header: 'Área',
+            render: (division) => (
+                <span className="text-sm text-zinc-600 dark:text-zinc-400">{division.department?.area?.name || 'No asignado'}</span>
+            ),
+        },
+        {
+            header: 'Características',
+            render: (division) => (
+                <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                    {division.characteristics || <span className="text-zinc-400 italic">Sin características</span>}
+                </span>
+            ),
         },
         {
             header: 'Acciones',
             className: 'text-right',
-            render: (dept) => (
+            render: (division) => (
                 <div className="flex justify-end gap-2">
-                    {confirmId === dept.id ? (
+                    {confirmId === division.id ? (
                         <div className="animate-in fade-in slide-in-from-right-2 flex items-center gap-2">
                             <span className="text-sm font-medium text-zinc-500">¿Restaurar?</span>
                             <button
                                 type="button"
-                                onClick={() => restore(dept.id, () => setConfirmId(null))}
-                                disabled={isProcessingAction === dept.id}
+                                onClick={() => restore(division.id, () => setConfirmId(null))}
+                                disabled={isProcessingAction === division.id}
                                 className="rounded-lg bg-green-600 px-3 py-1 text-xs font-bold text-white transition-colors hover:bg-green-700 disabled:opacity-50"
                             >
-                                {isProcessingAction === dept.id ? '...' : 'Sí'}
+                                {isProcessingAction === division.id ? '...' : 'Sí'}
                             </button>
                             <button
                                 type="button"
@@ -84,7 +94,7 @@ export default function Trashed({ departments, filters = {} }) {
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setConfirmId(dept.id)}
+                            onClick={() => setConfirmId(division.id)}
                             className="h-8 border-zinc-200 hover:bg-green-50 hover:text-green-600 dark:border-zinc-800"
                         >
                             <RotateCcw className="mr-2 h-3.5 w-3.5" />
@@ -98,18 +108,18 @@ export default function Trashed({ departments, filters = {} }) {
 
     return (
         <AppLayout>
-            <Head title="Papelera de Departamentos" />
+            <Head title="Papelera de Divisiones" />
             <Toaster position="top-right" richColors />
 
             <div className="space-y-6 p-4 md:p-8">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Papelera de Departamentos</h1>
-                        <p className="text-sm text-zinc-500">Consulta y recupera los departamentos eliminados.</p>
+                        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Papelera de Divisiones</h1>
+                        <p className="text-sm text-zinc-500">Consulta y recupera las divisiones eliminadas.</p>
                     </div>
                     <Button asChild className="bg-zinc-900 dark:bg-zinc-50 dark:text-zinc-900">
-                        <Link href={route('departments.index')}>
-                            <ArrowLeft className="mr-2 h-4 w-4" /> Volver a Departamentos
+                        <Link href={route('divisions.index')}>
+                            <ArrowLeft className="mr-2 h-4 w-4" /> Volver a Divisiones
                         </Link>
                     </Button>
                 </div>
@@ -117,13 +127,13 @@ export default function Trashed({ departments, filters = {} }) {
                 {/* UI de Búsqueda */}
                 <div className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
                     <div className="relative w-full md:w-1/3">
-                        <label htmlFor="search-trashed-depts" className="sr-only">
+                        <label htmlFor="search-trashed-divisions" className="sr-only">
                             Buscar en papelera
                         </label>
                         <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-400" />
                         <Input
-                            id="search-trashed-depts"
-                            placeholder="Buscar departamento borrado..."
+                            id="search-trashed-divisions"
+                            placeholder="Buscar división borrada..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="h-10 w-full rounded-lg border-zinc-200 bg-white pl-9 focus-visible:ring-zinc-500 dark:border-zinc-800 dark:bg-zinc-950"
@@ -131,8 +141,9 @@ export default function Trashed({ departments, filters = {} }) {
                     </div>
                 </div>
 
-                <GenericTable data={departments?.data || []} columns={columns} />
-                <Pagination links={departments?.links || []} />
+                <GenericTable data={divisions?.data || []} columns={columns} />
+
+                <Pagination links={divisions?.links || []} />
             </div>
         </AppLayout>
     );

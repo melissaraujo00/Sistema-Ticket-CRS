@@ -134,14 +134,6 @@ class TicketController extends Controller
             ->get();
 
 
-        // $resolvedTickets = TicketSolution::with(['ticket','user','ticket.department'])
-        //                 ->whereHas('ticket', function($query) {
-        //                     $query->where('requesting_user', auth()->id());
-        //                 })
-        //                 ->whereDoesntHave('ticket.qualification')
-        //                 ->orderBy('created_at', 'desc')
-        //                 ->get();
-
         return Inertia::render('tickets/index', [
             'tickets' => $tickets,
             'resolvedTickets' => $resolvedTickets

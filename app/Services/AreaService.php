@@ -4,9 +4,27 @@ namespace App\Services;
 
 use App\Models\Area;
 use Exception;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class AreaService
 {
+    /**
+     * Obtiene las áreas paginadas y filtradas para el datatable principal.
+     */
+    public function getPaginatedAreas(array $filters): LengthAwarePaginator
+    {
+        return Area::when($filters['search'] ?? null, function ($query, $search) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
+        })
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+    }
+
+
     /**
      * Obtiene todas las áreas ordenadas por las más recientes.
      */
@@ -23,9 +41,18 @@ class AreaService
         return Area::create($data);
     }
 
-    public function getTrashedAreas()
+    public function getTrashedAreas(array $filters = []): LengthAwarePaginator
     {
-        return Area::onlyTrashed()->latest()->get();
+        return Area::onlyTrashed()
+            ->when($filters['search'] ?? null, function ($query, $search) {
+                $query->where(function($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                });
+            })
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
     }
 
     /**
