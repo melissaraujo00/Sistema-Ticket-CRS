@@ -104,7 +104,8 @@ class TicketController extends Controller
             'ticketSolutions.solutionType',
             'ticketSolutions.attachments',
             'histories',
-            'histories.user'
+            'histories.user',
+            'qualification'
         ]);
 
         return Inertia::render('tickets/show', [
@@ -290,6 +291,15 @@ class TicketController extends Controller
         if ($department && $department->heads->count()) {
             foreach ($department->heads as $head) {
                 $head->notify(new NewTicketNotification($ticket));
+            }
+        }
+
+        $headIds = $department ? $department->heads->pluck('id') : collect();
+        $globalAdmins = \App\Models\User::role(['admin', 'superadmin'])->get();
+
+        foreach ($globalAdmins as $admin) {
+            if (!$headIds->contains($admin->id)) {
+                $admin->notify(new NewTicketNotification($ticket));
             }
         }
 

@@ -24,10 +24,11 @@ import {
     Info,
     Download,
     Eye,
-    X,
-    FileIcon
+    FileIcon,
+    X
 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
+import TicketRatingModal from '@/components/rating/calificationModal';
 
 export default function Show({ ticket }) {
     // ==========================================
@@ -35,17 +36,40 @@ export default function Show({ ticket }) {
     // ==========================================
     const { auth } = usePage().props;
     const userRoles = auth?.user?.roles || [];
-
-    
+    const userId = auth?.user?.id;
 
     // Solo permitimos ver la nota interna a superadmin, admin o agente
     const canViewInternalNote = userRoles.some(role => ['superadmin', 'admin', 'agent'].includes(role));
+    const isAgent = userRoles.includes('agent');
+    
+    // IMPORTANTE: Aseguramos que comparamos IDs numéricos para evitar fallos
+    const isOwner = ticket && ticket.requesting_user && userId ? Number(ticket.requesting_user) === Number(userId) : false;
+
     const [openCancelModal, setOpenCancelModal] = useState(false);
     const [cancellationReason, setCancellationReason] = useState('');
     const [processingCancel, setProcessingCancel] = useState(false);
     const [cancelErrors, setCancelErrors] = useState({});
     const [previewFile, setPreviewFile] = useState(null);
-    
+
+    // Estado para el modal de calificación
+    const [ratingModalOpen, setRatingModalOpen] = useState(() => {
+        // Abrir automáticamente si está resuelto, es el dueño, no tiene calificación
+        // y ademas viene específicamente de la notificación (parámetro rating=true)
+        if (!ticket || !isOwner) return false;
+        
+        const isResolved = ticket.status?.name === 'Resuelto' || ticket.status?.name === 'Cerrado';
+        const hasQualification = !!ticket.qualification;
+        
+        // Verificar si existe el parámetro 'rating' en la URL
+        const queryParams = new URLSearchParams(window.location.search);
+        const comingFromNotification = queryParams.get('rating') === 'true';
+
+        return isResolved && !hasQualification && comingFromNotification;
+    });
+
+    // Usar rutas estáticas para evitar errores de ziggy-js si no está inicializado
+    const backRoute = isAgent ? '/dashboard' : '/mis-tickets';
+
     const isImage = (fileType) => {
         return fileType && fileType.startsWith('image/');
     };
@@ -68,7 +92,7 @@ export default function Show({ ticket }) {
         setProcessingCancel(true);
         setCancelErrors({});
 
-        router.put(route('tickets.cancel', ticket.id), {
+        router.put(`/tickets/${ticket.id}/cancel`, {
             cancellation_reason: cancellationReason,
         }, {
             onSuccess: () => {
@@ -104,7 +128,7 @@ export default function Show({ ticket }) {
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
                     <div className="flex items-center gap-4">
                         <Button variant="outline" size="icon" className="rounded-full" asChild>
-                            <Link href={route('tickets.my')}>
+                            <Link href={backRoute}>
                                 <ArrowLeft className="h-4 w-4" />
                             </Link>
                         </Button>
@@ -336,10 +360,10 @@ export default function Show({ ticket }) {
                                     {ticket.assigned_user ? (
                                         <div className="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-800/50 p-2 rounded-lg border border-zinc-100 dark:border-zinc-700/50">
                                             <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
-                                                {ticket.assigned_user.name.charAt(0)}
+                                                {ticket.assigned_user.name ? ticket.assigned_user.name.charAt(0) : 'U'}
                                             </div>
                                             <span className="font-semibold text-sm text-zinc-900 dark:text-zinc-200">
-                                                {ticket.assigned_user.name}
+                                                {ticket.assigned_user.name || 'Usuario'}
                                             </span>
                                         </div>
                                     ) : (
@@ -487,6 +511,13 @@ export default function Show({ ticket }) {
                     </div>
                 </div>
             )}
+
+            <TicketRatingModal
+                isOpen={ratingModalOpen}
+                onClose={() => setRatingModalOpen(false)}
+                ticket={ticket}
+                onNext={() => setRatingModalOpen(false)}
+            />
         </AppLayout>
     );
 }

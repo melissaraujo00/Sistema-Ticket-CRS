@@ -45,15 +45,26 @@ const NotificationItem = ({ notification, onMarkAsRead }) => {
 };
 
 export function NotificationsDropdown() {
-    const { notifications } = usePage().props;
+    const { props } = usePage();
+    const notifications = props.notifications || [];
+    
     // ✅ Sincroniza el estado local con las props (evita datos obsoletos)
-    const [unread, setUnread] = useState(() =>
-        (notifications || []).filter(n => !n.read_at)
-    );
+    const [unread, setUnread] = useState([]);
+
+    // ✅ Obtiene notificaciones no leídas desde el estado de props
+    const getUnreadNotifications = (notifications) => {
+        if (!notifications) return [];
+        
+        const list = Array.isArray(notifications) 
+            ? notifications 
+            : Object.values(notifications);
+        
+        return list.filter(n => typeof n === 'object' && n !== null && !n.read_at);
+    };
 
     // ✅ Actualiza el estado cuando cambian las props (ej: nuevas notificaciones desde el servidor)
     useEffect(() => {
-        setUnread((notifications || []).filter(n => !n.read_at));
+        setUnread(getUnreadNotifications(notifications));
     }, [notifications]);
 
     const unreadCount = unread.length;
