@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button.jsx';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Search, X, Eye, EyeOff } from 'lucide-react';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { debounce } from 'lodash';
 
 export default function Faq({ knowledges = { data: [], links: [] }, categories = [], filters = {} }) {
@@ -33,6 +33,8 @@ export default function Faq({ knowledges = { data: [], links: [] }, categories =
     const [categoryId, setCategoryId] = useState(filters.category_id || 'all');
     const [showDeleted, setShowDeleted] = useState(filters.show_deleted || false);
     const [showDeletedCategories, setShowDeletedCategories] = useState(filters.show_deleted_categories || false);
+
+    const isFirstRender = useRef(true);
 
     const breadcrumbs = [
         { title: 'Dashboard', href: '/dashboard' },
@@ -57,6 +59,10 @@ export default function Faq({ knowledges = { data: [], links: [] }, categories =
     );
 
     useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
         updateFilters(search, categoryId, showDeleted, showDeletedCategories);
     }, [search, categoryId, showDeleted, showDeletedCategories]);
 
