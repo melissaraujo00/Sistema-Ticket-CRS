@@ -8,6 +8,7 @@ use App\Models\TicketHistory;
 use App\Models\Status;
 use App\Models\Priority;
 use App\Models\SlaPlan;
+use App\Notifications\TicketResolvedNotification;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 
@@ -99,6 +100,26 @@ class TicketObserver
                 $this->createHistory($ticket, ActionTypeEnum::SLA_PAUSED, [
                     'internal_note' => 'El conteo del SLA ha sido pausado debido al estado del ticket.'
                 ]);
+            }
+        }
+    }
+
+    /**
+     * Se ejecuta después de que los cambios se han guardado en la base de datos.
+     */
+    public function updated(Ticket $ticket): void
+    {
+        // NOTIFICAR AL USUARIO CUANDO EL TICKET SE RESUELVE O CIERRA
+        if ($ticket->wasChanged('status_id')) {
+            $newStatus = Status::find($ticket->status_id);
+            
+            if (
+                $newStatus &&
+                in_array($newStatus->name, ['Resuelto', 'Cerrado']) &&
+                $ticket->requestingUser &&
+                $ticket->requesting_user !== Auth::id()
+            ) {
+                $ticket->requestingUser->notify(new TicketResolvedNotification($ticket));
             }
         }
     }

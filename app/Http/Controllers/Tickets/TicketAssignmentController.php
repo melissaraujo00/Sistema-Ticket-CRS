@@ -15,6 +15,7 @@ use App\Models\Status;
 use App\Models\Ticket;
 use App\Models\TicketHistory;
 use App\Models\User;
+use App\Notifications\TicketAssignedNotification;
 use Spatie\OpeningHours\OpeningHours;
 use Carbon\Carbon;
 use Exception;
@@ -123,6 +124,12 @@ class TicketAssignmentController extends Controller
             $updateData['expiration_date'] = $this->calculateWorkingHoursExpiration($slaPlan->grace_time_hours);
         }
         $ticket->update($updateData);
+
+        // Notificar al técnico asignado
+        $tecnico = User::find($validated['assigned_user']);
+        if ($tecnico) {
+            $tecnico->notify(new TicketAssignedNotification($ticket));
+        }
 
         return redirect()->back()->with('success', 'Ticket asignado y actualizado correctamente.');
     }

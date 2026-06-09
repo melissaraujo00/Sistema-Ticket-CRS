@@ -42,7 +42,7 @@ class NewTicketNotification extends Notification
             'ticket_id' => $this->ticket->id,
             'ticket_code' => $this->ticket->code,
             'subject' => $this->ticket->subject,
-            'message' => 'Nuevo ticket pendiente de asignación.',
+            'message' => "Nuevo ticket #{$this->ticket->code} pendiente de asignación.",
             'type' => 'new_ticket',
             'url' => route('tickets.unassigned'),
         ];

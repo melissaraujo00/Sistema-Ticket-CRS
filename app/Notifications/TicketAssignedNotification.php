@@ -41,7 +41,8 @@ class TicketAssignedNotification extends Notification
             'ticket_code' => $this->ticket->code,
             'subject' => $this->ticket->subject,
             'message' => 'Se te ha asignado un ticket.',
-            'type' => 'ticket_assigned'
+            'type' => 'ticket_assigned',
+            'url' => route('tickets.show', $this->ticket->id),
         ];
     }
 }
