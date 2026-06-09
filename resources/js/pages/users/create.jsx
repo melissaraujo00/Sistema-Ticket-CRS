@@ -77,6 +77,7 @@ export default function Create({ departments = [], roles = [], areas = [] }) {
                                     placeholder="correo@ejemplo.com"
                                     value={data.email}
                                     onChange={(e) => setData('email', e.target.value)}
+                                    onKeyDown={(e) => e.key === ' ' && e.preventDefault()}
                                     className="h-12 rounded-xl border-zinc-200 bg-zinc-50/30 focus-visible:ring-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/30"
                                 />
                                 {errors.email && <p className="text-xs font-medium text-red-500">{errors.email}</p>}

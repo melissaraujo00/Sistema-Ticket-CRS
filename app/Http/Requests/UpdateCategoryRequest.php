@@ -22,10 +22,12 @@ class UpdateCategoryRequest extends FormRequest
                 'required',
                 'string',
                 'max:60',
+                'regex:/^[a-zA-Z\pL].*$/u',
                 function ($attribute, $value, $fail) use ($categoryId) {
+                    $normalizedValue = mb_strtolower(str_replace(' ', '', $value));
                     $exists = Category::withTrashed()
-                        ->where('name', $value)
                         ->where('id', '!=', $categoryId)
+                        ->whereRaw('LOWER(REPLACE(name, " ", "")) = ?', [$normalizedValue])
                         ->first();
 
                     if ($exists) {
@@ -34,7 +36,6 @@ class UpdateCategoryRequest extends FormRequest
                             : $fail('Ya existe otra categoría activa con este nombre.');
                     }
                 },
-                'regex:/^(?=.*[\pL])[\pL\s0-9\-]+$/u'
             ],
             'description' => ['nullable', 'string'],
         ];
@@ -46,7 +47,7 @@ class UpdateCategoryRequest extends FormRequest
             'name.required' => 'El nombre de la categoría es obligatorio.',
             'name.string' => 'El nombre debe ser una cadena de texto válida.',
             'name.max' => 'El nombre no puede superar los 60 caracteres.',
-            'name.regex' => 'El nombre solo puede contener letras, números, espacios y guiones.',
+            'name.regex' => 'El nombre debe comenzar con una letra.',
             'description.string' => 'La descripción debe ser una cadena de texto.',
         ];
     }
