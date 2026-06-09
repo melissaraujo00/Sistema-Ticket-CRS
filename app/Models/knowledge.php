@@ -32,6 +32,6 @@ class knowledge extends Model
 
     public function helpTopics()
     {
-        return $this->hasMany(HelpTopic::class, 'division_id');
+        return $this->hasMany(HelpTopic::class, 'knowledge_id');
     }
 }

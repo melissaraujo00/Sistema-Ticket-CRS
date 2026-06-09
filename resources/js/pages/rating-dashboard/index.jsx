@@ -31,7 +31,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { useState, useMemo } from 'react';
+import { router } from '@inertiajs/react';
 import RatingExportModal from '@/components/rating-dashboard/RatingExportModal';
 
 const breadcrumbs = [
@@ -40,6 +48,21 @@ const breadcrumbs = [
 ];
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+const MONTHS = [
+    { value: 1, label: 'Enero' },
+    { value: 2, label: 'Febrero' },
+    { value: 3, label: 'Marzo' },
+    { value: 4, label: 'Abril' },
+    { value: 5, label: 'Mayo' },
+    { value: 6, label: 'Junio' },
+    { value: 7, label: 'Julio' },
+    { value: 8, label: 'Agosto' },
+    { value: 9, label: 'Septiembre' },
+    { value: 10, label: 'Octubre' },
+    { value: 11, label: 'Noviembre' },
+    { value: 12, label: 'Diciembre' },
+];
 
 function KpiCard({ icon: Icon, title, value, description, colorClass }) {
     return (
@@ -66,10 +89,29 @@ export default function RatingDashboard({
     monthlyTrend = [],
     distribution = [],
     departmentPerformance = [],
-    updated_at,
+    currentPeriod = { month: new Date().getMonth() + 1, year: new Date().getFullYear() },
     error
 }) {
     const [exportOpen, setExportOpen] = useState(false);
+
+    // Opciones de años (del actual hacia atrás 2 años)
+    const years = useMemo(() => {
+        const currentYear = new Date().getFullYear();
+        return [currentYear, currentYear - 1, currentYear - 2];
+    }, []);
+
+    const handlePeriodChange = (month, year) => {
+        const m = month ? parseInt(month) : currentPeriod.month;
+        const y = year ? parseInt(year) : currentPeriod.year;
+
+        router.get(route('ratings.dashboard'), { 
+            month: m, 
+            year: y 
+        }, {
+            preserveState: true,
+            replace: true
+        });
+    };
 
     // Normalizar rankings
     const rankings = (technicianRankings || []).map(t => ({
@@ -85,8 +127,7 @@ export default function RatingDashboard({
                     <AlertCircle className="w-16 h-16 text-red-500 mb-2" />
                     <h2 className="text-xl font-semibold">{error}</h2>
                     <p className="text-muted-foreground text-center">
-                        Las estadísticas se generan periódicamente.<br />
-                        Prueba ejecutar: <code className="bg-muted px-2 py-1 rounded text-xs">php artisan app:update-technical-stats-rating</code>
+                        Las estadísticas se generan periódicamente.
                     </p>
                 </div>
             </AppLayout>
@@ -95,9 +136,9 @@ export default function RatingDashboard({
 
     // Preparar datos para distribución
     const distributionData = (Array.isArray(distribution) ? distribution : [])
-        .map(item => ({ 
-            name: `${item.score} ★`, 
-            value: Number(item.total ?? item.count ?? 0) 
+        .map(item => ({
+            name: `${item.score} ★`,
+            value: Number(item.total ?? item.count ?? 0)
         }))
         .sort((a, b) => b.name.localeCompare(a.name));
 
@@ -113,19 +154,52 @@ export default function RatingDashboard({
                             Análisis de desempeño y satisfacción del servicio técnico.
                         </p>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <Button 
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 p-1 rounded-lg border shadow-sm h-10">
+                            <Select 
+                                value={currentPeriod.month.toString()} 
+                                onValueChange={(val) => handlePeriodChange(val, null)}
+                            >
+                                <SelectTrigger className="w-[130px] border-none shadow-none focus:ring-0 h-8">
+                                    <Calendar className="w-4 h-4 mr-2 text-muted-foreground" />
+                                    <SelectValue placeholder="Mes" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {MONTHS.map((m) => (
+                                        <SelectItem key={m.value} value={m.value.toString()}>
+                                            {m.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+
+                            <div className="w-px h-4 bg-border" />
+
+                            <Select 
+                                value={currentPeriod.year.toString()} 
+                                onValueChange={(val) => handlePeriodChange(null, val)}
+                            >
+                                <SelectTrigger className="w-[100px] border-none shadow-none focus:ring-0 h-8">
+                                    <SelectValue placeholder="Año" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {years.map((y) => (
+                                        <SelectItem key={y} value={y.toString()}>
+                                            {y}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <Button
                             onClick={() => setExportOpen(true)}
-                            variant="outline" 
-                            className="flex items-center gap-2"
+                            variant="outline"
+                            className="flex items-center gap-2 h-10 px-4"
                         >
                             <FileText size={16} />
                             Descargar Reporte
                         </Button>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-white dark:bg-zinc-900 px-3 py-1.5 rounded-lg border">
-                            <Calendar className="w-4 h-4" />
-                            Última actualización: {updated_at ? new Date(updated_at).toLocaleString() : 'N/A'}
-                        </div>
                     </div>
                 </div>
 
@@ -135,28 +209,28 @@ export default function RatingDashboard({
                         icon={Star}
                         title="Rating Promedio"
                         value={`${stats?.ratingAverage?.toFixed(1) || 0} / 5.0`}
-                        description="Basado en calificaciones"
+                        description={`Periodo: ${MONTHS.find(m => m.value === currentPeriod.month)?.label} ${currentPeriod.year}`}
                         colorClass="bg-yellow-500"
                     />
                     <KpiCard
                         icon={CheckCircle}
                         title="Tickets Resueltos"
                         value={stats?.ticketsResolved || 0}
-                        description="Total histórico analizado"
+                        description="En el mes seleccionado"
                         colorClass="bg-green-500"
                     />
                     <KpiCard
                         icon={Clock}
                         title="Tiempo Promedio"
                         value={`${stats?.averageTime || 0}h`}
-                        description="Desde asignación a cierre"
+                        description="Cierres del periodo"
                         colorClass="bg-blue-500"
                     />
                     <KpiCard
                         icon={Users}
                         title="Técnicos Activos"
                         value={stats?.activeTechnicians || 0}
-                        description="Con actividad reciente"
+                        description="Global"
                         colorClass="bg-purple-500"
                     />
                 </div>
@@ -164,12 +238,14 @@ export default function RatingDashboard({
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Tendencia Mensual */}
                     <Card className="lg:col-span-2">
-                        <CardHeader>
-                            <CardTitle className="text-base font-medium flex items-center gap-2">
-                                <TrendingUp className="w-4 h-4 text-blue-500" />
-                                Tendencia de Calificación
-                            </CardTitle>
-                            <CardDescription>Evolución mensual del rating promedio</CardDescription>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                            <div>
+                                <CardTitle className="text-base font-medium flex items-center gap-2">
+                                    <TrendingUp className="w-4 h-4 text-blue-500" />
+                                    Tendencia de Calificación
+                                </CardTitle>
+                                <CardDescription>Evolución de los últimos 6 meses registrados</CardDescription>
+                            </div>
                         </CardHeader>
                         <CardContent>
                             <div className="h-[300px] w-full">
@@ -182,16 +258,28 @@ export default function RatingDashboard({
                                             </linearGradient>
                                         </defs>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
-                                        <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize: 12}} />
-                                        <YAxis 
-                                            domain={[0, 5]} 
-                                            ticks={[0, 1, 2, 3, 4, 5]}
+                                        <XAxis 
+                                            dataKey="month" 
                                             axisLine={false} 
                                             tickLine={false} 
                                             tick={{fontSize: 12}} 
                                         />
+                                        <YAxis
+                                            domain={[0, 5]}
+                                            ticks={[0, 1, 2, 3, 4, 5]}
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{fontSize: 12}}
+                                        />
                                         <Tooltip
                                             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                            formatter={(value) => [`${value} ★`, 'Rating']}
+                                            labelFormatter={(label, payload) => {
+                                                if (payload && payload.length > 0) {
+                                                    return `${payload[0].payload.month} ${payload[0].payload.year}`;
+                                                }
+                                                return label;
+                                            }}
                                         />
                                         <Area
                                             type="monotone"
@@ -214,7 +302,7 @@ export default function RatingDashboard({
                                 <BarChart3 className="w-4 h-4 text-orange-500" />
                                 Distribución
                             </CardTitle>
-                            <CardDescription>Frecuencia de estrellas otorgadas</CardDescription>
+                            <CardDescription>Estrellas en {MONTHS.find(m => m.value === currentPeriod.month)?.label}</CardDescription>
                         </CardHeader>
                         <CardContent className="flex flex-col items-center">
                             <div className="h-[240px] w-full">
@@ -251,9 +339,11 @@ export default function RatingDashboard({
                                     <Award className="w-4 h-4 text-yellow-500" />
                                     Top Técnicos
                                 </CardTitle>
-                                <CardDescription>Basado en rating y volumen de tickets</CardDescription>
+                                <CardDescription>Rendimiento en el periodo seleccionado</CardDescription>
                             </div>
-                            <Badge variant="outline" className="font-normal">Global</Badge>
+                            <Badge variant="outline" className="font-normal">
+                                {MONTHS.find(m => m.value === currentPeriod.month)?.label}
+                            </Badge>
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
@@ -285,7 +375,7 @@ export default function RatingDashboard({
                                     </div>
                                 ))}
                                 {rankings.length === 0 && (
-                                    <p className="text-center py-4 text-muted-foreground">No hay datos de ranking disponibles.</p>
+                                    <p className="text-center py-4 text-muted-foreground">No hay actividad registrada en este periodo.</p>
                                 )}
                             </div>
                         </CardContent>
@@ -298,7 +388,7 @@ export default function RatingDashboard({
                                 <Users className="w-4 h-4 text-purple-500" />
                                 Desempeño por Departamento
                             </CardTitle>
-                            <CardDescription>Rating promedio por área técnica</CardDescription>
+                            <CardDescription>Resultados del periodo seleccionado</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="h-[300px] w-full">
@@ -337,9 +427,9 @@ export default function RatingDashboard({
                 </div>
             </div>
 
-            <RatingExportModal 
-                open={exportOpen} 
-                onClose={() => setExportOpen(false)} 
+            <RatingExportModal
+                open={exportOpen}
+                onClose={() => setExportOpen(false)}
                 data={{
                     stats,
                     rankings,
@@ -351,3 +441,4 @@ export default function RatingDashboard({
         </AppLayout>
     );
 }
+
