@@ -1,9 +1,9 @@
 import { TrendingDown, TrendingUp } from 'lucide-react';
 
 // ─── KpiCard ──────────────────────────────────────────────────────────────────
-export function KpiCard({ icon: Icon, iconBg, iconColor, value, label, delta, positive }) {
+export function KpiCard({ icon: Icon, iconBg, iconColor, value, label, delta, positive, cardBg = 'bg-white dark:bg-sidebar' }) {
     return (
-        <div className="flex items-start gap-3 rounded-xl border border-sidebar-border bg-white p-4 dark:bg-sidebar">
+        <div className={`flex items-start gap-3 rounded-xl border border-sidebar-border p-4 ${cardBg}`}>
             <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${iconBg}`}>
                 <Icon size={20} className={iconColor} />
             </div>

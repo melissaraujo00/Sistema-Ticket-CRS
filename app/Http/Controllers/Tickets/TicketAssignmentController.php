@@ -15,6 +15,7 @@ use App\Models\Status;
 use App\Models\Ticket;
 use App\Models\TicketHistory;
 use App\Models\User;
+use Spatie\OpeningHours\OpeningHours;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -24,10 +25,10 @@ use Inertia\Inertia;
 
 class TicketAssignmentController extends Controller
 {
-   public function unassigned()
+    public function unassigned()
     {
         if (!auth()->user()->can('assign_tickets')) {
-        abort(403, 'No tienes permiso para ver tickets pendientes de asignación.');
+            abort(403, 'No tienes permiso para ver tickets pendientes de asignación.');
         }
 
         $user = auth()->user();
@@ -36,9 +37,9 @@ class TicketAssignmentController extends Controller
         // Consulta base: Cargamos la relación 'status'
         $query = Ticket::with(['department', 'helpTopic.division', 'priority', 'requestingUser', 'status', 'assignedUser'])
             ->orderBy('creation_date', 'asc')
-            ->whereHas('status', function($q) {
-            $q->where('name', '!=', 'Cerrado');
-        });
+            ->whereHas('status', function ($q) {
+                $q->where('name', '!=', 'Cerrado');
+            });
 
         if (!$user->hasRole('superadmin')) {
             $query->where('department_id', $departmentId);
@@ -114,15 +115,57 @@ class TicketAssignmentController extends Controller
         ];
 
         // Calcular fecha de expiración sumando las horas de gracia del SLA
-        if (!empty($validated['sla_plan_id'])) {
-            $slaPlan = SlaPlan::findOrFail($validated['sla_plan_id']);
-            $updateData['expiration_date'] = Carbon::parse($ticket->creation_date)->addHours($slaPlan->grace_time_hours);
-        }
+        $slaPlan = SlaPlan::findOrFail($validated['sla_plan_id']);
 
+        if ($slaPlan->working_hours == 0) {
+            $updateData['expiration_date'] = Carbon::now()->addHours($slaPlan->grace_time_hours);
+        } else {
+            $updateData['expiration_date'] = $this->calculateWorkingHoursExpiration($slaPlan->grace_time_hours);
+        }
         $ticket->update($updateData);
 
         return redirect()->back()->with('success', 'Ticket asignado y actualizado correctamente.');
     }
+
+    private function calculateWorkingHoursExpiration(int $graceHours): Carbon
+    {
+        $currentDate = Carbon::now();
+        $workStartHour = config('app.work_start', '08:00');
+        $workEndHour = config('app.work_end', '16:00');
+
+        $openingHours = OpeningHours::create([
+            'monday'    => ["$workStartHour-$workEndHour"],
+            'tuesday'   => ["$workStartHour-$workEndHour"],
+            'wednesday' => ["$workStartHour-$workEndHour"],
+            'thursday'  => ["$workStartHour-$workEndHour"],
+            'friday'    => ["$workStartHour-$workEndHour"],
+            'saturday'  => [],
+            'sunday'    => [],
+        ]);
+
+        $minutesToAdd = $graceHours * 60;
+
+        while ($minutesToAdd > 0) {
+            if (!$openingHours->isOpenAt($currentDate)) {
+                $currentDate = Carbon::instance($openingHours->nextOpen($currentDate));
+                continue;
+            }
+
+            $nextClose = Carbon::instance($openingHours->nextClose($currentDate));
+            $availableMinutes = $currentDate->diffInMinutes($nextClose);
+
+            if ($minutesToAdd <= $availableMinutes) {
+                $currentDate->addMinutes($minutesToAdd);
+                break;
+            }
+
+            $minutesToAdd -= $availableMinutes;
+            $currentDate = $nextClose->copy();
+        }
+
+        return $currentDate;
+    }
+
     public function adminClose(AdminCloseTicketRequest $request, Ticket $ticket)
     {
         $validated = $request->validated();
@@ -175,6 +218,7 @@ class TicketAssignmentController extends Controller
             'requestingUser',
             'status',
             'assignedUser',
+            'attachments',
             'histories.user' // Esto incluye 'histories' automáticamente
         ]);
 

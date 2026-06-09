@@ -11,13 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('sla_plans', function (Blueprint $table) {
-            $table->id();
-            $table->string('name', 50)->unique();
-            $table->integer('grace_time_hours');
-            $table->tinyInteger('working_hours');
-            $table->softDeletes();
-            $table->timestamps();
+        Schema::table('tickets', function (Blueprint $table) {
+            $table->text('cancellation_reason')->nullable()->after('closing_date');
         });
     }
 
@@ -26,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('sla_plans');
+        Schema::table('tickets', function (Blueprint $table) {
+            $table->dropColumn('cancellation_reason');
+        });
     }
 };

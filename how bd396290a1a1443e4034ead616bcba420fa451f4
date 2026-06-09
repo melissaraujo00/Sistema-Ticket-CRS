@@ -1,0 +1,254 @@
+[33mcommit 6887f214b76463a22d73e764f9e831c1895802e1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mticketHistory[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m
+Merge: d6655f8 bd39629
+Author: Merlyn8989 <merlynrajo@gmail.com>
+Date:   Sun May 3 20:11:51 2026 -0600
+
+    Merge branch 'main' into ticketHistory
+
+[33mcommit d6655f8769ab3859fee62daf0a40b7e38fdb15c2[m[33m ([m[1;31morigin/ticketHistory[m[33m)[m
+Author: Gustavo Rivas <gustavo.rivas1270@gmail.com>
+Date:   Sun May 3 15:19:51 2026 -0600
+
+    Politicas de seguridad de ticket hechas, eso espero
+
+[33mcommit bd396290a1a1443e4034ead616bcba420fa451f4[m
+Merge: d6a8a85 9d4d6e7
+Author: Melissa Araujo <140029893+melissaraujo00@users.noreply.github.com>
+Date:   Sat May 2 21:37:42 2026 -0600
+
+    Merge branch 'melissaraujo00:main' into main
+
+[33mcommit 9d4d6e723d68e0a9537f7de804312438093169f0[m
+Merge: b94f881 8ffa6e2
+Author: Ivan-Beltran <ivanbeltran1610@gmail.com>
+Date:   Thu Apr 30 10:26:52 2026 -0600
+
+    Merge pull request #21 from Ivan-Beltran/main
+    
+    merge main fork ivan con main de melissa
+
+[33mcommit b94f881b61c8fcfe62e4ced382f6173181094775[m
+Merge: b704cac 0d1a523
+Author: Shadow01xd <140091795+Shadow01xd@users.noreply.github.com>
+Date:   Thu Apr 30 00:58:04 2026 -0600
+
+    Merge pull request #25 from /revert-24-dev
+    
+    Revert merge of pull request #21
+
+[33mcommit 0d1a52383726ec04a73a54ed84aa5dc71eaaf8dd[m
+Author: Shadow01xd <140091795+Shadow01xd@users.noreply.github.com>
+Date:   Thu Apr 30 00:46:02 2026 -0600
+
+    Revert "Merge pull request #21 from dev"
+
+[33mcommit b704cac79e3c2245fc24d1ea01df5c6fa63bdbd6[m
+Merge: 4496a9c 5bb1065
+Author: Shadow01xd <140091795+Shadow01xd@users.noreply.github.com>
+Date:   Thu Apr 30 00:37:37 2026 -0600
+
+    Merge pull request #24 from /dev
+    
+    Merge pull request #21 from dev
+
+[33mcommit 5bb1065c78540dab0b0adb0c77cf34f6acad70da[m
+Merge: 9503013 077a9d3
+Author: Shadow01xd <140091795+Shadow01xd@users.noreply.github.com>
+Date:   Thu Apr 30 00:28:36 2026 -0600
+
+    Merge pull request  from feature/tecnico
+    
+    agreando componentes de la rama rating  y implementación de tipos de diagnosticos dinamico  por departamento
+
+[33mcommit 077a9d370fb2b9ed14c4a73dc2ba127ac18a5b17[m
+Author: AlejandroVasquez503 <alejandrovo702@gmail.com>
+Date:   Wed Apr 29 20:13:21 2026 -0600
+
+    implementación de tipos de diagnosticos dinamico y por departamento
+
+[33mcommit f1d14875f54950d590f88428166e3b606020fd97[m
+Merge: 4af797d b2adf39
+Author: Ivan-Beltran <ivanbeltran1610@gmail.com>
+Date:   Tue Apr 28 23:12:25 2026 -0600
+
+    Merge pull request #22 from Ivan-Beltran/raiting
+    
+    Raiting de fork en raiting original
+
+[33mcommit 8ffa6e2fd3eaaece3e8ef3906b323b99e4151698[m
+Merge: 4496a9c b2adf39
+Author: Ivan-Beltran <ivanbeltran1610@gmail.com>
+Date:   Tue Apr 28 22:22:05 2026 -0600
+
+    Merge pull request #1 from Ivan-Beltran/raiting
+    
+    Raiting
+
+[33mcommit b2adf39176155d540677cff7283b8ad7172f40f3[m
+Author: ivan beltran <ivanbeltran1610@gmail.com>
+Date:   Tue Apr 28 22:09:24 2026 -0600
+
+    corrigiendo errores de post
+
+[33mcommit 06c061782b6a1ea63839472e5a4471fdb18902c0[m
+Author: ivan beltran <ivanbeltran1610@gmail.com>
+Date:   Tue Apr 28 11:37:14 2026 -0600
+
+    añadiendo funcion de post a rating
+
+[33mcommit d3378ea6037ba3fac9977e8314e42ef07b1225cb[m
+Merge: 53a5262 433e224
+Author: ivan beltran <ivanbeltran1610@gmail.com>
+Date:   Mon Apr 27 23:46:57 2026 -0600
+
+    Merge branch 'main' into raiting
+
+[33mcommit 433e2247a4193550f4160667e70c0da0ad701879[m
+Author: ivan beltran <ivanbeltran1610@gmail.com>
+Date:   Mon Apr 27 23:40:39 2026 -0600
+
+    descarando despendencias
+
+[33mcommit cc79f17e1035310bcc8fa1353e32a1fb0518b0bd[m
+Merge: 1812027 4496a9c
+Author: ivan beltran <ivanbeltran1610@gmail.com>
+Date:   Mon Apr 27 23:05:37 2026 -0600
+
+    Merge branch 'main' of https://github.com/Ivan-Beltran/Sistema-Ticket-CRS
+
+[33mcommit d6a8a85016132b569964c715c77d0c9220485243[m
+Author: karlos <loboscarlos1704@gmail.com>
+Date:   Mon Apr 27 10:46:46 2026 -0600
+
+    formulario para asignar ticket
+
+[33mcommit 97b154db1e19974553372edd71f3bd66b5bac274[m
+Author: Merlyn8989 <merlynrajo@gmail.com>
+Date:   Sun Apr 26 20:57:49 2026 -0600
+
+    historial de cambio de departamento y asignacion
+
+[33mcommit 52281e9e5b6ba7e5864b4b753d8a978b3b446866[m
+Author: Merlyn8989 <merlynrajo@gmail.com>
+Date:   Sun Apr 26 17:21:10 2026 -0600
+
+    historial de creacion
+
+[33mcommit 0a9c280eb2b418ec357863b7a4a847122e88cfe2[m
+Merge: f5d9b02 4496a9c
+Author: Merlyn8989 <merlynrajo@gmail.com>
+Date:   Sun Apr 26 15:28:04 2026 -0600
+
+    agregar cambios de la main
+
+[33mcommit f5d9b02a025c9493f9fe45d2a1055378e4dc7541[m
+Author: Merlyn8989 <merlynrajo@gmail.com>
+Date:   Sun Apr 26 15:24:30 2026 -0600
+
+    cambios en migraciones
+
+[33mcommit 5bc47727c9d1931dfc362ae929dd9dd0bdffe9ef[m
+Author: Merlyn8989 <merlynrajo@gmail.com>
+Date:   Sun Apr 26 15:22:36 2026 -0600
+
+    avances en el back
+
+[33mcommit 4af797d0dfc872c887663278054f92f619a67078[m
+Merge: 8fca1a2 53a5262
+Author: Ivan-Beltran <ivanbeltran1610@gmail.com>
+Date:   Sun Apr 26 06:51:22 2026 -0600
+
+    Merge pull request #12 from Ivan-Beltran/raiting
+    
+    agregando validaciones de cantidad de estrellas y comentario al modal
+
+[33mcommit 53a5262cf99f78871881b7143a48b57369bb50a6[m
+Merge: 26d284e ec5827f
+Author: ivan beltran <ivanbeltran1610@gmail.com>
+Date:   Sun Apr 26 06:41:52 2026 -0600
+
+    Merge branch 'raiting' of https://github.com/Ivan-Beltran/Sistema-Ticket-CRS into raiting
+
+[33mcommit 26d284e1e5a28bd0842dbdb3dcb99d996c833f8a[m
+Author: ivan beltran <ivanbeltran1610@gmail.com>
+Date:   Sun Apr 26 06:16:20 2026 -0600
+
+    mostrando datos de la db en el modal
+
+[33mcommit a8f6dcae6053fd710b643a421642ebc9128c3f22[m
+Author: Merlyn8989 <merlynrajo@gmail.com>
+Date:   Sat Apr 25 20:32:41 2026 -0600
+
+    modificacion de interfaz de historial
+
+[33mcommit 4496a9ce2876b1ad919bfa08a8db32d8bfb75e76[m
+Merge: 93b16dc 9503013
+Author: Shadow01xd <140091795+Shadow01xd@users.noreply.github.com>
+Date:   Sat Apr 25 09:16:02 2026 -0600
+
+    Merge pull request #20 from dev
+    
+    fix de errores y nuevas implementaciones
+
+[33mcommit 9503013c9522325d268ec52f1c880dbb89a15208[m
+Merge: f08051f 89ce18b
+Author: Shadow01xd <140091795+Shadow01xd@users.noreply.github.com>
+Date:   Fri Apr 24 22:53:43 2026 -0600
+
+    Merge pull request #18 from feature/tecnico
+    
+    fix de errores y nuevas implementaciones
+
+[33mcommit 89ce18be945b75ada82410ded530ff2882995b59[m
+Author: Aristides <fuenteslfnss@outlook.com>
+Date:   Fri Apr 24 22:37:04 2026 -0600
+
+    fix: resolver conflictos con main
+
+[33mcommit 1518eb85b2b795760d9d0c2c746f27ac3dab6427[m
+Merge: 5df81ab 93b16dc
+Author: Aristides <fuenteslfnss@outlook.com>
+Date:   Fri Apr 24 22:29:44 2026 -0600
+
+    Merge branch 'main' of https://github.com/melissaraujo00/Sistema-Ticket-CRS into feature/tecnico
+
+[33mcommit 5df81abe1c10708955ef044a42e911c416da50ed[m
+Author: Aristides <fuenteslfnss@outlook.com>
+Date:   Fri Apr 24 22:24:10 2026 -0600
+
+    feat: sistema de reporte de incidencias y evidencias de tecnico
+
+[33mcommit 1971254adfe15208ebf8fa7b67e810f37efdd3af[m
+Merge: ff9aa5d 1812027
+Author: ivan beltran <ivanbeltran1610@gmail.com>
+Date:   Fri Apr 24 22:04:11 2026 -0600
+
+    mezclando cambios
+
+[33mcommit 181202762f07ae5ff9bfa02333df1dd5ef9a4123[m
+Author: ivan beltran <ivanbeltran1610@gmail.com>
+Date:   Fri Apr 24 22:02:13 2026 -0600
+
+    trayendo cambios
+
+[33mcommit 93b16dc2e33fe564fec4a972e546b18cf605528b[m
+Author: melissa <daliarivas11@gmail.com>
+Date:   Fri Apr 24 21:09:24 2026 -0600
+
+    agrego de codigo institucion
+
+[33mcommit 61e16709dd7fee69caec20d5490d01dd759a31e3[m
+Author: AlejandroVasquez503 <alejandrovo702@gmail.com>
+Date:   Fri Apr 24 20:40:36 2026 -0600
+
+    Arreglando problemas del sistema y aplicando mejoras al diseño
+
+[33mcommit 9b2b4858c4b7dbcf53e79f99e4b9e4d0a112355c[m
+Author: Aristides <fuenteslfnss@outlook.com>
+Date:   Fri Apr 24 16:50:10 2026 -0600
+
+    Fix: Refactor diagnostico de tickets y mejora de adjuntos en front-end
+
+[33mcommit 3b16b824c50ea60c4357cd61ece87af9c6600a9f[m
+Merge: 4dafd15 a57d233
+Au

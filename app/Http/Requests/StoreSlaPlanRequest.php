@@ -23,9 +23,27 @@ class StoreSlaPlanRequest extends FormRequest
     public function rules(): array
     {
         return [
-             'name'             => 'required|string|max:50',
-            'grace_time_hours' => 'required|integer|min:1',
+            // Corregido: apuntando a la tabla 'sla_plans'
+            'name'             => 'required|string|max:50|unique:sla_plans,name', 
+            'grace_time_hours' => 'required|integer|gt:0',
             'working_hours'    => 'required|boolean',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'El nombre es obligatorio.',
+            'name.string'   => 'El nombre debe ser una cadena de texto.',
+            'name.max'      => 'El nombre no debe exceder los 50 caracteres.',
+            'name.unique'   => 'Este nombre de SLA ya está en uso. Por favor, elige otro.', 
+            
+            'grace_time_hours.required' => 'Las horas de gracia son obligatorias.',
+            'grace_time_hours.integer'  => 'Las horas de gracia deben ser un número entero.',
+            'grace_time_hours.gt'       => 'Las horas de gracia deben ser un número positivo mayor a 0.',
+
+            'working_hours.required' => 'El campo de horas laborables es obligatorio.',
+            'working_hours.boolean'  => 'El campo de horas laborables debe ser verdadero o falso.',
         ];
     }
 }

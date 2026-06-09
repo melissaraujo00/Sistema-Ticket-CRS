@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use Inertia\Inertia;
 use App\Http\Controllers\SlaPlanController;
-use App\Http\Controllers\PriorityController;
 use App\Http\Controllers\TecnicoController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\AreaController;
@@ -59,9 +58,6 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/sla-plans/{id}/restore', [SlaPlanController::class, 'restore'])->name('sla-plans.restore');
     Route::resource('/sla-plans', SlaPlanController::class);
 
-    // --- E. PRIORIDADES ---
-    Route::resource('priorities', PriorityController::class);
-
     // --- F. ÁREA TÉCNICA (agente | admin) ---
     Route::middleware(['role:agent|admin'])->prefix('agent')->group(function () {
         Route::get('/dashboard', function () {
@@ -91,7 +87,6 @@ Route::middleware(['auth'])->group(function () {
     // --- G. CATÁLOGOS ---
     Route::middleware(['permission:manage_catalogs'])->group(function () {
         Route::resource('sla-plans', SlaPlanController::class);
-        Route::resource('priorities', PriorityController::class);
     });
 
     // --- H. GESTIÓN DE USUARIOS ---
@@ -101,6 +96,17 @@ Route::middleware(['auth'])->group(function () {
 
         Route::resource('users', UserController::class);
     });
+
+
+    Route::post('/qualifications', [QualificationController::class, 'store']);
+
+    // Knowledge
+    Route::middleware(['role:superadmin'])->group(function () {
+        Route::resource('category', CategoryController::class);
+    });
+
+    Route::middleware(['role:superadmin'])->group(function () {
+        Route::resource('faq', KnowledgeController::class);
 
     Route::post('/qualifications', [QualificationController::class, 'store']);
 
@@ -136,6 +142,8 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('faq/{id}/force', [KnowledgeController::class, 'forceDelete'])->name('faq.force-delete');
         Route::resource('faq', KnowledgeController::class);
     });
+});
+
 });
 
 // ==========================================

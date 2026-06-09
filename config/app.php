@@ -123,4 +123,14 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Horario Laboral de la Empresa
+    |--------------------------------------------------------------------------
+    | Aquí definimos la hora de apertura y cierre para el cálculo de los SLA.
+    | Toma el valor del archivo .env, y si no existe, usa 08:00 y 16:00 por defecto.
+    */
+    'work_start' => env('WORK_START_HOUR', '08:00'),
+    'work_end'   => env('WORK_END_HOUR', '16:00'),
+
 ];
