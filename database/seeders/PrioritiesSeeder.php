@@ -5,14 +5,14 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Priority;
 
-class PrioritiesTableSeeder extends Seeder
+class PrioritiesSeeder extends Seeder
 {
     public function run(): void
     {
         $priorities = [
             [
                 'name'  => 'Baja',
-                'color' => '#28a745', // verde
+                'color' => '#28a745',
                 'level' => 1,
             ],
             [
@@ -26,7 +26,7 @@ class PrioritiesTableSeeder extends Seeder
                 'level' => 3,
             ],
             [
-                'name'  => 'Crítica',
+                'name'  => 'Urgente',
                 'color' => '#dc3545', // rojo
                 'level' => 4,
             ],
@@ -34,8 +34,11 @@ class PrioritiesTableSeeder extends Seeder
 
         foreach ($priorities as $priority) {
             Priority::firstOrCreate(
-                ['level' => $priority['level']], // usamos level como identificador único
-                $priority
+                ['level' => $priority['level']], 
+                [                               
+                    'name'  => $priority['name'],
+                    'color' => $priority['color']
+                ]
             );
         }
     }

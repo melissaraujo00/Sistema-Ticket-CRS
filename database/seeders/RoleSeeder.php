@@ -30,6 +30,7 @@ class RoleSeeder extends Seeder
             'ver tickets',
             'view_all_tickets',
             'manage_areas', 'manage_departments', 'manage_divisions',
+            'view_sla_expiration'
         ];
 
         foreach ($permissions as $permissionName) {
@@ -46,11 +47,11 @@ class RoleSeeder extends Seeder
 
         $adminRole->syncPermissions([
             'manage_area_tickets', 'assign_tickets', 'view_area_dashboard',
-            'create_tickets', 'view_own_tickets'
+            'create_tickets', 'view_own_tickets', 'view_sla_expiration'
         ]);
 
         $agentRole->syncPermissions([
-            'view_assigned_tickets', 'solve_tickets', 'return_tickets'
+            'view_assigned_tickets', 'solve_tickets', 'return_tickets', 'view_sla_expiration'
         ]);
 
         $userRole->syncPermissions([

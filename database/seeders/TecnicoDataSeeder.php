@@ -44,11 +44,13 @@ class TecnicoDataSeeder extends Seeder
         $prioridadBaja = Priority::firstOrCreate(['name' => 'Baja', 'color' => '#28a745', 'level' => 1]);
         $prioridadMedia = Priority::firstOrCreate(['name' => 'Media', 'color' => '#ffc107', 'level' => 2]);
         $prioridadAlta = Priority::firstOrCreate(['name' => 'Alta', 'color' => '#fd7e14', 'level' => 3]);
-        $prioridadCritica = Priority::firstOrCreate(['name' => 'Crítica', 'color' => '#dc3545', 'level' => 4]);
+        $prioridadCritica = Priority::firstOrCreate(['name' => 'Urgente', 'color' => '#dc3545', 'level' => 4]);
 
         // Crear planes SLA
-        $slaBasico = SlaPlan::firstOrCreate(['name' => 'Básico', 'grace_time_hours' => 48, 'working_hours' => 9]);
-        $slaPremium = SlaPlan::firstOrCreate(['name' => 'Premium', 'grace_time_hours' => 24, 'working_hours' => 7]);
+        $slaPlata = SlaPlan::firstOrCreate(['name' => 'Plata'], ['grace_time_hours' => 48, 'working_hours' => 1] );
+
+        // Nivel superior (lo que antes era "Premium")
+        $slaOro = SlaPlan::firstOrCreate(['name' => 'Oro'],['grace_time_hours' => 24, 'working_hours' => 0]);
 
 
         // 1. BUSCAR categorías existentes (Creadas por CategorySeeder)
@@ -69,9 +71,9 @@ class TecnicoDataSeeder extends Seeder
         $divisionRed = Division::firstOrCreate(['name' => 'Soporte Red', 'characteristics' => 'Redes', 'department_id' => $deptSoporte->id]);
 
         // Crear temas de ayuda (Vinculando lo que encontramos)
-        $temaHardware = HelpTopic::firstOrCreate(['name_topic' => 'Hardware', 'division_id' => $divisionHardware->id, 'priority_id' => $prioridadMedia->id, 'sla_plan_id' => $slaBasico->id, 'knowledge_id' => $knowledgeHardware->id]);
-        $temaSoftware = HelpTopic::firstOrCreate(['name_topic' => 'Software', 'division_id' => $divisionSoftware->id, 'priority_id' => $prioridadAlta->id, 'sla_plan_id' => $slaPremium->id, 'knowledge_id' => $knowledgeSoftware->id]);
-        $temaRed = HelpTopic::firstOrCreate(['name_topic' => 'Red', 'division_id' => $divisionRed->id, 'priority_id' => $prioridadCritica->id, 'sla_plan_id' => $slaPremium->id, 'knowledge_id' => $knowledgeRed->id]);
+        $temaHardware = HelpTopic::firstOrCreate(['name_topic' => 'Hardware', 'division_id' => $divisionHardware->id, 'priority_id' => $prioridadMedia->id, 'sla_plan_id' =>  $slaPlata->id, 'knowledge_id' => $knowledgeHardware->id]);
+        $temaSoftware = HelpTopic::firstOrCreate(['name_topic' => 'Software', 'division_id' => $divisionSoftware->id, 'priority_id' => $prioridadAlta->id, 'sla_plan_id' => $slaOro ->id, 'knowledge_id' => $knowledgeSoftware->id]);
+        $temaRed = HelpTopic::firstOrCreate(['name_topic' => 'Red', 'division_id' => $divisionRed->id, 'priority_id' => $prioridadCritica->id, 'sla_plan_id' =>  $slaOro ->id, 'knowledge_id' => $knowledgeRed->id]);
 
         // Crear tickets de ejemplo
         $tickets = [
@@ -84,7 +86,7 @@ class TecnicoDataSeeder extends Seeder
                 'assigned_user' => $tecnico1->id,
                 'help_topic_id' => $temaHardware->id,
                 'priority_id' => $prioridadMedia->id,
-                'sla_plan_id' => $slaBasico->id,
+                'sla_plan_id' => $slaPlata->id,
                 'department_id' => $deptSoporte->id,
                 'status_id' => $estadoEnProceso->id,
                 'creation_date' => Carbon::now()->subDays(2),
@@ -100,7 +102,7 @@ class TecnicoDataSeeder extends Seeder
                 'assigned_user' => $tecnico1->id,
                 'help_topic_id' => $temaSoftware->id,
                 'priority_id' => $prioridadAlta->id,
-                'sla_plan_id' => $slaPremium->id,
+                'sla_plan_id' => $slaOro->id,
                 'department_id' => $deptSistemas->id,
                 'status_id' => $estadoResuelto->id,
                 'creation_date' => Carbon::now()->subDays(5),
@@ -116,7 +118,7 @@ class TecnicoDataSeeder extends Seeder
                 'assigned_user' => $tecnico1->id,
                 'help_topic_id' => $temaRed->id,
                 'priority_id' => $prioridadCritica->id,
-                'sla_plan_id' => $slaPremium->id,
+                'sla_plan_id' => $slaOro->id,
                 'department_id' => $deptSoporte->id,
                 'status_id' => $estadoEnProceso->id,
                 'creation_date' => Carbon::now()->subHours(6),
@@ -132,7 +134,7 @@ class TecnicoDataSeeder extends Seeder
                 'assigned_user' => $tecnico1->id,
                 'help_topic_id' => $temaHardware->id,
                 'priority_id' => $prioridadBaja->id,
-                'sla_plan_id' => $slaBasico->id,
+                'sla_plan_id' => $slaPlata->id,
                 'department_id' => $deptSoporte->id,
                 'status_id' => $estadoCerrado->id,
                 'creation_date' => Carbon::now()->subWeek(),
@@ -148,7 +150,7 @@ class TecnicoDataSeeder extends Seeder
                 'assigned_user' => $tecnico1->id,
                 'help_topic_id' => $temaSoftware->id,
                 'priority_id' => $prioridadAlta->id,
-                'sla_plan_id' => $slaPremium->id,
+                'sla_plan_id' => $slaPlata->id,
                 'department_id' => $deptSistemas->id,
                 'status_id' => $estadoEnProceso->id,
                 'creation_date' => Carbon::now()->subDay(),

@@ -27,10 +27,10 @@ class StoreTicketRequest extends FormRequest
             'department_id' => 'required|exists:departments,id',
             'division_id' => 'required|exists:divisions,id',
             'help_topic_id' => 'required|exists:help_topics,id',
-            'subject' => 'required|string|max:255',
+            'subject' => 'required|string|max:200',
             'message' => 'required|string',
             'attachments' => 'nullable|array',
-            'attachments.*' => 'file|max:10240',
+            'attachments.*' => 'file|mimes:jpg,jpeg,png,pdf,xlsx|max:10240'
         ];
     }
     
@@ -45,7 +45,7 @@ class StoreTicketRequest extends FormRequest
             'subject.max'            => 'El asunto no puede superar los 200 caracteres.',
             'message.required'       => 'El mensaje es obligatorio.',
             'attachments.*.max'   => 'Cada archivo no debe superar los 10MB.',
-        'attachments.*.mimes' => 'Archivos permitidos: JPG, PNG, PDF, DOC, DOCX.',
+            'attachments.*.mimes' => 'Archivos permitidos: JPG, PNG, PDF, XLSX',
         ];
     }
 }

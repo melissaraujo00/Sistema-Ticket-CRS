@@ -8,6 +8,8 @@ import {
     CircleDot,
     StickyNote,
     UserPlus,
+    X,
+    CheckCircle,
     History as HistoryIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,6 +22,11 @@ const actionMeta = {
     assigned: { label: "Asignación", icon: UserPlus, tone: "bg-emerald-500/10 text-emerald-600" },
     internal_note: { label: "Nota interna", icon: StickyNote, tone: "bg-zinc-500/10 text-zinc-600" },
     status_changed: { label: "Estado", icon: CircleDot, tone: "bg-violet-500/10 text-violet-600" },
+    sla_paused: { label: "SLA Pausado", icon: Clock, tone: "bg-zinc-500/10 text-zinc-600" },
+    sla_resumed: { label: "SLA Reanudado", icon: Clock, tone: "bg-blue-500/10 text-blue-600" },
+    sla_expired: { label: "SLA Incumplido", icon: X, tone: "bg-red-500 text-white font-bold animate-pulse" },
+    sla_met: { label: "SLA Cumplido", icon: CheckCircle, tone: "bg-emerald-500/10 text-emerald-600" },
+    sla_plan_changed: { label: "Plan SLA", icon: HistoryIcon, tone: "bg-indigo-500/10 text-indigo-600" },
 };
 
 export default function index() {
@@ -58,6 +65,16 @@ export default function index() {
                 return "cambió el estado del ticket";
             case 'internal_note':
                 return "agregó una nota interna";
+            case 'sla_paused':
+                return "pausó el conteo del SLA";
+            case 'sla_resumed':
+                return "reanudó el conteo del SLA";
+            case 'sla_expired':
+                return "registró un incumplimiento de SLA";
+            case 'sla_met':
+                return "registró el cumplimiento de SLA";
+            case 'sla_plan_changed':
+                return "cambió el plan SLA del ticket";
             default:
                 return "realizó una actualización";
         }

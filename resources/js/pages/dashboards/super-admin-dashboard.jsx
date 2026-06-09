@@ -7,8 +7,8 @@ import {
 } from 'recharts';
 
 import { DashCard, KpiCard } from '@/components/componts-dashadmin/dash-components';
+import TicketPreview          from '@/components/componts-dashadmin/Ticketpreview';
 import ExportModal            from '@/components/componts-dashadmin/Exportmodal.jsx';
-import TicketPreview          from '@/components/componts-dashadmin/Ticketpreview.jsx';
 import TicketsTable           from '@/components/componts-dashadmin/TicketsTable';
 
 export default function SuperAdminDashboard() {
@@ -52,7 +52,7 @@ export default function SuperAdminDashboard() {
         const next = { ...dateRange, to: e.target.value };
         setDateRange(next);
         if (next.from && next.to) applyFilter(next);
-        else if (!next.to)        applyFilter(next);
+        else if (!next.to)        applyFilter(next);    
     };
 
     const clearFilter = () => {

@@ -2,6 +2,10 @@ import React from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
+import { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import {
     ArrowLeft,
     User,
@@ -17,7 +21,11 @@ import {
     Wrench,
     CheckCircle,
     Paperclip,
-    Info
+    Info,
+    Download,
+    Eye,
+    X,
+    FileIcon
 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 
@@ -28,8 +36,19 @@ export default function Show({ ticket }) {
     const { auth } = usePage().props;
     const userRoles = auth?.user?.roles || [];
 
+    
+
     // Solo permitimos ver la nota interna a superadmin, admin o agente
     const canViewInternalNote = userRoles.some(role => ['superadmin', 'admin', 'agent'].includes(role));
+    const [openCancelModal, setOpenCancelModal] = useState(false);
+    const [cancellationReason, setCancellationReason] = useState('');
+    const [processingCancel, setProcessingCancel] = useState(false);
+    const [cancelErrors, setCancelErrors] = useState({});
+    const [previewFile, setPreviewFile] = useState(null);
+    
+    const isImage = (fileType) => {
+        return fileType && fileType.startsWith('image/');
+    };
 
     const statusName = ticket.status?.name || "Sin estado";
 
@@ -44,19 +63,30 @@ export default function Show({ ticket }) {
 
     const styleClass = statusStyles[statusName] || "bg-gray-100 text-gray-700 border-gray-200";
 
-    const handleCancelTicket = () => {
-        if (confirm("¿Estás seguro de que deseas cancelar este ticket? Esta acción no se puede deshacer.")) {
-            router.put(route('tickets.cancel', ticket.id), {}, {
-                onSuccess: () => toast.success("Ticket cancelado correctamente"),
-                onError: () => toast.error("Hubo un error al cancelar el ticket")
-            });
-        }
-    };
+    const handleCancelTicket = (e) => {
+        e.preventDefault();
+        setProcessingCancel(true);
+        setCancelErrors({});
 
+        router.put(route('tickets.cancel', ticket.id), {
+            cancellation_reason: cancellationReason,
+        }, {
+            onSuccess: () => {
+                setOpenCancelModal(false);
+                setCancellationReason('');
+                setProcessingCancel(false);
+                toast.success("Ticket cancelado correctamente");
+            },
+            onError: (errors) => {
+                setCancelErrors(errors);
+                setProcessingCancel(false);
+            },
+        });
+    };
     // Tomamos la primera solución (el diagnóstico) del array que devuelve Laravel
     const diagnostico = ticket.ticketSolutions && ticket.ticketSolutions.length > 0
-                        ? ticket.ticketSolutions[0]
-                        : (ticket.ticket_solutions && ticket.ticket_solutions.length > 0 ? ticket.ticket_solutions[0] : null);
+        ? ticket.ticketSolutions[0]
+        : (ticket.ticket_solutions && ticket.ticket_solutions.length > 0 ? ticket.ticket_solutions[0] : null);
 
     // Buscamos la nota administrativa de cierre en el historial
     const notaCierre = ticket.histories && ticket.histories.length > 0
@@ -98,12 +128,13 @@ export default function Show({ ticket }) {
                         <Button
                             variant="destructive"
                             className="bg-red-600 hover:bg-red-700 text-white font-bold w-full sm:w-auto shadow-md"
-                            onClick={handleCancelTicket}
+                            onClick={() => setOpenCancelModal(true)}
                         >
                             <Ban className="w-4 h-4 mr-2" />
                             Cancelar Solicitud
                         </Button>
                     )}
+
                 </div>
 
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -122,6 +153,64 @@ export default function Show({ ticket }) {
                                 </div>
                             </div>
                         </div>
+
+                        {/* ARCHIVOS ADJUNTOS DEL SOLICITANTE */}
+                        {ticket.attachments && ticket.attachments.length > 0 ? (
+                            <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-sm">
+                                <h2 className="text-lg font-bold mb-4 text-zinc-900 border-b pb-3 flex items-center gap-2">
+                                    <Paperclip className="w-5 h-5 text-zinc-500" />
+                                    Evidencia Adjunta
+                                </h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    {ticket.attachments.map((file, index) => (
+                                        <div
+                                            key={index}
+                                            className="flex items-center justify-between gap-3 bg-zinc-50 border border-zinc-200 rounded-lg px-4 py-3"
+                                        >
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                {isImage(file.file_type) ? (
+                                                    <img
+                                                        src={`/storage/${file.file_path}`}
+                                                        alt={file.file_name}
+                                                        className="w-10 h-10 rounded object-cover border border-zinc-200"
+                                                    />
+                                                ) : (
+                                                    <FileIcon className="w-8 h-8 text-zinc-400 flex-shrink-0" />
+                                                )}
+                                                <span className="text-sm text-zinc-700 truncate">
+                                                    {file.file_name}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-1 flex-shrink-0">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setPreviewFile(file)}
+                                                    className="p-2 rounded-md hover:bg-zinc-200 text-zinc-500 hover:text-zinc-800 transition"
+                                                    title="Ver archivo"
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                </button>
+                                                <a
+                                                    href={`/storage/${file.file_path}`}
+                                                    download={file.file_name}
+                                                    className="p-2 rounded-md hover:bg-zinc-200 text-zinc-500 hover:text-zinc-800 transition"
+                                                    title="Descargar archivo"
+                                                >
+                                                    <Download className="w-4 h-4" />
+                                                </a>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="bg-zinc-50 border border-dashed border-zinc-300 rounded-xl p-6 text-center">
+                                <Paperclip className="w-8 h-8 text-zinc-300 mx-auto mb-2" />
+                                <p className="text-sm text-zinc-400">
+                                    Este ticket no contiene archivos adjuntos
+                                </p>
+                            </div>
+                        )}
 
                         {/* ========================================== */}
                         {/* BLOQUE: NOTA ADMINISTRATIVA                */}
@@ -303,6 +392,101 @@ export default function Show({ ticket }) {
                     </div>
                 </div>
             </div>
+
+            {/* MODAL DE CANCELACIÓN */}
+            <Dialog open={openCancelModal} onOpenChange={setOpenCancelModal}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-red-600 flex items-center gap-2">
+                            <Ban className="w-5 h-5" />
+                            Cancelar Solicitud
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                            Esta acción retirará el ticket de la bandeja de atención. Una vez cancelado, no podrá ser reabierto.
+                        </p>
+                        <div className="space-y-2">
+                            <Label htmlFor="cancellation_reason">Motivo de la cancelación</Label>
+                            <Textarea
+                                id="cancellation_reason"
+                                value={cancellationReason}
+                                onChange={(e) => setCancellationReason(e.target.value)}
+                                placeholder="Describe el motivo por el cual deseas cancelar este ticket..."
+                                rows={4}
+                                required
+                            />
+                            {cancelErrors.cancellation_reason && (
+                                <p className="text-sm text-red-500">{cancelErrors.cancellation_reason}</p>
+                            )}
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="ghost" onClick={() => { setOpenCancelModal(false); setCancellationReason(''); setCancelErrors({}); }}>
+                            Volver
+                        </Button>
+                        <Button
+                            type="submit"
+                            variant="destructive"
+                            disabled={processingCancel || cancellationReason.trim().length < 10}
+                            className="bg-red-600 hover:bg-red-700"
+                            onClick={handleCancelTicket}
+                        >
+                            {processingCancel ? "Cancelando..." : "Confirmar Cancelación"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {previewFile && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+                    onClick={() => setPreviewFile(null)}
+                >
+                    <div
+                        className="relative max-w-[90vw] max-h-[90vh] flex flex-col items-center"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <button
+                            type="button"
+                            onClick={() => setPreviewFile(null)}
+                            className="absolute -top-3 -right-3 z-10 bg-white rounded-full p-1.5 shadow-lg hover:bg-zinc-100 transition"
+                        >
+                            <X className="w-5 h-5 text-zinc-700" />
+                        </button>
+                        {isImage(previewFile.file_type) ? (
+                            <img
+                                src={`/storage/${previewFile.file_path}`}
+                                alt={previewFile.file_name}
+                                className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
+                            />
+                        ) : previewFile.file_type === 'application/pdf' ? (
+                            <iframe
+                                src={`/storage/${previewFile.file_path}`}
+                                className="w-[80vw] h-[80vh] rounded-lg shadow-2xl bg-white"
+                                title={previewFile.file_name}
+                            />
+                        ) : (
+                            <div className="bg-white rounded-lg p-8 text-center shadow-2xl">
+                                <FileIcon className="w-16 h-16 text-zinc-400 mx-auto mb-4" />
+                                <p className="text-zinc-700 font-medium mb-2">{previewFile.file_name}</p>
+                                <p className="text-sm text-zinc-500 mb-4">No se puede previsualizar este tipo de archivo</p>
+                                <a
+                                    href={`/storage/${previewFile.file_path}`}
+                                    download={previewFile.file_name}
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-md hover:bg-zinc-800 transition text-sm"
+                                >
+                                    <Download className="w-4 h-4" />
+                                    Descargar
+                                </a>
+                            </div>
+                        )}
+                        <p className="mt-3 text-sm text-white/80 text-center truncate max-w-full">
+                            {previewFile.file_name}
+                        </p>
+                    </div>
+                </div>
+            )}
         </AppLayout>
     );
 }
